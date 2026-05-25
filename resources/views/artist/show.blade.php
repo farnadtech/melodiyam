@@ -16,14 +16,40 @@
                     </div>
                     @endif
                     <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-white">{{ $artist->display_name }}</h1>
-                    <p class="text-white/80 mt-2">{{ number_format($artist->monthly_listeners) }} شنونده ماهانه · {{ number_format($artist->followers_count) }} دنبال‌کننده</p>
+                    <p class="text-white/80 mt-2">
+                        {{ number_format($artist->monthly_listeners) }} شنونده ماهانه · <span id="artist-followers-count">{{ number_format($artist->followers_count) }}</span> دنبال‌کننده
+                    </p>
                 </div>
             </div>
         </div>
 
         {{-- Action buttons --}}
-        <div class="flex items-center gap-3">
-            <button class="btn-primary !rounded-full !px-8">دنبال کردن</button>
+        <div class="flex items-center gap-3"
+            x-data="{
+                following: {{ auth()->check() && auth()->user()->isFollowing($artist) ? 'true' : 'false' }},
+                followers: {{ $artist->followers_count }},
+                async toggleFollow() {
+                    const res = await fetch('/follow/toggle', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+                        body: JSON.stringify({type: 'artist', id: {{ $artist->id }}})
+                    });
+                    const data = await res.json();
+                    this.following = data.following;
+                    this.followers = data.following ? this.followers + 1 : this.followers - 1;
+                    document.getElementById('artist-followers-count').textContent = new Intl.NumberFormat('en').format(this.followers);
+                }
+            }"
+        >
+            @auth
+                <button
+                    x-on:click="toggleFollow"
+                    x-bind:class="following ? 'btn-ghost !rounded-full !px-8' : 'btn-primary !rounded-full !px-8'"
+                    x-text="following ? 'دنبال می‌کنید' : 'دنبال کردن'"
+                ></button>
+            @else
+                <a href="{{ route('login') }}" class="btn-primary !rounded-full !px-8">دنبال کردن</a>
+            @endauth
             <button class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors">
                 <svg class="w-5 h-5 text-surface-600 dark:text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>

@@ -48,6 +48,7 @@ class ArtistResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('cover_image')->label('تصویر')->circular()->disk('public')->defaultImageUrl(asset('images/default-avatar.png')),
                 Tables\Columns\TextColumn::make('display_name')->label('نام')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('user.name')->label('کاربر'),
                 Tables\Columns\BadgeColumn::make('verification_status')->label('تأیید')

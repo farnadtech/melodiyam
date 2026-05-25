@@ -154,4 +154,12 @@ class User extends Authenticatable
     {
         return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
     }
+
+    public function getAvatarUrl(): string
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+        return asset('images/default-avatar.png');
+    }
 }

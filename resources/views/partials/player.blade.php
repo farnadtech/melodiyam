@@ -8,7 +8,7 @@
     x-transition:enter-end="translate-y-0"
     class="fixed bottom-0 inset-x-0 z-50"
 >
-    <div class="bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 px-3 lg:px-4 py-2 lg:py-3">
+    <div id="global-player-bar" class="bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 px-3 lg:px-4 py-2 lg:py-3">
 
         {{-- Desktop Player --}}
         <div class="hidden lg:flex items-center gap-4 max-w-screen-2xl mx-auto">

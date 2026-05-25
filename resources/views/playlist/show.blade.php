@@ -18,7 +18,7 @@
                 </div>
 
                 @if($playlist->tracks->isNotEmpty())
-                <div class="flex items-center gap-3 mt-5" x-data>
+                <div class="flex items-center gap-3 mt-5 flex-wrap" x-data>
                     <button
                         @click="$store.player.playQueue([
                             @foreach($playlist->tracks as $track)
@@ -40,6 +40,35 @@
                     >
                         <svg class="w-5 h-5 text-surface-600 dark:text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
                     </button>
+
+                    {{-- Like Button --}}
+                    @auth
+                    <button
+                        x-data="{ liked: {{ $isLiked ? 'true' : 'false' }} }"
+                        x-on:click="fetch('/like/toggle', {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+                            body: JSON.stringify({type:'playlist', id:{{ $playlist->id }}})
+                        }).then(r=>r.json()).then(d=>{ liked = d.liked })"
+                        x-bind:class="liked ? 'text-rose-500 bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-700' : 'text-surface-500 bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700'"
+                        class="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors"
+                        title="لایک پلی‌لیست"
+                    >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <span x-text="liked ? 'ذخیره شد' : 'ذخیره'"></span>
+                    </button>
+                    @endauth
+
+                    {{-- Owner Actions --}}
+                    @auth
+                    @if(auth()->id() === $playlist->user_id)
+                    <a href="{{ route('playlist.edit', $playlist) }}" wire:navigate
+                        class="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 bg-surface-100 dark:bg-surface-800 text-sm font-medium transition-colors hover:bg-surface-200 dark:hover:bg-surface-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        ویرایش
+                    </a>
+                    @endif
+                    @endauth
                 </div>
                 @endif
             </div>

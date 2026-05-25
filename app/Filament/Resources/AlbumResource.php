@@ -50,7 +50,7 @@ class AlbumResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular(),
+                Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular()->disk('public'),
                 Tables\Columns\TextColumn::make('title')->label('عنوان')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('artist.display_name')->label('هنرمند')->searchable(),
                 Tables\Columns\BadgeColumn::make('type')->label('نوع'),

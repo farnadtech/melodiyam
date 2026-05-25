@@ -27,6 +27,8 @@ class PlanResource extends Resource
                 ->options(['free' => 'رایگان', 'premium' => 'پریمیوم', 'family' => 'خانوادگی', 'student' => 'دانشجو'])->required(),
             Forms\Components\TextInput::make('price')->label('قیمت (تومان)')->numeric()->required(),
             Forms\Components\TextInput::make('duration_days')->label('مدت (روز)')->numeric()->required(),
+            Forms\Components\TextInput::make('trial_days')->label('روزهای آزمایشی رایگان')->numeric()->default(0)
+                ->helperText('اگر ۰ باشد، آزمایشی ندارد. کاربر با انتخاب این پلن، این تعداد روز پریمیوم رایگان دریافت می‌کند.'),
             Forms\Components\TagsInput::make('features')->label('ویژگی‌ها'),
             Forms\Components\TextInput::make('max_devices')->label('حداکثر دستگاه')->numeric(),
             Forms\Components\Select::make('audio_quality')->label('کیفیت صدا')
@@ -48,6 +50,7 @@ class PlanResource extends Resource
                 Tables\Columns\BadgeColumn::make('type')->label('نوع'),
                 Tables\Columns\TextColumn::make('price')->label('قیمت')->numeric()->suffix(' تومان'),
                 Tables\Columns\TextColumn::make('duration_days')->label('مدت')->suffix(' روز'),
+                Tables\Columns\TextColumn::make('trial_days')->label('آزمایشی')->suffix(' روز')->default(0),
                 Tables\Columns\IconColumn::make('is_active')->label('فعال')->boolean(),
                 Tables\Columns\IconColumn::make('is_popular')->label('محبوب')->boolean(),
             ])

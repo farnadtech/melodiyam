@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\BrowseController;
 use App\Http\Controllers\Web\SearchController;
@@ -18,6 +20,33 @@ use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 
 // ── Public Routes ──
+
+// DEBUG: Test login
+Route::get('/test-login', function () {
+    $email = request('email', 'user@melodiyam.ir');
+    $password = request('password', 'password');
+
+    $user = \App\Models\User::where('email', $email)->first();
+
+    if (!$user) {
+        return "User not found: $email";
+    }
+
+    $output = "=== User Found ===\n";
+    $output .= "Email: " . $user->email . "\n";
+    $output .= "Name: " . $user->name . "\n";
+    $output .= "Type: " . $user->type . "\n";
+    $output .= "is_active: " . ($user->is_active ? 'YES' : 'NO') . "\n";
+    $output .= "email_verified_at: " . ($user->email_verified_at ?? 'NULL') . "\n";
+    $output .= "Password hash: " . substr($user->password, 0, 30) . "...\n";
+    $output .= "Hash check: " . (Hash::check($password, $user->password) ? 'PASS' : 'FAIL') . "\n";
+
+    $auth = Auth::attempt(['email' => $email, 'password' => $password], true);
+    $output .= "Auth::attempt: " . ($auth ? 'SUCCESS' : 'FAILED') . "\n";
+
+    return nl2br($output);
+});
+
 Route::get('/', HomeController::class)->name('home');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/browse/genre/{genre}', [BrowseController::class, 'genre'])->name('browse.genre');
@@ -65,8 +94,29 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     return response()->file($path, $headers);
 })->name('track.stream');
 Route::get('/album/{album}', [AlbumController::class, 'show'])->name('album.show');
+
+// All specific /artist/* routes (must be BEFORE /artist/{artist})
+Route::middleware(['auth'])->get('/artist/dashboard', [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
+Route::middleware(['auth'])->get('/artist/tracks', [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('artist.tracks');
+Route::middleware(['auth'])->get('/artist/tracks/create', [\App\Http\Controllers\Artist\TrackController::class, 'create'])->name('artist.tracks.create');
+Route::middleware(['auth'])->get('/artist/albums', [\App\Http\Controllers\Artist\AlbumController::class, 'index'])->name('artist.albums');
+Route::middleware(['auth'])->get('/artist/analytics', [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
+
+// DEBUG: Artist dashboard test
+Route::get('/artist-dashboard-test', function () {
+    return 'Artist Dashboard Route Works!';
+});
+
 Route::get('/artist/{artist}', [ArtistController::class, 'show'])->name('artist.show');
+Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
 Route::get('/playlist/{playlist}', [PlaylistController::class, 'show'])->name('playlist.show');
+Route::middleware('auth')->group(function () {
+    Route::get('/playlists/create', [PlaylistController::class, 'create'])->name('playlist.create');
+    Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlist.store');
+    Route::get('/playlist/{playlist}/edit', [PlaylistController::class, 'edit'])->name('playlist.edit');
+    Route::post('/playlist/{playlist}', [PlaylistController::class, 'update'])->name('playlist.update');
+    Route::delete('/playlist/{playlist}', [PlaylistController::class, 'destroy'])->name('playlist.destroy');
+});
 Route::get('/podcasts', [PodcastController::class, 'index'])->name('podcasts.index');
 Route::get('/podcast/{podcast}', [PodcastController::class, 'show'])->name('podcast.show');
 
@@ -92,6 +142,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/library/liked', [LibraryController::class, 'liked'])->name('library.liked');
     Route::get('/library/playlists', [LibraryController::class, 'playlists'])->name('library.playlists');
     Route::get('/library/history', [LibraryController::class, 'history'])->name('library.history');
+    Route::get('/library/albums', [LibraryController::class, 'albums'])->name('library.albums');
+    Route::get('/library/artists', [LibraryController::class, 'artists'])->name('library.artists');
+    Route::get('/library/downloads', [LibraryController::class, 'downloads'])->name('library.downloads');
+    Route::get('/queue', [LibraryController::class, 'queue'])->name('queue');
+    Route::get('/wallet', [LibraryController::class, 'wallet'])->name('wallet');
+    Route::get('/discover', [LibraryController::class, 'discover'])->name('discover');
     Route::get('/profile', [LibraryController::class, 'profile'])->name('profile');
     Route::get('/settings', [LibraryController::class, 'settings'])->name('settings');
 
@@ -292,17 +348,58 @@ Route::middleware('auth')->group(function () {
         return response()->json(['liked' => true]);
     })->name('like.toggle');
 
+    // Follow toggle
+    Route::post('/follow/toggle', function () {
+        $validated = request()->validate([
+            'type' => 'required|in:artist,user',
+            'id' => 'required|integer',
+        ]);
+
+        $user = auth()->user();
+
+        if ($validated['type'] === 'artist') {
+            $followable = \App\Models\Artist::findOrFail($validated['id']);
+        } else {
+            $followable = \App\Models\User::findOrFail($validated['id']);
+        }
+
+        $existing = $user->follows()
+            ->where('followable_type', get_class($followable))
+            ->where('followable_id', $followable->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            if ($validated['type'] === 'artist') {
+                $followable->decrement('followers_count');
+            }
+            return response()->json(['following' => false]);
+        } else {
+            $user->follows()->create([
+                'followable_type' => get_class($followable),
+                'followable_id' => $followable->id,
+            ]);
+            if ($validated['type'] === 'artist') {
+                $followable->increment('followers_count');
+            }
+            return response()->json(['following' => true]);
+        }
+    })->name('follow.toggle');
+
     // Subscription
     Route::get('/subscription/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::post('/subscription/pay', [SubscriptionController::class, 'pay'])->name('subscription.pay');
     Route::get('/subscription/verify', [SubscriptionController::class, 'verify'])->name('subscription.verify');
 });
 
-// ── Artist Routes ──
-Route::middleware(['auth'])->prefix('artist')->name('artist.')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/tracks', [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('tracks');
-    Route::get('/tracks/create', [\App\Http\Controllers\Artist\TrackController::class, 'create'])->name('tracks.create');
-    Route::get('/albums', [\App\Http\Controllers\Artist\AlbumController::class, 'index'])->name('albums');
-    Route::get('/analytics', [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('analytics');
-});
+
+// DEBUG: Simple artist dashboard test
+Route::get('/artist-dash-test2', function () {
+    if (!auth()->check()) {
+        return 'Not logged in';
+    }
+    if (!auth()->user()->isArtist()) {
+        return 'Not an artist. Type: ' . auth()->user()->type;
+    }
+    return 'Artist OK: ' . auth()->user()->name;
+})->middleware('auth');

@@ -86,4 +86,12 @@ class Artist extends Model
     {
         return $this->verification_status === 'pending';
     }
+
+    public function getAvatarUrl(): string
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        return asset('images/default-cover.png');
+    }
 }

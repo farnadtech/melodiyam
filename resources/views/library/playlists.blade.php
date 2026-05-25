@@ -1,54 +1,60 @@
-<x-layouts.app title="پلی‌لیست‌ها">
-    <div class="p-4 lg:p-8 space-y-6">
+<x-layouts.app title="پلی‌لیست‌های من">
+    <div class="p-4 lg:p-8 space-y-10">
+
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-display font-bold text-surface-900 dark:text-white">پلی‌لیست‌های من</h1>
-            <div x-data="{ showModal: false, title: '', description: '', creating: false }">
-                <button @click="showModal = true" class="btn-primary text-sm">ساخت پلی‌لیست جدید</button>
+            <a href="{{ route('playlist.create') }}" wire:navigate class="btn-primary flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                پلی‌لیست جدید
+            </a>
+        </div>
 
-                {{-- Create Playlist Modal --}}
-                <div x-show="showModal" x-cloak @keydown.escape.window="showModal = false" class="fixed inset-0 z-[100] flex items-center justify-center">
-                    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showModal = false"></div>
-                    <div class="relative bg-white dark:bg-surface-800 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" @click.stop>
-                        <h3 class="text-lg font-bold text-surface-900 dark:text-white mb-4">ساخت پلی‌لیست جدید</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">نام پلی‌لیست</label>
-                                <input x-model="title" type="text" class="w-full px-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-700 border-0 text-surface-900 dark:text-surface-100 text-sm focus:ring-2 focus:ring-primary-500/50 focus:outline-none" placeholder="مثلاً: آهنگ‌های مورد علاقه">
+        {{-- My Playlists --}}
+        <section>
+            <h2 class="text-base font-bold text-surface-700 dark:text-surface-300 mb-3">ساخته‌شده توسط من</h2>
+            @if($myPlaylists->isNotEmpty())
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    @foreach($myPlaylists as $playlist)
+                        <a href="{{ route('playlist.show', $playlist) }}" wire:navigate class="glass-card rounded-2xl p-4 hover:scale-105 transition-transform group relative">
+                            <div class="aspect-square rounded-xl overflow-hidden mb-3 bg-surface-200 dark:bg-surface-700 relative">
+                                <img src="{{ $playlist->cover_image ? asset('storage/'.$playlist->cover_image) : asset('images/default-playlist.png') }}"
+                                    alt="{{ $playlist->title }}" class="w-full h-full object-cover">
+                                @if($playlist->visibility === 'private')
+                                    <span class="absolute top-2 left-2 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                        <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </span>
+                                @endif
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">توضیحات (اختیاری)</label>
-                                <textarea x-model="description" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-700 border-0 text-surface-900 dark:text-surface-100 text-sm focus:ring-2 focus:ring-primary-500/50 focus:outline-none resize-none" placeholder="توضیح کوتاه..."></textarea>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 mt-6 justify-end">
-                            <button @click="showModal = false" class="px-4 py-2 rounded-xl text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors">انصراف</button>
-                            <button
-                                @click="if(!title.trim() || creating) return;
-                                    creating = true;
-                                    fetch('/playlist/create', {
-                                        method: 'POST',
-                                        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content},
-                                        body: JSON.stringify({title: title.trim(), description: description.trim()})
-                                    }).then(r => r.json()).then(d => { creating = false; showModal = false; window.location.href = '/playlist/' + d.slug; }).catch(() => creating = false)"
-                                class="btn-primary text-sm"
-                                :class="creating ? 'opacity-50' : ''"
-                            >
-                                <span x-show="!creating">ساخت</span>
-                                <span x-show="creating">در حال ساخت...</span>
-                            </button>
-                        </div>
-                    </div>
+                            <p class="font-medium text-surface-900 dark:text-white text-sm truncate">{{ $playlist->title }}</p>
+                            <p class="text-xs text-surface-500 mt-1">{{ $playlist->tracks_count }} آهنگ</p>
+                        </a>
+                    @endforeach
                 </div>
-            </div>
-        </div>
-        @if($playlists->isNotEmpty())
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            @foreach($playlists as $playlist)
-                @include('components.playlist-card', ['playlist' => $playlist])
-            @endforeach
-        </div>
-        @else
-        <div class="text-center py-16"><p class="text-surface-500">هنوز پلی‌لیستی ندارید</p></div>
-        @endif
+            @else
+                <p class="text-surface-400 text-sm">هنوز پلی‌لیستی نساخته‌اید.</p>
+            @endif
+        </section>
+
+        {{-- Saved (Liked) Playlists --}}
+        <section>
+            <h2 class="text-base font-bold text-surface-700 dark:text-surface-300 mb-3">ذخیره‌شده‌ها</h2>
+            @if($savedPlaylists->isNotEmpty())
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    @foreach($savedPlaylists as $playlist)
+                        <a href="{{ route('playlist.show', $playlist) }}" wire:navigate class="glass-card rounded-2xl p-4 hover:scale-105 transition-transform group">
+                            <div class="aspect-square rounded-xl overflow-hidden mb-3 bg-surface-200 dark:bg-surface-700">
+                                <img src="{{ $playlist->cover_image ? asset('storage/'.$playlist->cover_image) : asset('images/default-playlist.png') }}"
+                                    alt="{{ $playlist->title }}" class="w-full h-full object-cover">
+                            </div>
+                            <p class="font-medium text-surface-900 dark:text-white text-sm truncate">{{ $playlist->title }}</p>
+                            <p class="text-xs text-surface-500 mt-1">{{ $playlist->tracks_count }} آهنگ · {{ $playlist->user->name ?? '' }}</p>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-surface-400 text-sm">هنوز پلی‌لیستی ذخیره نکرده‌اید.</p>
+            @endif
+        </section>
+
     </div>
 </x-layouts.app>

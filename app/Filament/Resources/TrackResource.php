@@ -83,7 +83,7 @@ class TrackResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular(),
+                Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular()->disk('public'),
                 Tables\Columns\TextColumn::make('title')->label('عنوان')->searchable()->sortable()->limit(30),
                 Tables\Columns\TextColumn::make('artist.display_name')->label('هنرمند')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('album.title')->label('آلبوم')->limit(20),

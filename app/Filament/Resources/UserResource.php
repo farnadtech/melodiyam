@@ -53,6 +53,7 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('avatar')->label('آواتار')->circular()->disk('public')->defaultImageUrl(asset('images/default-avatar.png')),
                 Tables\Columns\TextColumn::make('id')->label('#')->sortable(),
                 Tables\Columns\TextColumn::make('name')->label('نام')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('phone')->label('موبایل')->searchable(),
