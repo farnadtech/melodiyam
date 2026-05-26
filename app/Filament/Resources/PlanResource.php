@@ -36,6 +36,9 @@ class PlanResource extends Resource
             Forms\Components\Toggle::make('ad_free')->label('بدون تبلیغات'),
             Forms\Components\Toggle::make('offline_mode')->label('حالت آفلاین'),
             Forms\Components\Toggle::make('unlimited_skips')->label('رد نامحدود'),
+            Forms\Components\Toggle::make('includes_paid_content')
+                ->label('دسترسی به محتوای پولی')
+                ->helperText('کاربران این پلن تمام آهنگ‌ها و آلبوم‌های پولی را رایگان گوش می‌دهند'),
             Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
             Forms\Components\Toggle::make('is_popular')->label('محبوب'),
             Forms\Components\TextInput::make('sort_order')->label('ترتیب')->numeric(),

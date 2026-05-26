@@ -23,6 +23,7 @@ class Track extends Model
         'is_premium_only', 'status', 'published_at', 'release_date',
         'is_featured', 'play_count', 'like_count', 'download_count', 'share_count',
         'mood', 'bpm', 'key_signature', 'isrc', 'seo_title', 'seo_description',
+        'price', 'discount_price', 'is_for_sale', 'preview_seconds',
     ];
 
     protected function casts(): array
@@ -40,6 +41,10 @@ class Track extends Model
             'like_count' => 'integer',
             'download_count' => 'integer',
             'share_count' => 'integer',
+            'price' => 'integer',
+            'discount_price' => 'integer',
+            'is_for_sale' => 'boolean',
+            'preview_seconds' => 'integer',
         ];
     }
 

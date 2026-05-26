@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Track;
+use App\Models\Sale;
+use App\Models\Album;
 use Illuminate\View\View;
 
 class TrackController extends Controller
@@ -11,6 +13,31 @@ class TrackController extends Controller
     public function show(Track $track): View
     {
         $track->load(['artist', 'album', 'genres', 'featuringArtists']);
+
+        $user = auth()->user();
+        $hasPlanAccess = $user?->activeSubscription?->plan?->includes_paid_content ?? false;
+        $canPlay = true;
+
+        if ($track->is_for_sale && $track->price) {
+            if (!$user) {
+                $canPlay = false;
+            } elseif (!$hasPlanAccess) {
+                $canPlay = Sale::where('buyer_id', $user->id)
+                    ->where('status', 'completed')
+                    ->where(function ($q) use ($track) {
+                        $q->where(function ($q2) use ($track) {
+                            $q2->where('saleable_type', Track::class)
+                               ->where('saleable_id', $track->id);
+                        });
+                        if ($track->album_id) {
+                            $q->orWhere(function ($q2) use ($track) {
+                                $q2->where('saleable_type', Album::class)
+                                   ->where('saleable_id', $track->album_id);
+                            });
+                        }
+                    })->exists();
+            }
+        }
 
         $relatedTracks = Track::published()
             ->where('id', '!=', $track->id)
@@ -51,6 +78,6 @@ class TrackController extends Controller
                 ->exists();
         }
 
-        return view('track.show', compact('track', 'relatedTracks', 'comments', 'userLikedTrack'));
+        return view('track.show', compact('track', 'relatedTracks', 'comments', 'userLikedTrack', 'canPlay'));
     }
 }

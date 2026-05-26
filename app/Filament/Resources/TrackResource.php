@@ -68,6 +68,35 @@ class TrackResource extends Resource
                 Forms\Components\Toggle::make('is_featured')->label('ویژه'),
             ])->columns(3),
 
+            \Filament\Schemas\Components\Section::make('قیمت‌گذاری و فروش')->schema([
+                Forms\Components\Toggle::make('is_for_sale')
+                    ->label('قابل فروش')
+                    ->helperText('فعال کنید تا آهنگ به صورت تکی قابل خرید باشد')
+                    ->live(),
+                Forms\Components\TextInput::make('price')
+                    ->label('قیمت اصلی (تومان)')
+                    ->numeric()
+                    ->nullable()
+                    ->suffix('تومان')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->required(fn($get) => $get('is_for_sale')),
+                Forms\Components\TextInput::make('discount_price')
+                    ->label('قیمت با تخفیف (تومان)')
+                    ->numeric()
+                    ->nullable()
+                    ->suffix('تومان')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->helperText('خالی = بدون تخفیف'),
+                Forms\Components\TextInput::make('preview_seconds')
+                    ->label('پیش‌نمایش (ثانیه)')
+                    ->numeric()
+                    ->default(0)
+                    ->minValue(0)
+                    ->suffix('ثانیه')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->helperText('۰ = بدون پیش‌نمایش، مثلاً ۳۰ = کاربر ۳۰ ثانیه اول را رایگان می‌شنود'),
+            ])->columns(3),
+
             \Filament\Schemas\Components\Section::make('متن آهنگ')->schema([
                 Forms\Components\Textarea::make('lyrics')->label('متن آهنگ')->rows(8),
             ])->collapsible(),

@@ -14,6 +14,9 @@ use App\Http\Controllers\Web\PodcastController;
 use App\Http\Controllers\Web\LibraryController;
 use App\Http\Controllers\Web\SubscriptionController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\WalletController;
+use App\Http\Controllers\Web\AdController;
+use App\Http\Controllers\Web\PurchaseController;
 use App\Http\Controllers\Web\PageController;
 use App\Services\StreamService;
 use App\Livewire\Auth\Login;
@@ -49,13 +52,47 @@ Route::get('/test-login', function () {
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
+Route::get('/browse/tracks.json', [BrowseController::class, 'tracksJson'])->name('browse.tracks-json');
 Route::get('/browse/genre/{genre}', [BrowseController::class, 'genre'])->name('browse.genre');
+Route::get('/browse/genre/{genre}/tracks.json', [BrowseController::class, 'genreTracksJson'])->name('browse.genre-tracks-json');
 Route::get('/search', SearchController::class)->name('search');
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');
 
 // Audio stream with byte-range support for seeking
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
+    // Access control for paid tracks
+    if ($track->is_for_sale && $track->price) {
+        // If track has a preview, allow stream — JS player handles the cutoff
+        $hasPreview = ($track->preview_seconds ?? 0) > 0;
+
+        if (!$hasPreview) {
+            $user = auth()->user();
+            if (!$user) {
+                abort(401);
+            }
+            $hasPlanAccess = $user->activeSubscription?->plan?->includes_paid_content;
+            if (!$hasPlanAccess) {
+                $hasPurchased = \App\Models\Sale::where('buyer_id', $user->id)
+                    ->where('status', 'completed')
+                    ->where(function ($q) use ($track) {
+                        $q->where(function ($q2) use ($track) {
+                            $q2->where('saleable_type', \App\Models\Track::class)
+                               ->where('saleable_id', $track->id);
+                        })->orWhere(function ($q2) use ($track) {
+                            if ($track->album_id) {
+                                $q2->where('saleable_type', \App\Models\Album::class)
+                                   ->where('saleable_id', $track->album_id);
+                            }
+                        });
+                    })->exists();
+                if (!$hasPurchased) {
+                    abort(403);
+                }
+            }
+        }
+    }
+
     $path = null;
     if ($track->file_path) {
         $path = storage_path('app/public/' . $track->file_path);
@@ -67,19 +104,19 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     $size = filesize($path);
     $mime = 'audio/mpeg';
     $headers = [
-        'Content-Type' => $mime,
+        'Content-Type'  => $mime,
         'Accept-Ranges' => 'bytes',
-        'Cache-Control' => 'public, max-age=86400',
+        'Cache-Control' => 'no-store',
     ];
 
     $range = request()->header('Range');
     if ($range) {
         preg_match('/bytes=(\d+)-(\d*)/', $range, $matches);
-        $start = intval($matches[1]);
-        $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $size - 1;
+        $start  = intval($matches[1]);
+        $end    = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $size - 1;
         $length = $end - $start + 1;
 
-        $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
+        $headers['Content-Range']  = "bytes {$start}-{$end}/{$size}";
         $headers['Content-Length'] = $length;
 
         $file = fopen($path, 'rb');
@@ -145,8 +182,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/library/albums', [LibraryController::class, 'albums'])->name('library.albums');
     Route::get('/library/artists', [LibraryController::class, 'artists'])->name('library.artists');
     Route::get('/library/downloads', [LibraryController::class, 'downloads'])->name('library.downloads');
-    Route::get('/queue', [LibraryController::class, 'queue'])->name('queue');
-    Route::get('/wallet', [LibraryController::class, 'wallet'])->name('wallet');
+
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
+    Route::post('/wallet/deposit', [WalletController::class, 'depositRequest'])->name('wallet.deposit');
+    Route::post('/wallet/withdraw', [WalletController::class, 'withdrawRequest'])->name('wallet.withdraw');
+    Route::get('/api/audio-ad', [AdController::class, 'getAudioAd'])->name('ad.audio');
+    Route::post('/api/ad-click', [AdController::class, 'trackClick'])->name('ad.click');
+    Route::get('/purchase', [PurchaseController::class, 'confirm'])->name('purchase');
+    Route::post('/purchase', [PurchaseController::class, 'purchase'])->name('purchase.submit');
+    Route::get('/my-purchases', [PurchaseController::class, 'userPurchases'])->name('purchases');
     Route::get('/discover', [LibraryController::class, 'discover'])->name('discover');
     Route::get('/profile', [LibraryController::class, 'profile'])->name('profile');
     Route::get('/settings', [LibraryController::class, 'settings'])->name('settings');

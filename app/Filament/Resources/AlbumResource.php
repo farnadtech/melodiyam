@@ -43,6 +43,28 @@ class AlbumResource extends Resource
                 Forms\Components\TextInput::make('upc')->label('UPC'),
                 Forms\Components\TextInput::make('copyright')->label('کپی‌رایت'),
             ])->columns(3),
+
+            \Filament\Schemas\Components\Section::make('قیمت‌گذاری و فروش')->schema([
+                Forms\Components\Toggle::make('is_for_sale')
+                    ->label('آلبوم قابل خرید')
+                    ->helperText('فعال کنید تا آلبوم به صورت کامل قابل خرید باشد')
+                    ->live(),
+                Forms\Components\TextInput::make('price')
+                    ->label('قیمت اصلی (تومان)')
+                    ->numeric()->nullable()->suffix('تومان')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->required(fn($get) => $get('is_for_sale')),
+                Forms\Components\TextInput::make('discount_price')
+                    ->label('قیمت با تخفیف (تومان)')
+                    ->numeric()->nullable()->suffix('تومان')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->helperText('خالی = بدون تخفیف'),
+                Forms\Components\TextInput::make('preview_seconds')
+                    ->label('پیش‌نمایش (ثانیه)')
+                    ->numeric()->default(0)->minValue(0)->suffix('ثانیه')
+                    ->visible(fn($get) => $get('is_for_sale'))
+                    ->helperText('۰ = بدون پیش‌نمایش'),
+            ])->columns(3),
         ]);
     }
 

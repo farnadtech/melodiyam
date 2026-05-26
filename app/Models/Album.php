@@ -19,6 +19,7 @@ class Album extends Model
         'type', 'genre_id', 'release_date', 'status', 'published_at',
         'is_explicit', 'is_featured', 'play_count', 'like_count',
         'upc', 'copyright', 'seo_title', 'seo_description',
+        'price', 'discount_price', 'is_for_sale', 'preview_seconds',
     ];
 
     protected function casts(): array
@@ -30,6 +31,10 @@ class Album extends Model
             'is_featured' => 'boolean',
             'play_count' => 'integer',
             'like_count' => 'integer',
+            'price' => 'integer',
+            'discount_price' => 'integer',
+            'is_for_sale' => 'boolean',
+            'preview_seconds' => 'integer',
         ];
     }
 

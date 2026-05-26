@@ -1,3 +1,107 @@
+{{-- Audio Ad Overlay --}}
+<div
+    x-data="{
+        adPlaying: false,
+        adTitle: '',
+        adAudio: null,
+        adRemaining: 0,
+        adTimer: null,
+        trackCount: 0,
+        adConfig: null,
+
+        async fetchAd() {
+            try {
+                const r = await fetch('/api/audio-ad');
+                const d = await r.json();
+                this.adConfig = d.ad;
+            } catch(e) {}
+        },
+
+        async maybePlayAd() {
+            if (!this.adConfig) await this.fetchAd();
+            if (!this.adConfig) return;
+
+            this.trackCount++;
+            const threshold = this.adConfig.tracks_between ?? 3;
+            if (this.trackCount < threshold) return;
+            this.trackCount = 0;
+            this.playAd();
+        },
+
+        playAd() {
+            if (!this.adConfig?.url) return;
+            // موقتاً پلیر اصلی رو پاز کن
+            if ($store.player.isPlaying) $store.player.toggle();
+
+            this.adPlaying = true;
+            this.adTitle = this.adConfig.title ?? 'تبلیغ';
+            this.adRemaining = this.adConfig.duration ?? 15;
+
+            this.adAudio = new Audio(this.adConfig.url);
+            this.adAudio.volume = $store.player.audio?.volume ?? 1;
+            this.adAudio.play().catch(() => {});
+
+            this.adTimer = setInterval(() => {
+                this.adRemaining--;
+                if (this.adRemaining <= 0) this.finishAd();
+            }, 1000);
+
+            this.adAudio.onended = () => this.finishAd();
+        },
+
+        finishAd() {
+            clearInterval(this.adTimer);
+            if (this.adAudio) { this.adAudio.pause(); this.adAudio = null; }
+            this.adPlaying = false;
+            // ادامه پخش آهنگ اصلی
+            if ($store.player.currentTrack && !$store.player.isPlaying) {
+                $store.player.toggle();
+            }
+        },
+
+        skipAd() {
+            this.finishAd();
+        }
+    }"
+    x-init="
+        $watch('$store.player.currentTrack', (val, old) => {
+            if (val && old && val.id !== old.id) maybePlayAd();
+        });
+    "
+    x-cloak
+    x-show="adPlaying"
+    x-transition
+    class="fixed bottom-0 inset-x-0 z-[60] bg-gradient-to-t from-black/90 to-black/70 backdrop-blur-sm"
+>
+    <div class="flex items-center justify-between px-4 py-3 max-w-screen-2xl mx-auto">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18.54 9L8.88 3.46a3.42 3.42 0 00-5.13 3v11.12A3.42 3.42 0 007.17 21a3.43 3.43 0 001.71-.46L8.88 21l9.66-5.46a3.42 3.42 0 000-5.91zM12 15.6a3.6 3.6 0 110-7.2 3.6 3.6 0 010 7.2z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-amber-400 font-medium">آگهی تبلیغاتی</p>
+                <p class="text-sm text-white font-semibold truncate max-w-xs" x-text="adTitle"></p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+                <div class="w-32 h-1.5 rounded-full bg-white/20 overflow-hidden">
+                    <div class="h-full bg-amber-400 rounded-full transition-all duration-1000"
+                         :style="`width: ${adConfig ? Math.max(0, (1 - adRemaining/adConfig.duration)*100) : 0}%`"></div>
+                </div>
+                <span class="text-xs text-white/60 tabular-nums w-6 text-right" x-text="adRemaining + 's'"></span>
+            </div>
+            <button @click="skipAd()"
+                    :disabled="adRemaining > 5"
+                    :class="adRemaining > 5 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'"
+                    class="px-3 py-1.5 rounded-lg border border-white/30 text-xs text-white transition">
+                <span x-show="adRemaining > 5" x-text="'رد کردن در ' + (adRemaining - 5) + 's'"></span>
+                <span x-show="adRemaining <= 5">رد کردن ←</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- Global Music Player --}}
 <div
     x-data="{ showQueue: false }"

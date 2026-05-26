@@ -16,7 +16,7 @@ class Plan extends Model
         'name', 'name_fa', 'slug', 'description', 'description_fa',
         'type', 'price', 'duration_days', 'trial_days', 'features', 'is_active',
         'is_popular', 'sort_order', 'max_devices', 'audio_quality',
-        'ad_free', 'offline_mode', 'unlimited_skips',
+        'ad_free', 'offline_mode', 'unlimited_skips', 'includes_paid_content',
     ];
 
     protected function casts(): array
@@ -28,6 +28,7 @@ class Plan extends Model
             'ad_free' => 'boolean',
             'offline_mode' => 'boolean',
             'unlimited_skips' => 'boolean',
+            'includes_paid_content' => 'boolean',
             'price' => 'decimal:0',
         ];
     }

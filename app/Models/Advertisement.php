@@ -16,6 +16,7 @@ class Advertisement extends Model
         'click_url', 'position', 'duration', 'starts_at', 'ends_at',
         'status', 'impressions', 'clicks', 'max_impressions',
         'budget', 'spent', 'targeting', 'priority',
+        'target_plans', 'tracks_between', 'interval_seconds',
     ];
 
     protected function casts(): array
@@ -23,7 +24,8 @@ class Advertisement extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
-            'targeting' => 'array',
+            'targeting'    => 'array',
+            'target_plans' => 'array',
             'budget' => 'decimal:0',
             'spent' => 'decimal:0',
             'impressions' => 'integer',

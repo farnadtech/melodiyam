@@ -104,10 +104,90 @@ class Settings extends Page implements HasForms
                                 TextInput::make('currency')->label('واحد پول'),
                             ])->columns(2),
                         Section::make('درگاه پرداخت')->schema([
-                            Select::make('payment_gateway')->label('درگاه پرداخت')
-                                ->options(['zarinpal' => 'زرین‌پال', 'idpay' => 'آیدی‌پی', 'payir' => 'Pay.ir']),
-                            TextInput::make('zarinpal_merchant')->label('مرچنت زرین‌پال'),
-                            TextInput::make('idpay_api_key')->label('API Key آیدی‌پی')->password()->revealable(),
+                            Select::make('payment_gateway')
+                                ->label('درگاه پرداخت فعال')
+                                ->options([
+                                    ''          => '— غیرفعال —',
+                                    'zarinpal'  => 'زرین‌پال',
+                                    'idpay'     => 'آیدی‌پی (IDPay)',
+                                    'payir'     => 'Pay.ir',
+                                    'nextpay'   => 'نکست‌پی',
+                                    'vandar'    => 'وندار',
+                                ])
+                                ->live()
+                                ->columnSpanFull(),
+
+                            // Zarinpal
+                            TextInput::make('zarinpal_merchant')
+                                ->label('Merchant ID زرین‌پال')
+                                ->placeholder('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
+                                ->visible(fn($get) => $get('payment_gateway') === 'zarinpal')
+                                ->columnSpanFull(),
+                            Toggle::make('zarinpal_sandbox')
+                                ->label('حالت آزمایشی (Sandbox) زرین‌پال')
+                                ->visible(fn($get) => $get('payment_gateway') === 'zarinpal'),
+
+                            // IDPay
+                            TextInput::make('idpay_api_key')
+                                ->label('API Key آیدی‌پی')
+                                ->password()->revealable()
+                                ->visible(fn($get) => $get('payment_gateway') === 'idpay'),
+                            Toggle::make('idpay_sandbox')
+                                ->label('حالت آزمایشی (Sandbox) آیدی‌پی')
+                                ->visible(fn($get) => $get('payment_gateway') === 'idpay'),
+
+                            // Pay.ir
+                            TextInput::make('payir_api')
+                                ->label('API Key پی‌ایر')
+                                ->password()->revealable()
+                                ->visible(fn($get) => $get('payment_gateway') === 'payir'),
+
+                            // Nextpay
+                            TextInput::make('nextpay_api')
+                                ->label('API Key نکست‌پی')
+                                ->password()->revealable()
+                                ->visible(fn($get) => $get('payment_gateway') === 'nextpay'),
+
+                            // Vandar
+                            TextInput::make('vandar_api')
+                                ->label('API Key وندار')
+                                ->password()->revealable()
+                                ->visible(fn($get) => $get('payment_gateway') === 'vandar'),
+                            TextInput::make('vandar_mobile')
+                                ->label('موبایل وندار')
+                                ->visible(fn($get) => $get('payment_gateway') === 'vandar'),
+                        ])->columns(2),
+
+                        Section::make('تنظیمات مالی')->schema([
+                            TextInput::make('deposit_min_amount')
+                                ->label('حداقل مبلغ شارژ (تومان)')
+                                ->numeric()->default(10000),
+                            TextInput::make('deposit_max_amount')
+                                ->label('حداکثر مبلغ شارژ (تومان)')
+                                ->numeric()->default(50000000),
+                            TextInput::make('withdraw_min_amount')
+                                ->label('حداقل مبلغ برداشت (تومان)')
+                                ->numeric()->default(10000),
+                            TextInput::make('withdraw_max_amount')
+                                ->label('حداکثر مبلغ برداشت (تومان)')
+                                ->numeric()->default(10000000),
+                            TextInput::make('transaction_tax_percent')
+                                ->label('درصد مالیات/کارمزد تراکنش')
+                                ->numeric()->default(0)
+                                ->suffix('%')
+                                ->helperText('مثلاً ۹ برای ۹٪ — این مقدار به مبلغ نهایی اضافه می‌شود'),
+                            TextInput::make('withdraw_fee_amount')
+                                ->label('کارمزد ثابت برداشت (تومان)')
+                                ->numeric()->default(0)
+                                ->helperText('مبلغ ثابت از هر برداشت کسر می‌شود'),
+                        ])->columns(3),
+
+                        Section::make('کیف پول و کارت به کارت')->schema([
+                            Toggle::make('wallet_enabled')->label('فعال بودن کیف پول')->default(true),
+                            Toggle::make('card2card_enabled')->label('شارژ کارت به کارت')->default(true),
+                            TextInput::make('bank_card_number')->label('شماره کارت بانکی (برای شارژ)')->placeholder('6037XXXXXXXXXXXXXXXX'),
+                            TextInput::make('bank_card_owner')->label('نام صاحب کارت'),
+                            TextInput::make('bank_name')->label('نام بانک'),
                         ])->columns(3),
                     ]),
 
