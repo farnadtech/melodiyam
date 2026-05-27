@@ -36,7 +36,10 @@
             </div>
 
             <div>
-                <label for="password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">رمز عبور</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="password" class="block text-sm font-medium text-surface-700 dark:text-surface-300">رمز عبور</label>
+                    <a href="{{ route('password.request') }}" class="text-xs text-primary-500 hover:text-primary-600">فراموشی رمز عبور؟</a>
+                </div>
                 <input
                     wire:model="password"
                     id="password"

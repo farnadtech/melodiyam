@@ -101,8 +101,9 @@
                 @php
                     $chartData = [];
                     for ($i = 29; $i >= 0; $i--) {
-                        $date = now()->subDays($i)->format('Y-m-d');
-                        $chartData[] = ['date' => now()->subDays($i)->format('m/d'), 'val' => $stats['dailyRevenue'][$date] ?? 0];
+                        $day  = now()->subDays($i);
+                        $date = $day->format('Y-m-d');
+                        $chartData[] = ['date' => \App\Helpers\Jalali::format($day, 'm/d'), 'val' => $stats['dailyRevenue'][$date] ?? 0];
                     }
                     $maxVal = max(array_column($chartData, 'val') ?: [1]);
                 @endphp
@@ -147,6 +148,64 @@
                 @endif
             </div>
 
+            {{-- Sales Detail Table --}}
+            <div class="rpt-card rpt-full">
+                <div class="rpt-header-row">
+                    <div class="rpt-card-title" style="margin-bottom:0">جزئیات فروش‌ها (۱۰ مورد آخر)</div>
+                </div>
+                @php
+                $recentSales = \App\Models\Sale::with(['buyer', 'seller', 'saleable', 'commissionRule'])
+                    ->where('status', 'completed')
+                    ->latest()
+                    ->limit(10)
+                    ->get();
+                @endphp
+                <div style="overflow-x:auto;margin-top:12px;">
+                    <table class="rpt-tx-table">
+                        <thead>
+                            <tr>
+                                <th>خریدار</th>
+                                <th>هنرمند/فروشنده</th>
+                                <th>آیتم</th>
+                                <th>مبلغ کل</th>
+                                <th>کمیسیون</th>
+                                <th>درآمد هنرمند</th>
+                                <th>تاریخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentSales as $sale)
+                            <tr>
+                                <td>{{ $sale->buyer?->name ?? '—' }}</td>
+                                <td>{{ $sale->seller?->name ?? '—' }}</td>
+                                <td>
+                                    <span style="font-size:11px;color:#9ca3af;">
+                                        {{ class_basename($sale->saleable_type) === 'Track' ? 'آهنگ' : 'آلبوم' }}:
+                                    </span>
+                                    {{ $sale->saleable?->title ?? '—' }}
+                                </td>
+                                <td style="font-weight:600;color:#059669;">{{ number_format($sale->gross_amount) }}</td>
+                                <td style="color:#dc2626;">
+                                    @if($sale->commission_amount > 0)
+                                        {{ number_format($sale->commission_amount) }}
+                                        @if($sale->commissionRule)
+                                        <span style="font-size:11px;color:#9ca3af;">({{ $sale->commissionRule->commission_value }}{{ $sale->commissionRule->commission_type === 'percent' ? '%' : 'ت' }})</span>
+                                        @endif
+                                    @else
+                                        <span style="color:#9ca3af;">—</span>
+                                    @endif
+                                </td>
+                                <td style="font-weight:600;color:#7c3aed;">{{ number_format($sale->net_amount) }}</td>
+                                <td style="font-size:12px;color:#9ca3af;">{{ \App\Helpers\Jalali::format($sale->created_at, 'Y/m/d') }}</td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="7" class="rpt-empty">هنوز فروشی ثبت نشده</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {{-- Recent Transactions --}}
             <div class="rpt-card rpt-full">
                 <div class="rpt-header-row">
@@ -182,7 +241,7 @@
                                         {{ $tx->status==='approved' ? 'تایید' : ($tx->status==='pending' ? 'انتظار' : 'رد') }}
                                     </span>
                                 </td>
-                                <td style="font-size:12px;color:#9ca3af;">{{ $tx->created_at->diffForHumans() }}</td>
+                                <td style="font-size:12px;color:#9ca3af;">{{ \App\Helpers\Jalali::format($tx->created_at, 'Y/m/d') }}</td>
                             </tr>
                             @endforeach
                         </tbody>

@@ -10,6 +10,17 @@ use Illuminate\View\View;
 
 class AlbumController extends Controller
 {
+    public function index(): View
+    {
+        $albums = Album::with('artist')
+            ->where('status', 'published')
+            ->withCount('tracks')
+            ->latest()
+            ->paginate(24);
+
+        return view('album.index', compact('albums'));
+    }
+
     public function show(Album $album): View
     {
         $album->load(['artist', 'tracks.artist', 'genre']);

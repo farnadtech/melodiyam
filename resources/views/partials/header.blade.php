@@ -66,9 +66,9 @@
         {{-- Notifications --}}
         @auth
         <div x-data="{ open: false, notifications: [], unreadCount: 0, loading: false }" x-init="
-            fetch('{{ route('notifications.index') }}')
-                .then(r => r.json())
-                .then(d => { notifications = d.notifications; unreadCount = d.unread_count; });
+            fetch('{{ route('notifications.index') }}', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => { if(d) { notifications = d.notifications; unreadCount = d.unread_count; } });
         " class="relative">
             <button @click="open = !open" class="relative p-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                 <svg class="w-5 h-5 text-surface-600 dark:text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

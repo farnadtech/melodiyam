@@ -14,6 +14,7 @@ class Reports extends Page
     protected static string|\UnitEnum|null $navigationGroup = 'سیستم';
     protected static ?string $title = 'گزارش‌ها و آمار';
     protected static ?string $navigationLabel = 'گزارش‌ها';
+    protected static ?string $slug = 'analytics-reports';
     protected static ?int $navigationSort = 1;
 
     public string $period = '30';

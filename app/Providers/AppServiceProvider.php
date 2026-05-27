@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Helpers\Jalali;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
@@ -16,6 +18,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Jalali Blade directives
+        Blade::directive('jalali', function ($expression) {
+            return "<?php echo \App\Helpers\Jalali::format($expression); ?>";
+        });
+        Blade::directive('jalalifull', function ($expression) {
+            return "<?php echo \App\Helpers\Jalali::formatFull($expression); ?>";
+        });
+
         if (!app()->runningInConsole() && Schema::hasTable('settings')) {
             try {
                 $settings = Setting::getAll();

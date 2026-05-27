@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\Components\JalaliDatePicker;
 use App\Filament\Resources\AlbumResource\Pages;
+use App\Helpers\Jalali;
 use App\Models\Album;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -27,21 +29,18 @@ class AlbumResource extends Resource
                     ->relationship('artist', 'display_name')->required()->searchable()->preload(),
                 Forms\Components\Select::make('genre_id')->label('ژانر')
                     ->relationship('genre', 'name_fa')->searchable()->preload(),
-                Forms\Components\TextInput::make('title')->label('عنوان فارسی')->required(),
-                Forms\Components\TextInput::make('title_en')->label('عنوان انگلیسی'),
+                Forms\Components\TextInput::make('title')->label('عنوان')->required(),
                 Forms\Components\Select::make('type')->label('نوع')
                     ->options(['album' => 'آلبوم', 'single' => 'سینگل', 'ep' => 'EP', 'compilation' => 'کامپایل'])->required(),
                 Forms\Components\Textarea::make('description')->label('توضیحات')->rows(2),
                 Forms\Components\FileUpload::make('cover_image')->label('تصویر کاور')->image()->directory('albums')->disk('public')->visibility('public'),
-                Forms\Components\DatePicker::make('release_date')->label('تاریخ ریلیز'),
+                JalaliDatePicker::make('release_date')->label('تاریخ ریلیز (شمسی)'),
             ])->columns(2),
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
                 Forms\Components\Select::make('status')->label('وضعیت')
                     ->options(['draft' => 'پیش‌نویس', 'published' => 'منتشر', 'archived' => 'بایگانی'])->required(),
                 Forms\Components\Toggle::make('is_explicit')->label('نامناسب'),
                 Forms\Components\Toggle::make('is_featured')->label('ویژه'),
-                Forms\Components\TextInput::make('upc')->label('UPC'),
-                Forms\Components\TextInput::make('copyright')->label('کپی‌رایت'),
             ])->columns(3),
 
             \Filament\Schemas\Components\Section::make('قیمت‌گذاری و فروش')->schema([
@@ -79,7 +78,9 @@ class AlbumResource extends Resource
                 Tables\Columns\BadgeColumn::make('status')->label('وضعیت')
                     ->colors(['gray' => 'draft', 'success' => 'published', 'danger' => 'archived']),
                 Tables\Columns\TextColumn::make('play_count')->label('پخش')->numeric()->sortable(),
-                Tables\Columns\TextColumn::make('release_date')->label('ریلیز')->date('Y/m/d')->sortable(),
+                Tables\Columns\TextColumn::make('release_date')->label('ریلیز')
+                    ->formatStateUsing(fn ($state) => $state ? Jalali::format($state, 'Y/m/d') : '-')
+                    ->sortable(),
             ])
             ->actions([\Filament\Actions\EditAction::make()])
             ->defaultSort('created_at', 'desc');

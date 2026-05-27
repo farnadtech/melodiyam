@@ -8,14 +8,30 @@
             </div>
             <div class="flex flex-col justify-end text-center md:text-right">
                 <p class="text-xs font-medium text-surface-500 uppercase tracking-wider mb-2">{{ $album->type === 'single' ? 'سینگل' : 'آلبوم' }}</p>
-                <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-3">{{ $album->title }}</h1>
+                <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-2">{{ $album->title }}</h1>
+                @if($album->is_featured || $album->is_explicit)
+                <div class="flex items-center gap-2 justify-center md:justify-start mb-3">
+                    @if($album->is_featured)
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/30">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        ویژه
+                    </span>
+                    @endif
+                    @if($album->is_explicit)
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        نامناسب
+                    </span>
+                    @endif
+                </div>
+                @endif
                 <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start text-sm text-surface-500">
                     <a href="{{ route('artist.show', $album->artist ?? '') }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">
                         {{ $album->artist->display_name ?? '' }}
                     </a>
                     @if($album->release_date)
                     <span>·</span>
-                    <span>{{ $album->release_date->year }}</span>
+                    <span>{{ \App\Helpers\Jalali::format($album->release_date, 'Y') }}</span>
                     @endif
                     <span>·</span>
                     <span>{{ $album->tracks->count() }} آهنگ</span>
@@ -25,8 +41,14 @@
 
                 {{-- Action Buttons --}}
                 @php
-                    $freeOrAccessibleTracks = $album->tracks->filter(function($t) use ($hasPlanAccess, $purchasedTrackIds, $albumAlreadyBought) {
-                        if (!$t->is_for_sale || !$t->price) return true;
+                    $albumIsPaid = $album->is_for_sale && $album->price;
+                    $albumPreviewSec = $album->preview_seconds ?? 0;
+
+                    // A track is "effectively paid" if it has its own price OR belongs to a paid album without own price
+                    $freeOrAccessibleTracks = $album->tracks->filter(function($t) use ($hasPlanAccess, $purchasedTrackIds, $albumAlreadyBought, $albumIsPaid) {
+                        $trackHasOwnPrice = $t->is_for_sale && $t->price;
+                        $effectivelyPaid = $trackHasOwnPrice || ($albumIsPaid && !$trackHasOwnPrice);
+                        if (!$effectivelyPaid) return true;
                         return $hasPlanAccess || $albumAlreadyBought || in_array($t->id, $purchasedTrackIds);
                     });
                     $coverUrl = $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png');
@@ -41,6 +63,7 @@
                         پخش همه
                     </button>
                     @endif
+                    @if($freeOrAccessibleTracks->count() > 1)
                     <button
                         @click="$store.player.isShuffled = true; $store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'duration' => $t->duration])->toArray()) }}, 0)"
                         class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-surface-700 dark:text-surface-200 text-sm font-semibold rounded-xl transition"
@@ -48,6 +71,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
                         پخش تصادفی
                     </button>
+                    @endif
                 </div>
 
                 {{-- Buy Album Button --}}
@@ -73,6 +97,13 @@
                 </div>
                 @endif
 
+                {{-- Report button --}}
+                @auth
+                <div class="mt-3 flex justify-center md:justify-start">
+                    <x-report-button type="album" :id="$album->id" />
+                </div>
+                @endauth
+
                 @if(session('success') || session('error') || session('info'))
                 <div class="mt-3 px-4 py-2.5 rounded-xl text-sm
                     {{ session('success') ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200' : (session('error') ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 border border-blue-200') }}">
@@ -90,9 +121,20 @@
                     // Set album on track so getCoverUrl() uses album cover without extra query
                     $track->setRelation('album', $album);
                     $tCover = $track->getCoverUrl();
-                    $tIsPaid = $track->is_for_sale && $track->price;
-                    $tHasAccess = !$tIsPaid || $hasPlanAccess || $albumAlreadyBought || in_array($track->id, $purchasedTrackIds);
-                    $tHasPreview = ($track->preview_seconds ?? 0) > 0;
+                    $tHasOwnPrice = $track->is_for_sale && $track->price;
+                    // Effectively paid: own price OR album is paid (and track has no own price)
+                    $tEffectivelyPaid = $tHasOwnPrice || ($albumIsPaid && !$tHasOwnPrice);
+                    $tHasAccess = !$tEffectivelyPaid || $hasPlanAccess || $albumAlreadyBought || in_array($track->id, $purchasedTrackIds);
+                    // Preview seconds: use track's own, fallback to album's preview_seconds
+                    $tPreviewSec = ($track->preview_seconds ?? 0) > 0 ? $track->preview_seconds : $albumPreviewSec;
+                    $tHasPreview = $tPreviewSec > 0;
+                    // For purchase URL and price: use track's own if set, else album's
+                    $tIsPaid = $tEffectivelyPaid;
+                    $tPrice = $tHasOwnPrice ? $track->price : ($albumIsPaid ? $album->price : 0);
+                    $tDiscountPrice = $tHasOwnPrice ? $track->discount_price : ($albumIsPaid ? $album->discount_price : null);
+                    $tPurchaseUrl = $tHasOwnPrice
+                        ? route('purchase', ['type'=>'track','id'=>$track->id])
+                        : ($albumIsPaid ? route('purchase', ['type'=>'album','id'=>$album->id]) : null);
                 @endphp
                 <div class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group" x-data>
                     <span class="text-sm text-surface-400 w-5 text-center flex-shrink-0 group-hover:hidden">{{ $track->track_number }}</span>
@@ -104,11 +146,11 @@
                             'url'            => $track->getStreamUrl(),
                             'cover'          => $tCover,
                             'duration'       => $track->duration,
-                            'previewSeconds' => $tHasAccess ? 0 : ($track->preview_seconds ?? 0),
+                            'previewSeconds' => $tHasAccess ? 0 : $tPreviewSec,
                             'canPlay'        => $tHasAccess,
-                            'price'          => $tIsPaid ? (int)$track->price : 0,
-                            'discountPrice'  => $tIsPaid ? $track->discount_price : null,
-                            'purchaseUrl'    => $tIsPaid ? route('purchase', ['type'=>'track','id'=>$track->id]) : null,
+                            'price'          => $tIsPaid ? (int)$tPrice : 0,
+                            'discountPrice'  => $tIsPaid ? $tDiscountPrice : null,
+                            'purchaseUrl'    => $tPurchaseUrl,
                         ]);
                     @endphp
                     {{-- Cover with play overlay --}}

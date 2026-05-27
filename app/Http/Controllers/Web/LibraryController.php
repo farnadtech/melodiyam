@@ -103,16 +103,37 @@ class LibraryController extends Controller
             ->take(12)
             ->get();
 
-        return view('discover', compact('newReleases', 'topArtists'));
+        $newAlbums = \App\Models\Album::with('artist')
+            ->where('status', 'published')
+            ->latest()
+            ->take(12)
+            ->get();
+
+        return view('discover', compact('newReleases', 'topArtists', 'newAlbums'));
     }
 
     public function profile(): View
     {
-        return view('library.profile');
+        $user = auth()->user();
+        $likeCount     = \App\Models\Like::where('user_id', $user->id)->count();
+        $playlistCount = \App\Models\Playlist::where('user_id', $user->id)->count();
+        $followCount   = \App\Models\Follow::where('user_id', $user->id)->count();
+        $application   = \App\Models\ArtistApplication::where('user_id', $user->id)->first();
+        return view('library.profile', compact('likeCount', 'playlistCount', 'followCount', 'application'));
     }
 
     public function settings(): View
     {
         return view('library.settings');
+    }
+
+    public function myReports(): View
+    {
+        $reports = \App\Models\Report::where('user_id', auth()->id())
+            ->with('reportable')
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return view('library.my-reports', compact('reports'));
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\Components\JalaliDatePicker;
 use App\Filament\Resources\TrackResource\Pages;
+use App\Helpers\Jalali;
 use App\Models\Track;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -29,8 +31,7 @@ class TrackResource extends Resource
                     ->relationship('album', 'title')->searchable()->preload(),
                 Forms\Components\Select::make('genre_id')->label('ژانر')
                     ->relationship('genre', 'name_fa')->searchable()->preload(),
-                Forms\Components\TextInput::make('title')->label('عنوان فارسی')->required()->maxLength(255),
-                Forms\Components\TextInput::make('title_en')->label('عنوان انگلیسی')->maxLength(255),
+                Forms\Components\TextInput::make('title')->label('عنوان')->required()->maxLength(255),
                 Forms\Components\Textarea::make('description')->label('توضیحات')->rows(2),
             ])->columns(2),
 
@@ -42,26 +43,14 @@ class TrackResource extends Resource
                 Forms\Components\FileUpload::make('file_path_128')->label('فایل 128kbps')
                     ->directory('tracks/audio/128')->disk('public')->visibility('public')->acceptedFileTypes(['audio/mpeg', 'audio/mp3']),
                 Forms\Components\TextInput::make('file_url')->label('آدرس خارجی فایل')->url(),
-                Forms\Components\TextInput::make('duration')->label('مدت (ثانیه)')->numeric()->required(),
             ])->columns(2),
 
-            \Filament\Schemas\Components\Section::make('جزئیات')->schema([
-                Forms\Components\TextInput::make('track_number')->label('شماره ترک')->numeric()->default(1),
-                Forms\Components\TextInput::make('disc_number')->label('شماره دیسک')->numeric()->default(1),
-                Forms\Components\Select::make('language')->label('زبان')
-                    ->options(['fa' => 'فارسی', 'en' => 'انگلیسی', 'ar' => 'عربی', 'tr' => 'ترکی']),
-                Forms\Components\Select::make('mood')->label('حال و هوا')
-                    ->options(['happy' => 'شاد', 'sad' => 'غمگین', 'energetic' => 'پرانرژی', 'calm' => 'آرام', 'romantic' => 'عاشقانه']),
-                Forms\Components\TextInput::make('bpm')->label('BPM')->numeric(),
-                Forms\Components\TextInput::make('isrc')->label('ISRC'),
-            ])->columns(3),
 
             \Filament\Schemas\Components\Section::make('وضعیت و انتشار')->schema([
                 Forms\Components\Select::make('status')->label('وضعیت')
                     ->options(['draft' => 'پیش‌نویس', 'scheduled' => 'زمان‌بندی', 'published' => 'منتشر', 'archived' => 'بایگانی'])
                     ->required()->default('draft'),
-                Forms\Components\DateTimePicker::make('published_at')->label('تاریخ انتشار'),
-                Forms\Components\DatePicker::make('release_date')->label('تاریخ ریلیز'),
+                JalaliDatePicker::make('release_date')->label('تاریخ انتشار/ریلیز (شمسی)'),
                 Forms\Components\Toggle::make('is_explicit')->label('محتوای نامناسب'),
                 Forms\Components\Toggle::make('is_downloadable')->label('قابل دانلود'),
                 Forms\Components\Toggle::make('is_premium_only')->label('فقط پریمیوم'),
@@ -121,7 +110,9 @@ class TrackResource extends Resource
                 Tables\Columns\TextColumn::make('play_count')->label('پخش')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('like_count')->label('لایک')->numeric()->sortable(),
                 Tables\Columns\IconColumn::make('is_featured')->label('ویژه')->boolean(),
-                Tables\Columns\TextColumn::make('created_at')->label('تاریخ')->dateTime('Y/m/d')->sortable(),
+                Tables\Columns\TextColumn::make('created_at')->label('تاریخ')
+                    ->formatStateUsing(fn ($state) => $state ? Jalali::format($state, 'Y/m/d') : '-')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->label('وضعیت')

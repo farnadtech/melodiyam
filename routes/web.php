@@ -21,6 +21,8 @@ use App\Http\Controllers\Web\PageController;
 use App\Services\StreamService;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
+use App\Livewire\Auth\ForgotPassword;
+use App\Livewire\Auth\ResetPassword;
 
 // ── Public Routes ──
 
@@ -61,10 +63,25 @@ Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show
 
 // Audio stream with byte-range support for seeking
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
-    // Access control for paid tracks
-    if ($track->is_for_sale && $track->price) {
-        // If track has a preview, allow stream — JS player handles the cutoff
-        $hasPreview = ($track->preview_seconds ?? 0) > 0;
+    // Determine if this track requires purchase:
+    // 1) Track itself is paid, OR
+    // 2) Track belongs to a paid album and has no individual price override
+    $album = $track->album_id ? \App\Models\Album::find($track->album_id) : null;
+    $trackIsPaid  = $track->is_for_sale && $track->price;
+    $albumIsPaid  = $album && $album->is_for_sale && $album->price;
+    $trackHasOwnPrice = $track->is_for_sale && $track->price;
+
+    // Effective paid status: track's own price OR album's price (when track has no own price)
+    $isPaid = $trackIsPaid || ($albumIsPaid && !$trackHasOwnPrice);
+
+    if ($isPaid) {
+        // Preview: allow stream, JS enforces cutoff
+        $previewSeconds = $track->preview_seconds ?? 0;
+        // For album-priced tracks, also check album's preview_seconds
+        if ($previewSeconds === 0 && $albumIsPaid) {
+            $previewSeconds = $album->preview_seconds ?? 0;
+        }
+        $hasPreview = $previewSeconds > 0;
 
         if (!$hasPreview) {
             $user = auth()->user();
@@ -75,16 +92,17 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
             if (!$hasPlanAccess) {
                 $hasPurchased = \App\Models\Sale::where('buyer_id', $user->id)
                     ->where('status', 'completed')
-                    ->where(function ($q) use ($track) {
+                    ->where(function ($q) use ($track, $album) {
                         $q->where(function ($q2) use ($track) {
                             $q2->where('saleable_type', \App\Models\Track::class)
                                ->where('saleable_id', $track->id);
-                        })->orWhere(function ($q2) use ($track) {
-                            if ($track->album_id) {
-                                $q2->where('saleable_type', \App\Models\Album::class)
-                                   ->where('saleable_id', $track->album_id);
-                            }
                         });
+                        if ($album) {
+                            $q->orWhere(function ($q2) use ($album) {
+                                $q2->where('saleable_type', \App\Models\Album::class)
+                                   ->where('saleable_id', $album->id);
+                            });
+                        }
                     })->exists();
                 if (!$hasPurchased) {
                     abort(403);
@@ -93,11 +111,8 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
         }
     }
 
-    $path = null;
-    if ($track->file_path) {
-        $path = storage_path('app/public/' . $track->file_path);
-    }
-    if (!$path || !file_exists($path)) {
+    $path = $track->getEffectiveStreamPath();
+    if (!$path) {
         abort(404);
     }
 
@@ -130,14 +145,72 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     $headers['Content-Length'] = $size;
     return response()->file($path, $headers);
 })->name('track.stream');
+Route::get('/albums', [AlbumController::class, 'index'])->name('albums.index');
 Route::get('/album/{album}', [AlbumController::class, 'show'])->name('album.show');
 
+// Admin album track reorder (used by Filament EditAlbum page footer)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/admin/albums/{album}/reorder-tracks', function (\Illuminate\Http\Request $request, \App\Models\Album $album) {
+        abort_if(!auth()->user()->isAdmin(), 403);
+        $request->validate(['order' => 'required|array', 'order.*' => 'integer']);
+        foreach ($request->order as $position => $trackId) {
+            $album->tracks()->where('id', $trackId)->update(['track_number' => $position + 1]);
+        }
+        return response()->json(['ok' => true]);
+    })->name('filament.admin.album-track-reorder');
+
+    Route::get('/admin/albums/{album}/search-tracks', function (\Illuminate\Http\Request $request, \App\Models\Album $album) {
+        abort_if(!auth()->user()->isAdmin(), 403);
+        $q = trim($request->get('q', ''));
+        $tracks = \App\Models\Track::where('artist_id', $album->artist_id)
+            ->where('album_id', '!=', $album->id)
+            ->when($q, fn($query) => $query->where('title', 'like', "%{$q}%"))
+            ->orderBy('title')
+            ->limit(20)
+            ->get(['id', 'title', 'status']);
+        return response()->json($tracks);
+    })->name('filament.admin.album-track-search');
+
+    Route::post('/admin/albums/{album}/attach-track', function (\Illuminate\Http\Request $request, \App\Models\Album $album) {
+        abort_if(!auth()->user()->isAdmin(), 403);
+        $request->validate(['track_id' => 'required|integer|exists:tracks,id']);
+        $track = \App\Models\Track::findOrFail($request->track_id);
+        abort_if($track->artist_id !== $album->artist_id, 422);
+        $maxNum = $album->tracks()->max('track_number') ?? 0;
+        $track->update(['album_id' => $album->id, 'track_number' => $maxNum + 1]);
+        return response()->json(['ok' => true, 'track_number' => $maxNum + 1]);
+    })->name('filament.admin.album-track-attach');
+
+    Route::post('/admin/albums/{album}/detach-track', function (\Illuminate\Http\Request $request, \App\Models\Album $album) {
+        abort_if(!auth()->user()->isAdmin(), 403);
+        $request->validate(['track_id' => 'required|integer|exists:tracks,id']);
+        $album->tracks()->where('id', $request->track_id)->update(['album_id' => null, 'track_number' => null]);
+        return response()->json(['ok' => true]);
+    })->name('filament.admin.album-track-detach');
+});
+
 // All specific /artist/* routes (must be BEFORE /artist/{artist})
-Route::middleware(['auth'])->get('/artist/dashboard', [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
-Route::middleware(['auth'])->get('/artist/tracks', [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('artist.tracks');
-Route::middleware(['auth'])->get('/artist/tracks/create', [\App\Http\Controllers\Artist\TrackController::class, 'create'])->name('artist.tracks.create');
-Route::middleware(['auth'])->get('/artist/albums', [\App\Http\Controllers\Artist\AlbumController::class, 'index'])->name('artist.albums');
-Route::middleware(['auth'])->get('/artist/analytics', [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
+Route::middleware(['auth'])->prefix('artist')->group(function () {
+    Route::get('/dashboard',       [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
+    Route::get('/analytics',       [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
+
+    // Tracks
+    Route::get('/tracks',          [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('artist.tracks');
+    Route::get('/tracks/create',   [\App\Http\Controllers\Artist\TrackController::class, 'create'])->name('artist.tracks.create');
+    Route::post('/tracks',         [\App\Http\Controllers\Artist\TrackController::class, 'store'])->name('artist.tracks.store');
+    Route::get('/tracks/{track}/edit',   [\App\Http\Controllers\Artist\TrackController::class, 'edit'])->name('artist.tracks.edit');
+    Route::put('/tracks/{track}',        [\App\Http\Controllers\Artist\TrackController::class, 'update'])->name('artist.tracks.update');
+    Route::delete('/tracks/{track}',     [\App\Http\Controllers\Artist\TrackController::class, 'destroy'])->name('artist.tracks.destroy');
+
+    // Albums
+    Route::get('/albums',          [\App\Http\Controllers\Artist\AlbumController::class, 'index'])->name('artist.albums');
+    Route::get('/albums/create',   [\App\Http\Controllers\Artist\AlbumController::class, 'create'])->name('artist.albums.create');
+    Route::post('/albums',         [\App\Http\Controllers\Artist\AlbumController::class, 'store'])->name('artist.albums.store');
+    Route::get('/albums/{album}/edit',   [\App\Http\Controllers\Artist\AlbumController::class, 'edit'])->name('artist.albums.edit');
+    Route::put('/albums/{album}',        [\App\Http\Controllers\Artist\AlbumController::class, 'update'])->name('artist.albums.update');
+    Route::delete('/albums/{album}',     [\App\Http\Controllers\Artist\AlbumController::class, 'destroy'])->name('artist.albums.destroy');
+    Route::post('/albums/{album}/reorder', [\App\Http\Controllers\Artist\AlbumController::class, 'reorderTracks'])->name('artist.albums.reorder');
+});
 
 // DEBUG: Artist dashboard test
 Route::get('/artist-dashboard-test', function () {
@@ -164,6 +237,8 @@ Route::get('/page/{page}', [PageController::class, 'show'])->name('page.show');
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
     Route::get('/register', Register::class)->name('register');
+    Route::get('/forgot-password', ForgotPassword::class)->name('password.request');
+    Route::get('/reset-password/{token}', ResetPassword::class)->name('password.reset');
 });
 
 Route::post('/logout', function () {
@@ -194,6 +269,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/discover', [LibraryController::class, 'discover'])->name('discover');
     Route::get('/profile', [LibraryController::class, 'profile'])->name('profile');
     Route::get('/settings', [LibraryController::class, 'settings'])->name('settings');
+    Route::get('/my-reports', [LibraryController::class, 'myReports'])->name('my.reports');
+    Route::get('/become-artist', [\App\Http\Controllers\Web\ArtistApplicationController::class, 'show'])->name('artist-application.show');
+    Route::post('/become-artist', [\App\Http\Controllers\Web\ArtistApplicationController::class, 'store'])->name('artist-application.store');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -391,6 +469,9 @@ Route::middleware('auth')->group(function () {
 
         return response()->json(['liked' => true]);
     })->name('like.toggle');
+
+    // Report (شکایت)
+    Route::post('/report', [\App\Http\Controllers\Web\ReportController::class, 'store'])->name('report.store');
 
     // Follow toggle
     Route::post('/follow/toggle', function () {

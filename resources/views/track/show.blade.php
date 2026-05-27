@@ -8,7 +8,23 @@
             </div>
             <div class="flex flex-col justify-end text-center md:text-right">
                 <p class="text-xs font-medium text-surface-500 uppercase tracking-wider mb-2">آهنگ</p>
-                <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-3">{{ $track->title }}</h1>
+                <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-2">{{ $track->title }}</h1>
+                @if($track->is_featured || $track->is_explicit)
+                <div class="flex items-center gap-2 justify-center md:justify-start mb-3">
+                    @if($track->is_featured)
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/30">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        ویژه
+                    </span>
+                    @endif
+                    @if($track->is_explicit)
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        نامناسب
+                    </span>
+                    @endif
+                </div>
+                @endif
                 <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start text-sm text-surface-500">
                     <a href="{{ route('artist.show', $track->artist ?? '') }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">
                         {{ $track->artist->display_name ?? '' }}
@@ -28,12 +44,6 @@
                         <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
                     </div>
 
-                    @php
-                        $isPaidTrack = $track->is_for_sale && $track->price;
-                        $previewSec  = $track->preview_seconds ?? 0;
-                        $buyUrl      = route('purchase', ['type'=>'track','id'=>$track->id]);
-                        $sellPrice   = $track->discount_price ?: $track->price;
-                    @endphp
                     @if($canPlay)
                     <button
                         @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: 0, canPlay: true })"
@@ -45,28 +55,36 @@
                     @elseif($isPaidTrack && $previewSec > 0)
                     {{-- Has preview: play with timer --}}
                     <button
-                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
+                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
                         class="btn-primary !rounded-full !px-8 !py-3 gap-2"
                     >
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         پخش پیش‌نمایش ({{ $previewSec }} ثانیه)
                     </button>
-                    @else
+                    @elseif($isPaidTrack)
                     <div class="flex items-center gap-3 flex-wrap">
                         <div class="flex items-center gap-2 px-5 py-3 rounded-full bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400 text-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            محتوای پولی
+                            @if($track->album && !($track->is_for_sale && $track->price))
+                                برای شنیدن این آهنگ باید البوم «{{ $track->album->title }}» را خریداری کنید
+                            @else
+                                محتوای پولی
+                            @endif
                         </div>
                         @auth
-                        <a href="{{ route('purchase', ['type'=>'track','id'=>$track->id]) }}"
+                        <a href="{{ $buyUrl }}"
                            class="btn-primary !rounded-full !px-8 !py-3 gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            خرید
-                            @if($track->discount_price)
-                                <span class="line-through text-xs opacity-60">{{ number_format($track->price) }}</span>
-                                {{ number_format($track->discount_price) }} ت
+                            @if($track->album && !($track->is_for_sale && $track->price))
+                                خرید البوم
                             @else
-                                {{ number_format($track->price) }} ت
+                                خرید
+                            @endif
+                            @if($sellDiscount)
+                                <span class="line-through text-xs opacity-60">{{ number_format($sellPrice) }}</span>
+                                {{ number_format($sellDiscount) }} ت
+                            @elseif($sellPrice)
+                                {{ number_format($sellPrice) }} ت
                             @endif
                         </a>
                         @else
@@ -132,6 +150,11 @@
                     </div>
                     @endauth
 
+                    {{-- Report button --}}
+                    @auth
+                    <x-report-button type="track" :id="$track->id" />
+                    @endauth
+
                     {{-- Share button --}}
                     <div class="relative">
                         <button @click="shareOpen = !shareOpen" class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors">
@@ -169,19 +192,24 @@
             <div class="w-16 h-16 rounded-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
                 <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             </div>
+            @if($track->album && !($track->is_for_sale && $track->price))
+            <p class="text-surface-600 dark:text-surface-400 text-sm font-medium">این آهنگ بخشی از البوم «{{ $track->album->title }}» است — برای شنیدن باید البوم را خریداری کنید</p>
+            @else
             <p class="text-surface-600 dark:text-surface-400 text-sm font-medium">این آهنگ پولیه — برای شنیدن باید خریداری کنید</p>
+            @endif
             <div class="flex items-center gap-3">
-                @if($track->discount_price)
-                <span class="text-surface-400 line-through text-sm">{{ number_format($track->price) }} ت</span>
-                <span class="text-2xl font-bold text-primary-500">{{ number_format($track->discount_price) }} ت</span>
-                @else
-                <span class="text-2xl font-bold text-primary-500">{{ number_format($track->price) }} ت</span>
+                @if($sellDiscount)
+                <span class="text-surface-400 line-through text-sm">{{ number_format($sellPrice) }} ت</span>
+                <span class="text-2xl font-bold text-primary-500">{{ number_format($sellDiscount) }} ت</span>
+                @elseif($sellPrice)
+                <span class="text-2xl font-bold text-primary-500">{{ number_format($sellPrice) }} ت</span>
                 @endif
             </div>
             @auth
             <a href="{{ $buyUrl }}" class="btn-primary gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                خرید آهنگ
+                @if($track->album && !($track->is_for_sale && $track->price))خرید البوم «{{ $track->album->title }}»@elseخرید آهنگ@endif
+                @if($sellDiscount) <span class="line-through text-xs opacity-60">{{ number_format($sellPrice) }}</span> {{ number_format($sellDiscount) }} ت @elseif($sellPrice) {{ number_format($sellPrice) }} ت @endif
             </a>
             @else
             <a href="{{ route('login') }}" wire:navigate class="btn-primary gap-2">ورود و خرید</a>
@@ -190,6 +218,7 @@
         @elseif(!$canPlay && $previewSec > 0)
         {{-- Has preview — show waveform but player will cut off --}}
         <section
+            wire:key="waveform-preview-{{ $track->id }}"
             x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, [])"
             x-init="init()"
             class="relative"
@@ -208,7 +237,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 mt-4">
-                    <button @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
+                    <button @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
                         class="btn-primary gap-2 !py-2 !px-5">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         پخش پیش‌نمایش
@@ -216,7 +245,8 @@
                     @auth
                     <a href="{{ $buyUrl }}" class="btn-secondary gap-2 !py-2 !px-5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        خرید — {{ number_format($sellPrice) }} ت
+                        @if($track->album && !($track->is_for_sale && $track->price))خرید البوم@elseخرید@endif
+                        @if($sellDiscount) <span class="line-through text-xs opacity-60">{{ number_format($sellPrice) }}</span> {{ number_format($sellDiscount) }} ت @elseif($sellPrice) {{ number_format($sellPrice) }} ت @endif
                     </a>
                     @endauth
                 </div>
@@ -224,6 +254,7 @@
         </section>
         @else
         <section
+            wire:key="waveform-full-{{ $track->id }}"
             x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, {{ json_encode($comments->whereNotNull('timestamp_at')->map(fn($c) => ['id' => $c->id, 'body' => $c->body, 'user' => $c->user->name ?? 'کاربر', 'at' => $c->timestamp_at, 'likes' => $c->likes_count ?? 0])->values()) }})"
             x-init="init()"
             class="relative"
@@ -299,7 +330,8 @@
 
         @push('scripts')
         <script>
-        document.addEventListener('alpine:init', () => {
+        function registerWaveform() {
+            if (typeof Alpine === 'undefined') return;
             Alpine.data('waveform', (audioUrl, trackId, timedCommentsData) => ({
                 peaks: [],
                 currentTime: 0,
@@ -347,6 +379,7 @@
                 },
 
                 async generatePeaks(url) {
+                    const phpDur = {{ $track->duration > 0 ? $track->duration : 0 }};
                     try {
                         const resp = await fetch(url);
                         const buf = await resp.arrayBuffer();
@@ -366,11 +399,10 @@
                         const max = Math.max(...peaks);
                         this.peaks = peaks.map(p => p / max);
                         this.duration = audio.duration;
+                        // Use audio.duration (accurate float) for marker; phpDur is integer and causes rounding offset
                         this.positionPreviewMarker(audio.duration);
                     } catch (e) {
                         this.peaks = Array.from({length: 200}, () => 0.2 + Math.random() * 0.8);
-                        // fallback: use PHP duration
-                        const phpDur = {{ $track->duration > 0 ? $track->duration : 0 }};
                         if (phpDur > 0) this.positionPreviewMarker(phpDur);
                     }
                 },
@@ -379,14 +411,17 @@
                     const previewSec = {{ $previewSec ?? 0 }};
                     const marker = this.$refs.previewMarker;
                     if (!marker || previewSec <= 0 || totalDuration <= 0) return;
-                    // waveform is RTL: bar[0]=right=second 0, bar[last]=left=end
-                    // right% from container right = previewSec/totalDuration * 100
-                    const pct = (previewSec / totalDuration) * 100;
-                    marker.style.right = pct + '%';
+                    // drawWave renders bar[i=0] at x = rect.width (RIGHT edge) = second 0
+                    // bar[i=last] at x = 0 (LEFT edge) = end of track
+                    // So previewSec is at distance (previewSec/totalDuration) from the RIGHT edge
+                    const rightPct = (previewSec / totalDuration) * 100;
+                    marker.style.right = rightPct + '%';
+                    marker.style.left = 'auto';
                     marker.classList.remove('hidden');
                 },
 
                 drawWave(canvas, fillTop, fillBottom) {
+                    if (!canvas || !canvas.parentElement) return;
                     const dpr = window.devicePixelRatio || 1;
                     const rect = canvas.parentElement.getBoundingClientRect();
                     canvas.width = rect.width * dpr;
@@ -415,6 +450,7 @@
 
                 drawProgress() {
                     const canvas = this.$refs.waveProgress;
+                    if (!canvas || !canvas.parentElement) return;
                     const dpr = window.devicePixelRatio || 1;
                     const rect = canvas.parentElement.getBoundingClientRect();
                     canvas.width = rect.width * dpr;
@@ -473,6 +509,10 @@
                 },
 
                 tick() {
+                    if (!this.$refs.waveProgress) {
+                        if (this.animFrame) cancelAnimationFrame(this.animFrame);
+                        return;
+                    }
                     const phpDuration = {{ $track->duration > 0 ? $track->duration : 0 }};
                     const store = Alpine.store('player');
                     this.isThisTrack = store.currentTrack && store.currentTrack.id === trackId;
@@ -518,8 +558,8 @@
                             previewSeconds: previewSec,
                             canPlay: canPlay,
                             @if($isPaidTrack ?? false)
-                            price: {{ $track->price }},
-                            discountPrice: {{ $track->discount_price ?? 'null' }},
+                            price: {{ $sellPrice ?? 0 }},
+                            discountPrice: {{ $sellDiscount ?? 'null' }},
                             purchaseUrl: '{{ $buyUrl ?? '' }}',
                             @endif
                         });
@@ -551,7 +591,23 @@
                     if (this.animFrame) cancelAnimationFrame(this.animFrame);
                 }
             }));
+        }
+        document.addEventListener('alpine:init', registerWaveform);
+        document.addEventListener('livewire:navigated', () => {
+            if (typeof Alpine === 'undefined') return;
+            // Re-register so the new page's waveform data factory is fresh
+            registerWaveform();
+            // Find uninitialized waveform elements and init them
+            document.querySelectorAll('[x-data^="waveform"]').forEach(el => {
+                // If already has Alpine data stack, skip (already initialized this navigation)
+                if (el._x_dataStack && el._x_dataStack.length > 0) return;
+                Alpine.initTree(el);
+            });
         });
+        // Also handle the case where the script runs after Alpine is already initialized
+        if (typeof Alpine !== 'undefined' && typeof Alpine.data === 'function') {
+            registerWaveform();
+        }
         </script>
         @endpush
 

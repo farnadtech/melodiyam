@@ -106,6 +106,11 @@ class Track extends Model
         return $this->morphMany(Comment::class, 'commentable');
     }
 
+    public function reports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     public function streams(): HasMany
     {
         return $this->hasMany(Stream::class);
@@ -149,8 +154,19 @@ class Track extends Model
         if ($this->file_url) {
             return $this->file_url;
         }
-        if ($this->file_path) {
+        if ($this->file_path || $this->file_path_128) {
             return route('track.stream', $this);
+        }
+        return null;
+    }
+
+    public function getEffectiveStreamPath(): ?string
+    {
+        if ($this->file_path && file_exists(storage_path('app/public/' . $this->file_path))) {
+            return storage_path('app/public/' . $this->file_path);
+        }
+        if ($this->file_path_128 && file_exists(storage_path('app/public/' . $this->file_path_128))) {
+            return storage_path('app/public/' . $this->file_path_128);
         }
         return null;
     }

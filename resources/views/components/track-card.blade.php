@@ -38,6 +38,14 @@
         </div>
     </div>
     <div class="mt-3 min-w-0">
+        <div class="flex items-center gap-1 mb-1">
+            @if($track->is_featured)
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 leading-none">ویژه</span>
+            @endif
+            @if($track->is_explicit)
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-surface-500 leading-none">E</span>
+            @endif
+        </div>
         <a href="{{ route('track.show', $track) }}" wire:navigate class="block text-sm font-medium text-surface-900 dark:text-surface-100 truncate hover:text-primary-500 transition-colors">
             {{ $track->title }}
         </a>

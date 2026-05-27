@@ -119,6 +119,11 @@ class User extends Authenticatable
         return $this->type === 'artist';
     }
 
+    public function isListener(): bool
+    {
+        return in_array($this->type, ['user', 'listener', null, '']);
+    }
+
     public function isAdmin(): bool
     {
         return $this->type === 'admin';

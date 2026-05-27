@@ -77,6 +77,11 @@ class Album extends Model
         return $this->morphMany(Comment::class, 'commentable');
     }
 
+    public function reports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     // ── Scopes ──
 
     public function scopePublished($query)
@@ -99,5 +104,13 @@ class Album extends Model
     public function getTracksCountAttribute(): int
     {
         return $this->tracks()->count();
+    }
+
+    public function getCoverUrl(): string
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        return asset('images/default-cover.png');
     }
 }
