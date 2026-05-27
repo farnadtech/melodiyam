@@ -20,6 +20,12 @@ class AlbumController extends Controller
         return $artist;
     }
 
+    private function checkSubscription($artist): void
+    {
+        if (\App\Models\Setting::get('artist_subscription_required', '0') !== '1') return;
+        abort_unless($artist->canUploadAlbum(), 403, 'برای ساخت آلبوم باید اشتراک فعال داشته باشید یا سقف مجاز پلن شما تمام شده است.');
+    }
+
     public function index(): View
     {
         $artist = $this->artistOrAbort();
@@ -33,7 +39,8 @@ class AlbumController extends Controller
 
     public function create(): View
     {
-        $this->artistOrAbort();
+        $artist = $this->artistOrAbort();
+        $this->checkSubscription($artist);
         $genres = Genre::active()->ordered()->get();
         return view('artist.albums.create', compact('genres'));
     }
@@ -41,6 +48,7 @@ class AlbumController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $artist = $this->artistOrAbort();
+        $this->checkSubscription($artist);
 
         $request->validate([
             'title'           => 'required|string|max:255',

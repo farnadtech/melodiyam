@@ -13,6 +13,7 @@ class Advertisement extends Model
 
     protected $fillable = [
         'title', 'description', 'type', 'media_path', 'media_url',
+        'button_text', 'button_url',
         'click_url', 'position', 'duration', 'starts_at', 'ends_at',
         'status', 'impressions', 'clicks', 'max_impressions',
         'budget', 'spent', 'targeting', 'priority',
@@ -52,5 +53,26 @@ class Advertisement extends Model
         return $this->status === 'active'
             && $this->starts_at <= now()
             && ($this->ends_at === null || $this->ends_at >= now());
+    }
+
+    // Accessors for type-specific media fields (read-only)
+    public function getAudioMediaPathAttribute()
+    {
+        return $this->type === 'audio' ? $this->media_path : null;
+    }
+
+    public function getAudioMediaUrlAttribute()
+    {
+        return $this->type === 'audio' ? $this->media_url : null;
+    }
+
+    public function getBannerMediaPathAttribute()
+    {
+        return $this->type === 'banner' ? $this->media_path : null;
+    }
+
+    public function getBannerMediaUrlAttribute()
+    {
+        return $this->type === 'banner' ? $this->media_url : null;
     }
 }

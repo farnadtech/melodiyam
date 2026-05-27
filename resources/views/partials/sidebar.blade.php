@@ -1,3 +1,30 @@
+@php
+    $pbEnabled = \App\Models\Setting::get('premium_banner_enabled', '1') === '1';
+    $abEnabled = \App\Models\Setting::get('artist_banner_enabled',  '1') === '1';
+    // Premium banner vars
+    $_pbImg  = \App\Models\Setting::get('premium_banner_image');
+    $pbImg   = $_pbImg ? asset('storage/' . $_pbImg) : null;
+    $pbFrom  = \App\Models\Setting::get('premium_banner_bg_from');
+    $pbTo    = \App\Models\Setting::get('premium_banner_bg_to');
+    $pbStyle = $pbImg ? "background-image:url('{$pbImg}');background-size:cover;background-position:center;" : ($pbFrom && $pbTo ? "background:linear-gradient(135deg,{$pbFrom},{$pbTo});" : '');
+    $pbTitle = \App\Models\Setting::get('premium_banner_title',    'ملودیام پریمیوم');
+    $pbSub   = \App\Models\Setting::get('premium_banner_subtitle', 'بدون تبلیغات، کیفیت بالا');
+    $pbBtn   = \App\Models\Setting::get('premium_banner_btn_text', 'ارتقا حساب');
+    $pbUrl   = (string)(\App\Models\Setting::get('premium_banner_btn_url') ?: '/premium');
+    $pbColor = (string)(\App\Models\Setting::get('premium_banner_text_color') ?: '#ffffff');
+    // Artist banner vars
+    $_abImg  = \App\Models\Setting::get('artist_banner_image');
+    $abImg   = $_abImg ? asset('storage/' . $_abImg) : null;
+    $abFrom  = \App\Models\Setting::get('artist_banner_bg_from');
+    $abTo    = \App\Models\Setting::get('artist_banner_bg_to');
+    $abStyle = $abImg ? "background-image:url('{$abImg}');background-size:cover;background-position:center;" : ($abFrom && $abTo ? "background:linear-gradient(135deg,{$abFrom},{$abTo});" : '');
+    $abTitle = \App\Models\Setting::get('artist_banner_title',    'هنرمند شوید!');
+    $abSub   = \App\Models\Setting::get('artist_banner_subtitle', 'موسیقی‌تان را با جهان به اشتراک بگذارید');
+    $abBtn   = \App\Models\Setting::get('artist_banner_btn_text', 'شروع کنید');
+    $abUrl   = (string)(\App\Models\Setting::get('artist_banner_btn_url') ?: '/become-artist');
+    $abColor = (string)(\App\Models\Setting::get('artist_banner_text_color') ?: '#ffffff');
+@endphp
+
 {{-- Desktop Sidebar --}}
 <aside
     class="hidden lg:flex flex-col w-72 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-800 transition-all duration-300 h-screen"
@@ -194,22 +221,38 @@
         @endauth
     </nav>
 
-    {{-- Premium CTA --}}
-    @if($premiumEnabled ?? true)
+    {{-- Sidebar Banners --}}
     @auth
-        @unless(auth()->user()->isPremium())
-        <div class="sticky bottom-0 p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800 transition-transform duration-300" :class="playerActive ? 'translate-y-[-80px]' : 'translate-y-0'">
-            <div class="gradient-primary rounded-xl p-4 text-white text-center">
-                <p class="text-sm font-bold mb-1">ملودیام پریمیوم</p>
-                <p class="text-xs opacity-90 mb-3">بدون تبلیغات، کیفیت بالا</p>
-                <a href="{{ url('/premium') }}" wire:navigate class="block w-full py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors">
-                    ارتقا حساب
+    <div class="sticky bottom-0 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800 transition-transform duration-300 space-y-0" :class="playerActive ? 'translate-y-[-80px]' : 'translate-y-0'">
+
+        {{-- بنر هنرمند شو --}}
+        @if($abEnabled && auth()->user()->isListener())
+        <div class="p-3 pb-0">
+            <div class="rounded-xl p-4 text-center {{ !$abImg && !$abFrom ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600' : '' }}" style="{{ $abStyle }} color:{{ $abColor }};">
+                <p class="text-sm font-bold mb-1">{{ $abTitle }}</p>
+                <p class="text-xs opacity-90 mb-3">{{ $abSub }}</p>
+                <a href="{{ $abUrl }}" wire:navigate class="block w-full py-2 rounded-lg text-sm font-medium transition-colors" style="background:color-mix(in srgb,{{ $abColor }} 20%,transparent);color:{{ $abColor }};">
+                    {{ $abBtn }}
                 </a>
             </div>
         </div>
-        @endunless
+        @endif
+
+        {{-- بنر پریمیوم --}}
+        @if($pbEnabled && !auth()->user()->isPremium())
+        <div class="p-3">
+            <div class="rounded-xl p-4 text-center {{ !$pbImg && !$pbFrom ? 'gradient-primary' : '' }}" style="{{ $pbStyle }} color:{{ $pbColor }};">
+                <p class="text-sm font-bold mb-1">{{ $pbTitle }}</p>
+                <p class="text-xs opacity-90 mb-3">{{ $pbSub }}</p>
+                <a href="{{ $pbUrl }}" wire:navigate class="block w-full py-2 rounded-lg text-sm font-medium transition-colors" style="background:color-mix(in srgb,{{ $pbColor }} 20%,transparent);color:{{ $pbColor }};">
+                    {{ $pbBtn }}
+                </a>
+            </div>
+        </div>
+        @endif
+
+    </div>
     @endauth
-    @endif
 </aside>
 
 {{-- Mobile Sidebar Overlay --}}
@@ -359,22 +402,34 @@
             </div>
             @endauth
 
-            {{-- Mobile Premium CTA --}}
-            @if($premiumEnabled ?? true)
+            {{-- Mobile Banners --}}
             @auth
-                @unless(auth()->user()->isPremium())
-                <div class="pt-4 mt-2 pb-4">
-                    <div class="gradient-primary rounded-xl p-4 text-white text-center">
-                        <p class="text-sm font-bold mb-1">ملودیام پریمیوم</p>
-                        <p class="text-xs opacity-90 mb-3">بدون تبلیغات، کیفیت بالا</p>
-                        <a href="{{ url('/premium') }}" wire:navigate @click="mobileSidebar = false" class="block w-full py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors">
-                            ارتقا حساب
+                {{-- بنر هنرمند شو --}}
+                @if($abEnabled && auth()->user()->isListener())
+                <div class="pt-3 mt-2">
+                    <div class="rounded-xl p-4 text-center {{ !$abImg && !$abFrom ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600' : '' }}" style="{{ $abStyle }} color:{{ $abColor }};">
+                        <p class="text-sm font-bold mb-1">{{ $abTitle }}</p>
+                        <p class="text-xs opacity-90 mb-3">{{ $abSub }}</p>
+                        <a href="{{ $abUrl }}" wire:navigate @click="mobileSidebar = false" class="block w-full py-2 rounded-lg text-sm font-medium transition-colors" style="background:color-mix(in srgb,{{ $abColor }} 20%,transparent);color:{{ $abColor }};">
+                            {{ $abBtn }}
                         </a>
                     </div>
                 </div>
-                @endunless
+                @endif
+
+                {{-- بنر پریمیوم --}}
+                @if($pbEnabled && !auth()->user()->isPremium())
+                <div class="pt-3 mt-2 pb-4">
+                    <div class="rounded-xl p-4 text-center {{ !$pbImg && !$pbFrom ? 'gradient-primary' : '' }}" style="{{ $pbStyle }} color:{{ $pbColor }};">
+                        <p class="text-sm font-bold mb-1">{{ $pbTitle }}</p>
+                        <p class="text-xs opacity-90 mb-3">{{ $pbSub }}</p>
+                        <a href="{{ $pbUrl }}" wire:navigate @click="mobileSidebar = false" class="block w-full py-2 rounded-lg text-sm font-medium transition-colors" style="background:color-mix(in srgb,{{ $pbColor }} 20%,transparent);color:{{ $pbColor }};">
+                            {{ $pbBtn }}
+                        </a>
+                    </div>
+                </div>
+                @endif
             @endauth
-            @endif
         </nav>
     </div>
 </div>

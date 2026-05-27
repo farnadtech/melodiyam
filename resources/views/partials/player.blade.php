@@ -6,40 +6,59 @@
         adAudio: null,
         adRemaining: 0,
         adTimer: null,
-        trackCount: 0,
         adConfig: null,
+
+        getTrackCount() {
+            return parseInt(sessionStorage.getItem('ad_track_count') || '0');
+        },
+        setTrackCount(n) {
+            sessionStorage.setItem('ad_track_count', String(n));
+        },
 
         async fetchAd() {
             try {
                 const r = await fetch('/api/audio-ad');
                 const d = await r.json();
-                this.adConfig = d.ad;
-            } catch(e) {}
+                this.adConfig = d.ad || null;
+            } catch(e) { this.adConfig = null; }
         },
 
-        async maybePlayAd() {
-            if (!this.adConfig) await this.fetchAd();
-            if (!this.adConfig) return;
+        checkAndPlayAd(pendingTrack) {
+            // این synchronous هست — فقط وقتی adConfig از قبل load شده کار می‌کنه
+            if (!this.adConfig || !this.adConfig.url) return false;
 
-            this.trackCount++;
+            // اگر تبلیغ در حال پخشه، count زیاد نکن
+            if (window._adCurrentlyPlaying) return false;
+
+            // تبلیغ در حالت preview/demo نپخشه
+            if (pendingTrack && pendingTrack.canPlay === false) return false;
+
+            const count = this.getTrackCount() + 1;
             const threshold = this.adConfig.tracks_between ?? 3;
-            if (this.trackCount < threshold) return;
-            this.trackCount = 0;
+            this.setTrackCount(count);
+            if (count < threshold) return false;
+            this.setTrackCount(0);
             this.playAd();
+            return true;
         },
 
         playAd() {
             if (!this.adConfig?.url) return;
-            // موقتاً پلیر اصلی رو پاز کن
-            if ($store.player.isPlaying) $store.player.toggle();
+            // فوری flag بذار تا play() بلاک بشه
+            window._adCurrentlyPlaying = true;
+            window._adPendingTrack = null;
 
+            const playerStore = Alpine.store('player');
+            // پاز کن آهنگ اصلی
+            if (playerStore.audio) { playerStore.audio.pause(); }
+            playerStore.isPlaying = false;
             this.adPlaying = true;
             this.adTitle = this.adConfig.title ?? 'تبلیغ';
             this.adRemaining = this.adConfig.duration ?? 15;
 
             this.adAudio = new Audio(this.adConfig.url);
-            this.adAudio.volume = $store.player.audio?.volume ?? 1;
-            this.adAudio.play().catch(() => {});
+            this.adAudio.volume = (playerStore.audio?.volume ?? 0.8);
+            this.adAudio.play().catch(() => { this.finishAd(); });
 
             this.adTimer = setInterval(() => {
                 this.adRemaining--;
@@ -51,22 +70,34 @@
 
         finishAd() {
             clearInterval(this.adTimer);
+            this.adTimer = null;
             if (this.adAudio) { this.adAudio.pause(); this.adAudio = null; }
             this.adPlaying = false;
-            // ادامه پخش آهنگ اصلی
-            if ($store.player.currentTrack && !$store.player.isPlaying) {
-                $store.player.toggle();
+            window._adCurrentlyPlaying = false;
+
+            const playerStore = Alpine.store('player');
+            // اگر کاربر حین تبلیغ روی آهنگ دیگه‌ای کلیک کرده بود، اون رو پخش کن
+            if (window._adPendingTrack) {
+                const pending = window._adPendingTrack;
+                window._adPendingTrack = null;
+                playerStore.play(pending);
+            } else if (playerStore.currentTrack && playerStore.audio?.src) {
+                // ادامه همان آهنگ قبلی
+                playerStore.audio.play().catch(() => {});
+                playerStore.isPlaying = true;
             }
+            // رفرش adConfig برای دفعه بعد
+            this.fetchAd();
         },
 
         skipAd() {
+            this.setTrackCount(0);
             this.finishAd();
         }
     }"
     x-init="
-        $watch('$store.player.currentTrack', (val, old) => {
-            if (val && old && val.id !== old.id) maybePlayAd();
-        });
+        fetchAd();
+        window._adCheckHook = (track) => checkAndPlayAd(track);
     "
     x-cloak
     x-show="adPlaying"
@@ -84,6 +115,12 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <a x-show="adConfig?.button_text && adConfig?.button_url"
+               :href="adConfig.button_url"
+               target="_blank"
+               class="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-400 text-white text-sm font-medium transition-colors"
+               x-text="adConfig.button_text">
+            </a>
             <div class="flex items-center gap-1.5">
                 <div class="w-32 h-1.5 rounded-full bg-white/20 overflow-hidden">
                     <div class="h-full bg-amber-400 rounded-full transition-all duration-1000"

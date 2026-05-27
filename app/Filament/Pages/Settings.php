@@ -79,6 +79,13 @@ class Settings extends Page implements HasForms
                             Toggle::make('allow_artist_register')->label('ثبت‌نام هنرمند'),
                             Toggle::make('auto_approve_artist')->label('تأیید خودکار هنرمند'),
                         ])->columns(3),
+                        Section::make('اشتراک هنرمندان')
+                            ->description('اگر فعال باشد، هنرمندان برای آپلود آهنگ و آلبوم باید اشتراک فعال داشته باشند.')
+                            ->schema([
+                                Toggle::make('artist_subscription_required')
+                                    ->label('اشتراک هنرمند اجباری')
+                                    ->helperText('در صورت فعال بودن، هنرمند بدون اشتراک نمی‌تواند آپلود کند'),
+                            ])->columns(1),
                     ]),
 
                     // ── Tab 3: Content & Music ──
@@ -272,7 +279,97 @@ class Settings extends Page implements HasForms
                         ])->columns(3),
                     ]),
 
-                    // ── Tab 9: Storage ──
+                    // ── Tab 9: Banners ──
+                    Tab::make('🎯 بنرهای سایدبار')->schema([
+
+                        Section::make('بنر پریمیوم (سایدبار)')
+                            ->description('این بنر برای کاربران غیرپریمیوم در پایین سایدبار نمایش داده می‌شود.')
+                            ->schema([
+                                Toggle::make('premium_banner_enabled')
+                                    ->label('نمایش بنر پریمیوم')
+                                    ->default(true)
+                                    ->columnSpanFull(),
+                                TextInput::make('premium_banner_title')
+                                    ->label('عنوان بنر')
+                                    ->default('ملودیام پریمیوم')
+                                    ->placeholder('ملودیام پریمیوم'),
+                                TextInput::make('premium_banner_subtitle')
+                                    ->label('زیرعنوان')
+                                    ->default('بدون تبلیغات، کیفیت بالا')
+                                    ->placeholder('بدون تبلیغات، کیفیت بالا'),
+                                TextInput::make('premium_banner_btn_text')
+                                    ->label('متن دکمه')
+                                    ->default('ارتقا حساب')
+                                    ->placeholder('ارتقا حساب'),
+                                TextInput::make('premium_banner_btn_url')
+                                    ->label('لینک دکمه')
+                                    ->default('/premium')
+                                    ->placeholder('/premium'),
+                                ColorPicker::make('premium_banner_bg_from')
+                                    ->label('رنگ شروع گرادیانت')
+                                    ->hexColor(),
+                                ColorPicker::make('premium_banner_bg_to')
+                                    ->label('رنگ پایان گرادیانت')
+                                    ->hexColor(),
+                                ColorPicker::make('premium_banner_text_color')
+                                    ->label('رنگ متن و دکمه')
+                                    ->hexColor()
+                                    ->helperText('پیش‌فرض: سفید (#ffffff)'),
+                                FileUpload::make('premium_banner_image')
+                                    ->label('عکس بنر (اختیاری — جایگزین گرادیانت می‌شود)')
+                                    ->image()
+                                    ->directory('banners')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->columnSpanFull()
+                                    ->helperText('اگر عکس آپلود شود، به جای رنگ گرادیانت استفاده می‌شود'),
+                            ])->columns(2),
+
+                        Section::make('بنر هنرمند شو (سایدبار)')
+                            ->description('این بنر برای کاربران شنونده (غیرهنرمند) در پایین سایدبار نمایش داده می‌شود.')
+                            ->schema([
+                                Toggle::make('artist_banner_enabled')
+                                    ->label('نمایش بنر هنرمند شو')
+                                    ->default(true)
+                                    ->columnSpanFull(),
+                                TextInput::make('artist_banner_title')
+                                    ->label('عنوان بنر')
+                                    ->default('هنرمند شوید!')
+                                    ->placeholder('هنرمند شوید!'),
+                                TextInput::make('artist_banner_subtitle')
+                                    ->label('زیرعنوان')
+                                    ->default('موسیقی‌تان را با جهان به اشتراک بگذارید')
+                                    ->placeholder('موسیقی‌تان را با جهان به اشتراک بگذارید'),
+                                TextInput::make('artist_banner_btn_text')
+                                    ->label('متن دکمه')
+                                    ->default('شروع کنید')
+                                    ->placeholder('شروع کنید'),
+                                TextInput::make('artist_banner_btn_url')
+                                    ->label('لینک دکمه')
+                                    ->default('/become-artist')
+                                    ->placeholder('/become-artist'),
+                                ColorPicker::make('artist_banner_bg_from')
+                                    ->label('رنگ شروع گرادیانت')
+                                    ->hexColor(),
+                                ColorPicker::make('artist_banner_bg_to')
+                                    ->label('رنگ پایان گرادیانت')
+                                    ->hexColor(),
+                                ColorPicker::make('artist_banner_text_color')
+                                    ->label('رنگ متن و دکمه')
+                                    ->hexColor()
+                                    ->helperText('پیش‌فرض: سفید (#ffffff)'),
+                                FileUpload::make('artist_banner_image')
+                                    ->label('عکس بنر (اختیاری — جایگزین گرادیانت می‌شود)')
+                                    ->image()
+                                    ->directory('banners')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->columnSpanFull()
+                                    ->helperText('اگر عکس آپلود شود، به جای رنگ گرادیانت استفاده می‌شود'),
+                            ])->columns(2),
+                    ]),
+
+                    // ── Tab 10: Storage ──
                     Tab::make('🗄️ ذخیره‌سازی')->schema([
                         Section::make('درایور ذخیره‌سازی')->schema([
                             Select::make('storage_driver')->label('درایور')

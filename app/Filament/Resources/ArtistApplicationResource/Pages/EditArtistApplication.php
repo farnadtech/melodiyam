@@ -46,8 +46,10 @@ class EditArtistApplication extends EditRecord
                     ?? $user->name;
 
                 Artist::create([
-                    'user_id'      => $user->id,
-                    'display_name' => $displayName,
+                    'user_id'             => $user->id,
+                    'display_name'        => $displayName,
+                    'verification_status' => 'approved',
+                    'verified_at'         => now(),
                 ]);
             }
 

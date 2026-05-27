@@ -22,20 +22,34 @@ class AdController extends Controller
         // پلن فعال کاربر
         $planSlug = $user?->activeSubscription?->plan?->slug ?? 'free';
 
-        $ad = Advertisement::active()
+        $ads = Advertisement::active()
             ->where('type', 'audio')
             ->where(function ($q) use ($planSlug) {
                 $q->whereNull('target_plans')
+                  ->orWhere('target_plans', '[]')
+                  ->orWhere('target_plans', '')
                   ->orWhereJsonContains('target_plans', $planSlug)
                   ->orWhereJsonContains('target_plans', 'all');
             })
-            ->where(function ($q) {
-                $q->whereNull('max_impressions')
-                  ->orWhereColumn('impressions', '<', 'max_impressions');
-            })
-            ->orderByDesc('priority')
-            ->inRandomOrder()
-            ->first();
+            ->whereRaw('(max_impressions IS NULL OR impressions < max_impressions)')
+            ->get();
+
+        if ($ads->isEmpty()) {
+            return response()->json(['ad' => null]);
+        }
+
+        // Weighted random based on priority (higher priority = more likely)
+        $totalWeight = $ads->sum('priority');
+        $random = mt_rand(1, $totalWeight);
+        $currentWeight = 0;
+        $ad = null;
+        foreach ($ads as $candidate) {
+            $currentWeight += $candidate->priority;
+            if ($random <= $currentWeight) {
+                $ad = $candidate;
+                break;
+            }
+        }
 
         if (!$ad) {
             return response()->json(['ad' => null]);
@@ -61,6 +75,8 @@ class AdController extends Controller
                 'url'              => $mediaUrl,
                 'duration'         => $ad->duration ?? 15,
                 'tracks_between'   => $ad->tracks_between ?? 3,
+                'button_text'      => $ad->button_text,
+                'button_url'       => $ad->button_url,
             ]
         ]);
     }

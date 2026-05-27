@@ -68,10 +68,28 @@ function registerAlpineStuff(Alpine) {
         },
 
         play(track = null) {
+            // اگر تبلیغ داره پخش میشه، آهنگ جدید رو نگه دار تا بعد از تبلیغ پخش بشه
+            if (window._adCurrentlyPlaying) {
+                if (track) window._adPendingTrack = track;
+                return;
+            }
+
             if (track) {
+                const prevId = this.currentTrack?.id;
+                const isTrackChange = prevId && prevId !== track.id;
+
                 this.currentTrack = track;
                 this.previewLimitReached = false;
-                if (this.audio) this.audio.src = track.url;
+                if (this.audio) {
+                    this.audio.src = track.url;
+                    this.audio.load();
+                }
+
+                // اگر track عوض شد، از ad hook چک کن
+                if (isTrackChange && window._adCheckHook) {
+                    const shouldBlock = window._adCheckHook(track);
+                    if (shouldBlock) return; // ad شروع شد، پخش نکن
+                }
             }
             if (this.audio && this.audio.src) {
                 this.audio.play().catch(() => {});
@@ -190,7 +208,18 @@ function registerAlpineStuff(Alpine) {
             } else {
                 this.queueIndex = (this.queueIndex + 1) % this.queue.length;
             }
-            this.play(this.queue[this.queueIndex]);
+            const track = this.queue[this.queueIndex];
+            // If ad is playing, increment track_count and set pending track
+            if (window._adCurrentlyPlaying) {
+                const adComponent = document.querySelector('[x-data*="adPlaying"]')?.__x;
+                if (adComponent) {
+                    const count = adComponent.getTrackCount() + 1;
+                    adComponent.setTrackCount(count);
+                }
+                window._adPendingTrack = track;
+                return;
+            }
+            this.play(track);
         },
 
         previous() {
@@ -201,7 +230,18 @@ function registerAlpineStuff(Alpine) {
             this.recordStream(false);
             if (this.queue.length === 0) return;
             this.queueIndex = (this.queueIndex - 1 + this.queue.length) % this.queue.length;
-            this.play(this.queue[this.queueIndex]);
+            const track = this.queue[this.queueIndex];
+            // If ad is playing, increment track_count and set pending track
+            if (window._adCurrentlyPlaying) {
+                const adComponent = document.querySelector('[x-data*="adPlaying"]')?.__x;
+                if (adComponent) {
+                    const count = adComponent.getTrackCount() + 1;
+                    adComponent.setTrackCount(count);
+                }
+                window._adPendingTrack = track;
+                return;
+            }
+            this.play(track);
         },
 
         handleTrackEnd() {

@@ -52,6 +52,10 @@ Route::get('/test-login', function () {
     return nl2br($output);
 });
 
+// ── Audio Ad API (used by player) ──
+Route::get('/api/audio-ad', [\App\Http\Controllers\Web\AdController::class, 'getAudioAd'])->name('api.audio-ad');
+Route::post('/api/ad-click', [\App\Http\Controllers\Web\AdController::class, 'trackClick'])->name('ad.click.public');
+
 Route::get('/', HomeController::class)->name('home');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/browse/tracks.json', [BrowseController::class, 'tracksJson'])->name('browse.tracks-json');
@@ -194,6 +198,9 @@ Route::middleware(['auth'])->prefix('artist')->group(function () {
     Route::get('/dashboard',       [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
     Route::get('/analytics',       [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
 
+    // Subscription Plans
+    Route::get('/plans', [\App\Http\Controllers\Artist\SubscriptionController::class, 'index'])->name('artist.plans');
+
     // Tracks
     Route::get('/tracks',          [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('artist.tracks');
     Route::get('/tracks/create',   [\App\Http\Controllers\Artist\TrackController::class, 'create'])->name('artist.tracks.create');
@@ -261,8 +268,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
     Route::post('/wallet/deposit', [WalletController::class, 'depositRequest'])->name('wallet.deposit');
     Route::post('/wallet/withdraw', [WalletController::class, 'withdrawRequest'])->name('wallet.withdraw');
-    Route::get('/api/audio-ad', [AdController::class, 'getAudioAd'])->name('ad.audio');
-    Route::post('/api/ad-click', [AdController::class, 'trackClick'])->name('ad.click');
     Route::get('/purchase', [PurchaseController::class, 'confirm'])->name('purchase');
     Route::post('/purchase', [PurchaseController::class, 'purchase'])->name('purchase.submit');
     Route::get('/my-purchases', [PurchaseController::class, 'userPurchases'])->name('purchases');

@@ -32,7 +32,7 @@ class UserResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('gender')->label('جنسیت')
                     ->options(['male' => 'مرد', 'female' => 'زن', 'other' => 'سایر']),
-                Forms\Components\DatePicker::make('birth_date')->label('تاریخ تولد'),
+                \App\Filament\Forms\Components\JalaliDatePicker::make('birth_date')->label('تاریخ تولد'),
                 Forms\Components\TextInput::make('country')->label('کشور')->default('IR'),
                 Forms\Components\TextInput::make('city')->label('شهر'),
             ])->columns(2),
@@ -40,7 +40,7 @@ class UserResource extends Resource
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
                 Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
                 Forms\Components\Toggle::make('is_premium')->label('پریمیوم'),
-                Forms\Components\DateTimePicker::make('premium_expires_at')->label('انقضای پریمیوم'),
+                \App\Filament\Forms\Components\JalaliDatePicker::make('premium_expires_at')->label('انقضای پریمیوم'),
             ])->columns(3),
 
             \Filament\Schemas\Components\Section::make('بیوگرافی')->schema([

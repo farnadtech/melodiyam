@@ -75,7 +75,41 @@ class Artist extends Model
         return $this->morphMany(Follow::class, 'followable');
     }
 
+    public function subscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ArtistSubscription::class);
+    }
+
+    public function activeSubscription(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ArtistSubscription::class)
+            ->where('status', 'active')
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->latestOfMany();
+    }
+
     // ── Helpers ──
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription()->exists();
+    }
+
+    public function canUploadTrack(): bool
+    {
+        $required = \App\Models\Setting::get('artist_subscription_required', '0') === '1';
+        $sub = $this->activeSubscription;
+        if (!$sub) return !$required;
+        return $sub->canUploadTrack();
+    }
+
+    public function canUploadAlbum(): bool
+    {
+        $required = \App\Models\Setting::get('artist_subscription_required', '0') === '1';
+        $sub = $this->activeSubscription;
+        if (!$sub) return !$required;
+        return $sub->canUploadAlbum();
+    }
 
     public function isVerified(): bool
     {

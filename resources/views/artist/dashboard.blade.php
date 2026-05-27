@@ -23,6 +23,54 @@
     </div>
     @endif
 
+    {{-- Subscription Banner --}}
+    @if($subscriptionRequired)
+        @if(!$activeSub)
+        <div class="rounded-2xl p-5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold text-amber-800 dark:text-amber-300">اشتراک فعال ندارید</p>
+                <p class="text-sm text-amber-700 dark:text-amber-400 mt-0.5">برای آپلود آهنگ و ساخت آلبوم باید یک پلن هنرمند خریداری کنید.</p>
+            </div>
+            <a href="{{ route('artist.plans') }}" wire:navigate class="flex-shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors">
+                خرید اشتراک
+            </a>
+        </div>
+        @else
+        <div class="rounded-2xl p-5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400">پلن فعال</p>
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm">{{ $activeSub->plan->name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400">انقضا</p>
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm">
+                        {{ $activeSub->expires_at ? \App\Helpers\Jalali::format($activeSub->expires_at, 'Y/m/d') : 'نامحدود' }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400">آهنگ</p>
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm">
+                        {{ $activeSub->tracks_used }} / {{ $activeSub->plan->max_tracks == 0 ? '∞' : $activeSub->plan->max_tracks }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400">فضا</p>
+                    <p class="font-semibold text-emerald-800 dark:text-emerald-200 text-sm">
+                        {{ $activeSub->storage_used_mb }} / {{ $activeSub->plan->max_storage_mb == 0 ? '∞' : $activeSub->plan->max_storage_mb . ' MB' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        @endif
+    @endif
+
     {{-- Stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass-card rounded-2xl p-5">

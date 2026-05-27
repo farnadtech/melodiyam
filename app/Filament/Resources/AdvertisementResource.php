@@ -8,7 +8,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Forms\Components\DateTimePicker;
+use App\Filament\Forms\Components\JalaliDatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -43,8 +43,8 @@ class AdvertisementResource extends Resource
                         'banner' => 'بنر',
                     ])
                     ->default('audio')
-                    ->required()
-                    ->live(),
+                    ->reactive()
+                    ->required(),
                 Select::make('status')
                     ->label('وضعیت')
                     ->options([
@@ -62,31 +62,47 @@ class AdvertisementResource extends Resource
             ])->columns(2),
 
             Section::make('فایل صوتی')->schema([
-                FileUpload::make('media_path')
+                FileUpload::make('audio_media_path')
                     ->label('فایل صوتی آگهی')
                     ->disk('public')
                     ->directory('ads/audio')
                     ->acceptedFileTypes(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'])
                     ->maxSize(10240)
-                    ->visible(fn ($get) => $get('type') === 'audio')
                     ->columnSpanFull(),
-                TextInput::make('media_url')
+                TextInput::make('audio_media_url')
                     ->label('یا URL فایل صوتی')
                     ->url()
-                    ->visible(fn ($get) => $get('type') === 'audio')
                     ->helperText('اگر فایل آپلود نشده، از URL استفاده کنید')
                     ->columnSpanFull(),
                 TextInput::make('duration')
                     ->label('مدت زمان (ثانیه)')
                     ->numeric()
-                    ->default(15)
-                    ->visible(fn ($get) => $get('type') === 'audio'),
+                    ->default(15),
+            ])->columns(2)
+            ->visible(fn ($get) => $get('type') === 'audio'),
+
+            Section::make('تصویر بنر')->schema([
+                FileUpload::make('banner_media_path')
+                    ->label('تصویر بنر')
+                    ->disk('public')
+                    ->directory('ads/banners')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(2048)
+                    ->columnSpanFull(),
+                TextInput::make('banner_media_url')
+                    ->label('یا URL تصویر')
+                    ->url()
+                    ->helperText('اگر فایل آپلود نشده، از URL استفاده کنید')
+                    ->columnSpanFull(),
+            ])->columns(2)
+            ->visible(fn ($get) => $get('type') === 'banner'),
+
+            Section::make('تنظیمات نمایش')->schema([
                 TextInput::make('tracks_between')
                     ->label('هر چند آهنگ یک بار')
                     ->numeric()
                     ->default(3)
-                    ->helperText('مثلاً 3 = بعد از هر 3 آهنگ')
-                    ->visible(fn ($get) => $get('type') === 'audio'),
+                    ->helperText('مثلاً 3 = بعد از هر 3 آهنگ'),
             ])->columns(2),
 
             Section::make('هدف‌گذاری')->schema([
@@ -100,10 +116,10 @@ class AdvertisementResource extends Resource
                     ->default(['free'])
                     ->helperText('خالی = همه کاربران')
                     ->columnSpanFull(),
-                DateTimePicker::make('starts_at')
+                JalaliDatePicker::make('starts_at')
                     ->label('شروع از')
-                    ->default(now()),
-                DateTimePicker::make('ends_at')
+                    ->default(fn() => \App\Helpers\Jalali::format(now(), 'Y/m/d')),
+                JalaliDatePicker::make('ends_at')
                     ->label('پایان در')
                     ->nullable(),
                 TextInput::make('max_impressions')
@@ -111,6 +127,18 @@ class AdvertisementResource extends Resource
                     ->numeric()
                     ->nullable()
                     ->helperText('خالی = بدون محدودیت'),
+            ])->columns(2),
+
+            Section::make('دکمه/لینک')->schema([
+                TextInput::make('button_text')
+                    ->label('متن دکمه')
+                    ->placeholder('مثال: خرید اشتراک')
+                    ->columnSpanFull(),
+                TextInput::make('button_url')
+                    ->label('لینک دکمه')
+                    ->url()
+                    ->placeholder('https://example.com')
+                    ->columnSpanFull(),
             ])->columns(2),
 
             Section::make('توضیحات')->schema([
@@ -127,22 +155,12 @@ class AdvertisementResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('عنوان')->searchable(),
-                Tables\Columns\TextColumn::make('type')->label('نوع')
-                    ->badge()
-                    ->formatStateUsing(fn ($s) => $s === 'audio' ? 'صوتی' : 'بنر')
-                    ->color(fn ($s) => $s === 'audio' ? 'warning' : 'info'),
-                Tables\Columns\TextColumn::make('status')->label('وضعیت')
-                    ->badge()
-                    ->formatStateUsing(fn ($s) => match ($s) {
-                        'active' => 'فعال', 'paused' => 'متوقف', default => 'پیش‌نویس'
-                    })
-                    ->color(fn ($s) => match ($s) {
-                        'active' => 'success', 'paused' => 'warning', default => 'gray'
-                    }),
                 Tables\Columns\TextColumn::make('impressions')->label('نمایش')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('duration')->label('مدت (ثانیه)'),
                 Tables\Columns\TextColumn::make('tracks_between')->label('هر N آهنگ'),
-                Tables\Columns\TextColumn::make('starts_at')->label('شروع')->dateTime('Y/m/d')->sortable(),
+                Tables\Columns\TextColumn::make('starts_at')->label('شروع')
+                    ->formatStateUsing(fn($state) => $state ? \App\Helpers\Jalali::format($state, 'Y/m/d') : '—')
+                    ->sortable(),
             ])
             ->defaultSort('priority', 'desc')
             ->actions([

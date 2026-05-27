@@ -22,7 +22,7 @@
                     <button
                         @click="$store.player.playQueue([
                             @foreach($playlist->tracks as $track)
-                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }} }{{ !$loop->last ? ',' : '' }}
+                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ ($track->is_for_sale && $track->price) ? 'false' : 'true' }}, previewSeconds: {{ $track->preview_seconds ?? 0 }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
                             @endforeach
                         ], 0)"
                         class="w-12 h-12 rounded-full bg-primary-500 hover:bg-primary-400 hover:scale-105 flex items-center justify-center shadow-lg shadow-primary-500/30 transition-all"
@@ -32,7 +32,7 @@
                     <button
                         @click="let tracks = [
                             @foreach($playlist->tracks as $track)
-                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }} }{{ !$loop->last ? ',' : '' }}
+                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ ($track->is_for_sale && $track->price) ? 'false' : 'true' }}, previewSeconds: {{ $track->preview_seconds ?? 0 }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
                             @endforeach
                         ]; let shuffled = [...tracks].sort(() => Math.random() - 0.5); $store.player.playQueue(shuffled, 0)"
                         class="w-12 h-12 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 flex items-center justify-center transition-colors"
@@ -86,9 +86,18 @@
                     <a href="{{ route('track.show', $track) }}" wire:navigate class="text-sm font-medium text-surface-900 dark:text-surface-100 hover:text-primary-500 truncate block">{{ $track->title }}</a>
                     <p class="text-xs text-surface-400 truncate">{{ $track->artist->display_name ?? '' }}</p>
                 </div>
+                @php
+                    $plIsPaid = $track->is_for_sale && $track->price;
+                    $plPreview = $track->preview_seconds ?? 0;
+                    $plCanPlay = !$plIsPaid ? 'true' : 'false';
+                @endphp
+                @if($plIsPaid)
+                <span class="text-xs font-bold text-primary-500 whitespace-nowrap">{{ number_format($track->discount_price ?: $track->price) }} ت</span>
+                @else
                 <span class="text-xs text-surface-400">{{ $track->formattedDuration() }}</span>
+                @endif
                 <button
-                    @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }} })"
+                    @click="@if($plIsPaid && $plPreview == 0)$store.player.showPurchaseModal({ title: '{{ e($track->title) }}', price: {{ $track->discount_price ?: $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ route('purchase', ['type'=>'track','id'=>$track->id]) }}' })@else$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ $plCanPlay }}, previewSeconds: {{ $plPreview }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type'=>'track','id'=>$track->id]) }}' })@endif"
                     class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center transition-opacity"
                 >
                     <svg class="w-3.5 h-3.5 text-white mr-[-1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>

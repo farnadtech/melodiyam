@@ -38,7 +38,7 @@ class ArtistResource extends Resource
             \Filament\Schemas\Components\Section::make('تأیید و وضعیت')->schema([
                 Forms\Components\Select::make('verification_status')->label('وضعیت تأیید')
                     ->options(['pending' => 'در انتظار', 'approved' => 'تأیید شده', 'rejected' => 'رد شده'])->required(),
-                Forms\Components\DateTimePicker::make('verified_at')->label('تاریخ تأیید'),
+                \App\Filament\Forms\Components\JalaliDatePicker::make('verified_at')->label('تاریخ تأیید'),
                 Forms\Components\Toggle::make('is_featured')->label('ویژه'),
             ])->columns(3),
         ]);
@@ -51,8 +51,20 @@ class ArtistResource extends Resource
                 Tables\Columns\ImageColumn::make('cover_image')->label('تصویر')->circular()->disk('public')->defaultImageUrl(asset('images/default-avatar.png')),
                 Tables\Columns\TextColumn::make('display_name')->label('نام')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('user.name')->label('کاربر'),
-                Tables\Columns\BadgeColumn::make('verification_status')->label('تأیید')
-                    ->colors(['warning' => 'pending', 'success' => 'approved', 'danger' => 'rejected']),
+                Tables\Columns\TextColumn::make('verification_status')->label('تأیید')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => match($state) {
+                        'pending'  => 'در انتظار',
+                        'approved' => 'تأیید شده',
+                        'rejected' => 'رد شده',
+                        default    => $state,
+                    })
+                    ->color(fn($state) => match($state) {
+                        'pending'  => 'warning',
+                        'approved' => 'success',
+                        'rejected' => 'danger',
+                        default    => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('followers_count')->label('دنبال‌کننده')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('total_streams')->label('کل پخش')->numeric()->sortable(),
                 Tables\Columns\IconColumn::make('is_featured')->label('ویژه')->boolean(),

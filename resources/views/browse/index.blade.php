@@ -69,14 +69,23 @@
 
         {{-- Tracks with infinite scroll --}}
         @php
-            $initialTracks = $tracks->map(fn($t) => [
-                'id'         => $t->id,
-                'title'      => $t->title,
-                'artist'     => $t->artist?->display_name ?? $t->artist?->name,
-                'cover'      => $t->getCoverUrl(),
-                'url'        => $t->getStreamUrl(),
-                'cover_page' => route('track.show', $t->slug),
-            ])->values()->toArray();
+            $initialTracks = $tracks->map(function($t) {
+                $isPaid = $t->is_for_sale && $t->price;
+                $previewSec = $t->preview_seconds ?? 0;
+                return [
+                    'id'             => $t->id,
+                    'title'          => $t->title,
+                    'artist'         => $t->artist?->display_name ?? $t->artist?->name,
+                    'cover'          => $t->getCoverUrl(),
+                    'url'            => $t->getStreamUrl(),
+                    'cover_page'     => route('track.show', $t->slug),
+                    'canPlay'        => !$isPaid,
+                    'previewSeconds' => $previewSec,
+                    'price'          => $t->discount_price ?: $t->price,
+                    'purchaseUrl'    => route('purchase', ['type' => 'track', 'id' => $t->id]),
+                    'isPaid'         => (bool)$isPaid,
+                ];
+            })->values()->toArray();
             $hasMore   = $tracks->hasMorePages();
             $nextPage  = 2;
             $apiUrl    = url()->current() . '/tracks.json?' . http_build_query(request()->except('page'));
@@ -130,15 +139,25 @@
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
                                 <button
-                                    x-on:click.stop="$store.player.play({id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url})"
+                                    x-on:click.stop="track.isPaid && !track.previewSeconds
+                                        ? $store.player.showPurchaseModal({ title: track.title, price: track.price, purchaseUrl: track.purchaseUrl })
+                                        : $store.player.play({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url, canPlay: track.canPlay, previewSeconds: track.previewSeconds, price: track.price, purchaseUrl: track.purchaseUrl })"
                                     class="opacity-0 group-hover:opacity-100 transition w-11 h-11 rounded-full bg-primary-500 hover:bg-primary-400 flex items-center justify-center shadow-lg">
-                                    <svg class="w-5 h-5 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    <template x-if="track.isPaid && !track.previewSeconds">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </template>
+                                    <template x-if="!(track.isPaid && !track.previewSeconds)">
+                                        <svg class="w-5 h-5 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </template>
                                 </button>
                             </div>
                         </div>
                         <div class="mt-2 min-w-0">
                             <a :href="track.cover_page" class="block text-sm font-medium text-surface-900 dark:text-white truncate hover:text-primary-500 transition-colors" x-text="track.title"></a>
-                            <p class="text-xs text-surface-500 truncate" x-text="track.artist"></p>
+                            <div class="flex items-center justify-between mt-0.5">
+                                <p class="text-xs text-surface-500 truncate" x-text="track.artist"></p>
+                                <span x-show="track.isPaid" class="whitespace-nowrap mr-1 text-xs font-bold text-primary-500" x-text="track.price ? track.price.toLocaleString('fa-IR') + ' ت' : ''"></span>
+                            </div>
                         </div>
                     </div>
                 </template>

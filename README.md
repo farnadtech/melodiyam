@@ -57,3 +57,8 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+
+باگ داره هنوز اولا چرا من الان یک تبلیغ بنری با الویت 4 ساختم چرا نشون داده نمیشه
+درضمن الان کاربر روی دکمه پلی در کارت هر اهنگی در هر جای اسکریپت میزنه موقع پخش تبلیغ بعد پایان تبلیغ دوباره تبلیغ بهدی رو به تعداد دفعات کلیک روی دکمه پلی نشون میده

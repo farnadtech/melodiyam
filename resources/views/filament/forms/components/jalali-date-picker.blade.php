@@ -24,7 +24,7 @@
         </span>
     </div>
     {{-- Hidden input Livewire reads --}}
-    <input type="hidden" id="hid{{ $uid }}" wire:model.live="{{ $getStatePath() }}" value="{{ $val }}" />
+    <input type="hidden" id="hid{{ $uid }}" value="{{ $val }}" />
 </div>
 
 {{-- Floating popup --}}
@@ -55,7 +55,7 @@
     if(_p.length===3&&+_p[0]>1300){_y=+_p[0];_m=+_p[1];_d=+_p[2];}
     else{var _t=window._jNow();_y=_t[0];_m=_t[1];}
 
-    window['_fjdp_'+uid]={year:_y,month:_m,day:_d,popEl:null,inpEl:null,hidEl:null};
+    window['_fjdp_'+uid]={year:_y,month:_m,day:_d,popEl:null,inpEl:null,hidEl:null,statePath:'{{ $getStatePath() }}'};
 
     function getS(){return window['_fjdp_'+uid];}
 
@@ -119,14 +119,19 @@
         s.day=d;
         var v=s.year+'/'+String(s.month).padStart(2,'0')+'/'+String(d).padStart(2,'0');
         s.inpEl.value=v;
-        if(s.hidEl){s.hidEl.value=v;s.hidEl.dispatchEvent(new Event('input'));s.hidEl.dispatchEvent(new Event('change'));}
+        if(s.hidEl){s.hidEl.value=v;}
+        // Livewire $wire.set for Filament 3/4
+        var lw=window.Livewire?window.Livewire.find(s.inpEl.closest('[wire\\:id]')?.getAttribute('wire:id')):null;
+        if(lw)lw.set(s.statePath,v);else{if(s.hidEl){s.hidEl.dispatchEvent(new Event('input',{bubbles:true}));s.hidEl.dispatchEvent(new Event('change',{bubbles:true}));}}
         s.popEl.style.display='none';
     };
     window['fjdpToday']=function(id){var t=window._jNow(),s=window['_fjdp_'+id];if(!s)return;s.year=t[0];s.month=t[1];fjdpPick(id,t[2]);};
     window['fjdpClear']=function(id){
         var s=window['_fjdp_'+id];if(!s)return;
         s.inpEl.value='';s.day=0;
-        if(s.hidEl){s.hidEl.value='';s.hidEl.dispatchEvent(new Event('input'));s.hidEl.dispatchEvent(new Event('change'));}
+        if(s.hidEl){s.hidEl.value='';}
+        var lw=window.Livewire?window.Livewire.find(s.inpEl.closest('[wire\\:id]')?.getAttribute('wire:id')):null;
+        if(lw)lw.set(s.statePath,'');else{if(s.hidEl){s.hidEl.dispatchEvent(new Event('input',{bubbles:true}));s.hidEl.dispatchEvent(new Event('change',{bubbles:true}));}}
         s.popEl.style.display='none';
     };
 

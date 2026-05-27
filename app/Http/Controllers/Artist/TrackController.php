@@ -22,6 +22,35 @@ class TrackController extends Controller
         return $artist;
     }
 
+    private function checkSubscription($artist): void
+    {
+        abort_unless($artist->canUploadTrack(), 403, 'برای آپلود آهنگ باید اشتراک فعال داشته باشید یا سقف مجاز پلن شما تمام شده است.');
+    }
+
+    private function checkStorageLimit($artist, int $fileSizeMb): void
+    {
+        $required = \App\Models\Setting::get('artist_subscription_required', '0') === '1';
+        if (!$required) return;
+        $sub = $artist->activeSubscription;
+        if (!$sub) return;
+        if ($sub->plan->isUnlimitedStorage()) return;
+        abort_unless(
+            ($sub->storage_used_mb + $fileSizeMb) <= $sub->plan->max_storage_mb,
+            403,
+            'فضای ذخیره‌سازی پلن شما کافی نیست. فضای مانده: ' . ($sub->plan->max_storage_mb - $sub->storage_used_mb) . ' MB'
+        );
+    }
+
+    private function incrementSubscriptionUsage($artist, int $fileSizeMb): void
+    {
+        $required = \App\Models\Setting::get('artist_subscription_required', '0') === '1';
+        if (!$required) return;
+        $sub = $artist->activeSubscription;
+        if (!$sub) return;
+        $sub->increment('tracks_used');
+        $sub->increment('storage_used_mb', $fileSizeMb);
+    }
+
     public function index(): View
     {
         $artist = $this->artistOrAbort();
@@ -36,6 +65,7 @@ class TrackController extends Controller
     public function create(): View
     {
         $artist = $this->artistOrAbort();
+        $this->checkSubscription($artist);
         $albums = $artist->albums()->orderBy('title')->get();
         $genres = Genre::active()->ordered()->get();
         return view('artist.tracks.create', compact('albums', 'genres'));
@@ -44,6 +74,7 @@ class TrackController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $artist = $this->artistOrAbort();
+        $this->checkSubscription($artist);
 
         $request->validate([
             'title'           => 'required|string|max:255',
@@ -67,6 +98,9 @@ class TrackController extends Controller
         $releaseDate = $request->release_date
             ? Jalali::toGregorianString($request->release_date)
             : null;
+
+        $file320SizeMb = (int) ceil($request->file('file_320')->getSize() / (1024 * 1024));
+        $this->checkStorageLimit($artist, $file320SizeMb);
 
         $path320 = $request->file('file_320')->store('tracks/320', 'public');
         $path128 = $request->hasFile('file_128') ? $request->file('file_128')->store('tracks/128', 'public') : null;
@@ -117,6 +151,8 @@ class TrackController extends Controller
             'status'          => $request->status,
             'published_at'    => $request->status === 'published' ? now() : null,
         ]);
+
+        $this->incrementSubscriptionUsage($artist, $file320SizeMb);
 
         return redirect()->route('artist.tracks')->with('success', 'آهنگ «' . $track->title . '» با موفقیت آپلود شد.');
     }

@@ -20,7 +20,12 @@ class DashboardController extends Controller
         $totalTracks = $artist->tracks()->count();
         $totalAlbums = $artist->albums()->count();
         $followers = $artist->followers_count;
+        $subscriptionRequired = \App\Models\Setting::get('artist_subscription_required', '0') === '1';
+        $activeSub = $artist->load('activeSubscription')->activeSubscription;
 
-        return view('artist.dashboard', compact('artist', 'totalStreams', 'totalTracks', 'totalAlbums', 'followers'));
+        return view('artist.dashboard', compact(
+            'artist', 'totalStreams', 'totalTracks', 'totalAlbums', 'followers',
+            'subscriptionRequired', 'activeSub'
+        ));
     }
 }
