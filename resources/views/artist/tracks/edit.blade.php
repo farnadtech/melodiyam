@@ -50,22 +50,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">شماره ترک</label>
-                    <input type="number" name="track_number" value="{{ old('track_number', $track->track_number) }}" min="1"
-                           class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                </div>
-                <x-jalali-date-input name="release_date" label="تاریخ انتشار (شمسی)" :value="old('release_date', $track->release_date)" />
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">وضعیت</label>
-                <select name="status" required class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="draft" @selected(old('status', $track->status)==='draft')>پیش‌نویس</option>
-                    <option value="published" @selected(old('status', $track->status)==='published')>منتشرشده</option>
-                </select>
-            </div>
+            <x-jalali-date-input name="release_date" label="تاریخ انتشار (شمسی)" :value="old('release_date', $track->release_date)" />
         </div>
 
         <div class="glass-card rounded-2xl p-6 space-y-5">
@@ -135,10 +120,6 @@
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="is_explicit" value="1" {{ old('is_explicit', $track->is_explicit) ? 'checked' : '' }} class="w-4 h-4 rounded accent-primary-500">
                     <span class="text-sm text-surface-700 dark:text-surface-300">محتوای بزرگسال (Explicit)</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="is_downloadable" value="1" {{ old('is_downloadable', $track->is_downloadable) ? 'checked' : '' }} class="w-4 h-4 rounded accent-primary-500">
-                    <span class="text-sm text-surface-700 dark:text-surface-300">قابل دانلود</span>
                 </label>
             </div>
         </div>

@@ -139,24 +139,28 @@
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
                                 <button
-                                    x-on:click.stop="track.isPaid && !track.previewSeconds
-                                        ? $store.player.showPurchaseModal({ title: track.title, price: track.price, purchaseUrl: track.purchaseUrl })
-                                        : $store.player.play({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url, canPlay: track.canPlay, previewSeconds: track.previewSeconds, price: track.price, purchaseUrl: track.purchaseUrl })"
-                                    class="opacity-0 group-hover:opacity-100 transition w-11 h-11 rounded-full bg-primary-500 hover:bg-primary-400 flex items-center justify-center shadow-lg">
-                                    <template x-if="track.isPaid && !track.previewSeconds">
+                                    x-on:click.stop="track.isPremium
+                                        ? $store.player.play({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url, canPlay: false, previewSeconds: track.previewSeconds, isPremium: true, purchaseUrl: track.purchaseUrl })
+                                        : (track.isPaid && !track.previewSeconds
+                                            ? $store.player.showPurchaseModal({ title: track.title, price: track.price, purchaseUrl: track.purchaseUrl })
+                                            : $store.player.play({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url, canPlay: track.canPlay, previewSeconds: track.previewSeconds, price: track.price, purchaseUrl: track.purchaseUrl }))"
+                                    :class="track.isPremium ? 'bg-purple-500 hover:bg-purple-400 shadow-purple-500/40' : 'bg-primary-500 hover:bg-primary-400'"
+                                    class="opacity-0 group-hover:opacity-100 transition w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
+                                    <template x-if="track.isPaid && !track.previewSeconds && !track.isPremium">
                                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                     </template>
-                                    <template x-if="!(track.isPaid && !track.previewSeconds)">
+                                    <template x-if="!(track.isPaid && !track.previewSeconds && !track.isPremium)">
                                         <svg class="w-5 h-5 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                     </template>
                                 </button>
                             </div>
                         </div>
                         <div class="mt-2 min-w-0">
-                            <a :href="track.cover_page" class="block text-sm font-medium text-surface-900 dark:text-white truncate hover:text-primary-500 transition-colors" x-text="track.title"></a>
+                            <a :href="track.cover_page" @click.prevent="Livewire.navigate(track.cover_page)" class="block text-sm font-medium text-surface-900 dark:text-white truncate hover:text-primary-500 transition-colors" x-text="track.title"></a>
                             <div class="flex items-center justify-between mt-0.5">
                                 <p class="text-xs text-surface-500 truncate" x-text="track.artist"></p>
-                                <span x-show="track.isPaid" class="whitespace-nowrap mr-1 text-xs font-bold text-primary-500" x-text="track.price ? track.price.toLocaleString('fa-IR') + ' ت' : ''"></span>
+                                <span x-show="track.isPremium" class="whitespace-nowrap mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 leading-none">پریمیوم</span>
+                                <span x-show="track.isPaid && !track.isPremium" class="whitespace-nowrap mr-1 text-xs font-bold text-primary-500" x-text="track.price ? track.price.toLocaleString('fa-IR') + ' ت' : ''"></span>
                             </div>
                         </div>
                     </div>

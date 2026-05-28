@@ -16,7 +16,14 @@ class TrackController extends Controller
 
         $user = auth()->user();
         $hasPlanAccess = $user?->activeSubscription?->plan?->includes_paid_content ?? false;
-        $canPlay = true;
+        $isPremiumUser = $user?->isPremium() ?? false;
+
+        // Premium-only check: block non-premium users from playing
+        $isPremiumOnly = (bool) $track->is_premium_only;
+        $premiumPreviewSec = $isPremiumOnly && !$isPremiumUser
+            ? (int) (\App\Models\Setting::get('premium_preview_seconds', 30))
+            : 0;
+        $canPlay = !$isPremiumOnly || $isPremiumUser;
 
         $album = $track->album;
         $trackHasOwnPrice = $track->is_for_sale && $track->price;
@@ -45,7 +52,9 @@ class TrackController extends Controller
             $sellDiscount = null;
         }
 
-        if ($isPaidTrack) {
+        if ($isPremiumOnly && !$isPremiumUser) {
+            $canPlay = false;
+        } elseif ($isPaidTrack) {
             if (!$user) {
                 $canPlay = false;
             } elseif (!$hasPlanAccess) {
@@ -107,7 +116,8 @@ class TrackController extends Controller
 
         return view('track.show', compact(
             'track', 'relatedTracks', 'comments', 'userLikedTrack', 'canPlay',
-            'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount'
+            'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount',
+            'isPremiumOnly', 'premiumPreviewSec'
         ));
     }
 }

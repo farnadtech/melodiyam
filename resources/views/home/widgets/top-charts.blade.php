@@ -50,7 +50,7 @@
     <div class="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 divide-y divide-surface-100 dark:divide-surface-800 overflow-hidden">
         @foreach($tracks as $i => $track)
         <div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition cursor-pointer"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url]) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <span class="font-mono w-7 text-center text-sm flex-shrink-0 {{ $i===0?'text-yellow-500 font-bold':($i===1?'text-surface-400 font-bold':($i===2?'text-orange-400 font-bold':'text-surface-400')) }}">
                 {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}
             </span>
@@ -72,7 +72,7 @@
     <div class="grid {{ $colClass }} gap-4">
         @foreach($tracks as $i => $track)
         <div class="relative cursor-pointer group"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url]) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <span class="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 text-white text-xs font-bold flex items-center justify-center">
                 {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}
             </span>
@@ -91,7 +91,7 @@
     <div class="flex gap-4 overflow-x-auto scrollbar-hide pb-2 cursor-grab" x-drag-scroll>
         @foreach($tracks as $i => $track)
         <div class="flex-shrink-0 w-36 cursor-pointer group"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url]) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <div class="relative">
                 <span class="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 text-white text-xs font-bold flex items-center justify-center">
                     {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}

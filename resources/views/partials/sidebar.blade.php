@@ -165,6 +165,11 @@
         <div class="pt-4 mt-4 border-t border-surface-200 dark:border-surface-800">
             <p class="text-xs font-medium text-surface-400 dark:text-surface-500 px-3 mb-2">حساب کاربری</p>
 
+            <a href="{{ route('profile.edit') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('profile') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>ویرایش پروفایل</span>
+            </a>
+
             <a href="{{ url('/notifications') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('notifications*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 <span>اعلان‌ها</span>
@@ -224,6 +229,45 @@
     {{-- Sidebar Banners --}}
     @auth
     <div class="sticky bottom-0 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800 transition-transform duration-300 space-y-0" :class="playerActive ? 'translate-y-[-80px]' : 'translate-y-0'">
+
+        {{-- بنر تبلیغاتی داینامیک (Advertisement Model) --}}
+        <div x-data="{
+            ad: null,
+            async fetchAd() {
+                try {
+                    const r = await fetch('/api/banner-ad');
+                    const d = await r.json();
+                    this.ad = d.ad;
+                } catch(e) { this.ad = null; }
+            },
+            trackClick() {
+                if (!this.ad) return;
+                fetch('/api/ad-click', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ ad_id: this.ad.id })
+                });
+            }
+        }" x-init="fetchAd()" x-show="ad" class="p-3 pb-0">
+            <div class="rounded-xl overflow-hidden relative group border border-surface-200 dark:border-surface-800">
+                <template x-if="ad && ad.image_url">
+                    <a :href="ad.click_url || ad.button_url || '#'"
+                       @click="trackClick()"
+                       :target="ad.click_url || ad.button_url ? '_blank' : '_self'"
+                       class="block">
+                        <img :src="ad.image_url" :alt="ad.title" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                            <p class="text-white text-sm font-bold" x-text="ad.title"></p>
+                            <p x-show="ad.description" class="text-white/80 text-[10px] mt-1 line-clamp-1" x-text="ad.description"></p>
+                            <span x-show="ad.button_text" class="mt-2 inline-block w-fit px-3 py-1 bg-primary-500 text-white text-[10px] font-bold rounded-lg" x-text="ad.button_text"></span>
+                        </div>
+                    </a>
+                </template>
+            </div>
+        </div>
 
         {{-- بنر هنرمند شو --}}
         @if($abEnabled && auth()->user()->isListener())

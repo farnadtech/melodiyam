@@ -46,16 +46,37 @@
 
                     @if($canPlay)
                     <button
-                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: 0, canPlay: true })"
+                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist) : '' }}', duration: {{ $track->duration }}, previewSeconds: 0, canPlay: true })"
                         class="btn-primary !rounded-full !px-8 !py-3 gap-2"
                     >
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         پخش
                     </button>
+                    @elseif($isPremiumOnly)
+                    {{-- Premium locked: play preview if available, then show upgrade modal --}}
+                    <div class="flex items-center gap-3 flex-wrap">
+                        @if($premiumPreviewSec > 0)
+                        <button
+                            @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist) : '' }}', duration: {{ $track->duration }}, previewSeconds: {{ $premiumPreviewSec }}, canPlay: false, isPremium: true, purchaseUrl: '{{ route('premium') }}' })"
+                            class="btn-primary !rounded-full !px-8 !py-3 gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            پخش پیش‌نمایش ({{ $premiumPreviewSec }} ثانیه)
+                        </button>
+                        @endif
+                        <div class="flex items-center gap-2 px-5 py-3 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            این آهنگ مخصوص کاربران پریمیوم است
+                        </div>
+                        <a href="{{ route('premium') }}" wire:navigate class="btn-primary !rounded-full !px-8 !py-3 gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            خرید اشتراک پریمیوم
+                        </a>
+                    </div>
                     @elseif($isPaidTrack && $previewSec > 0)
                     {{-- Has preview: play with timer --}}
                     <button
-                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
+                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist) : '' }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
                         class="btn-primary !rounded-full !px-8 !py-3 gap-2"
                     >
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -237,7 +258,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 mt-4">
-                    <button @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
+                    <button @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist) : '' }}', duration: {{ $track->duration }}, previewSeconds: {{ $previewSec }}, canPlay: false, price: {{ $sellPrice ?? 0 }}, discountPrice: {{ $sellDiscount ?? 'null' }}, purchaseUrl: '{{ $buyUrl }}' })"
                         class="btn-primary gap-2 !py-2 !px-5">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         پخش پیش‌نمایش

@@ -26,7 +26,7 @@ class PlaylistResource extends Resource
             \Filament\Schemas\Components\Section::make('اطلاعات پلی‌لیست')->schema([
                 Forms\Components\TextInput::make('title')
                     ->label('عنوان')->required()->maxLength(255)
-                    ->unique(ignoreRecord: true, validationMessages: ['unique' => 'پلی‌لیستی با این نام قبلاً ثبت شده است.']),
+                    ->unique(ignoreRecord: true),
                 Forms\Components\Textarea::make('description')
                     ->label('توضیحات')->rows(3),
                 Forms\Components\FileUpload::make('cover_image')
@@ -98,6 +98,11 @@ class PlaylistResource extends Resource
                 Tables\Columns\TextColumn::make('tracks_count')->label('آهنگ')
                     ->counts('tracks')->numeric()->sortable(),
                 Tables\Columns\BadgeColumn::make('visibility')->label('دسترسی')
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'public' => 'عمومی',
+                        'private' => 'خصوصی',
+                        default => $state,
+                    })
                     ->colors(['success' => 'public', 'gray' => 'private']),
                 Tables\Columns\IconColumn::make('is_featured')->label('ویژه ادمین')->boolean(),
                 Tables\Columns\TextColumn::make('created_at')->label('تاریخ')->date('Y/m/d')->sortable(),

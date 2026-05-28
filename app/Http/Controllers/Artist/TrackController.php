@@ -34,11 +34,11 @@ class TrackController extends Controller
         $sub = $artist->activeSubscription;
         if (!$sub) return;
         if ($sub->plan->isUnlimitedStorage()) return;
-        abort_unless(
-            ($sub->storage_used_mb + $fileSizeMb) <= $sub->plan->max_storage_mb,
-            403,
-            'فضای ذخیره‌سازی پلن شما کافی نیست. فضای مانده: ' . ($sub->plan->max_storage_mb - $sub->storage_used_mb) . ' MB'
-        );
+        
+        if (($sub->storage_used_mb + $fileSizeMb) > $sub->plan->max_storage_mb) {
+            $remaining = max(0, $sub->plan->max_storage_mb - $sub->storage_used_mb);
+            abort(403, "فضای ذخیره‌سازی پلن شما کافی نیست. فضای باقی‌مانده: {$remaining} مگابایت");
+        }
     }
 
     private function incrementSubscriptionUsage($artist, int $fileSizeMb): void
@@ -83,16 +83,23 @@ class TrackController extends Controller
             'cover_image'     => 'nullable|image|max:5120',
             'album_id'        => 'nullable|exists:albums,id',
             'genre_id'        => 'nullable|exists:genres,id',
-            'track_number'    => 'nullable|integer|min:1',
             'release_date'    => 'nullable|string',
             'lyrics'          => 'nullable|string',
             'is_explicit'     => 'nullable|boolean',
-            'is_downloadable' => 'nullable|boolean',
             'is_for_sale'     => 'nullable|boolean',
             'price'           => 'nullable|integer|min:0',
             'discount_price'  => 'nullable|integer|min:0',
             'preview_seconds' => 'nullable|integer|min:0|max:300',
-            'status'          => 'required|in:draft,published',
+        ], [
+            'file_320.required' => 'فایل صوتی کیفیت بالا الزامی است.',
+            'file_320.file' => 'فایل آپلود شده معتبر نیست.',
+            'file_320.mimes' => 'فرمت فایل باید یکی از موارد زیر باشد: MP3، MP4، OGG، FLAC، WAV یا M4A.',
+            'file_320.max' => 'حجم فایل صوتی نباید بیشتر از ۱۰۰ مگابایت باشد.',
+            'file_128.file' => 'فایل آپلود شده معتبر نیست.',
+            'file_128.mimes' => 'فرمت فایل باید یکی از موارد زیر باشد: MP3، MP4، OGG، FLAC، WAV یا M4A.',
+            'file_128.max' => 'حجم فایل صوتی نباید بیشتر از ۵۰ مگابایت باشد.',
+            'cover_image.image' => 'فایل کاور باید تصویر باشد.',
+            'cover_image.max' => 'حجم تصویر کاور نباید بیشتر از ۵ مگابایت باشد.',
         ]);
 
         $releaseDate = $request->release_date
@@ -128,6 +135,10 @@ class TrackController extends Controller
             $albumId = $album?->id;
         }
 
+        $autoApproveValue = \App\Models\Setting::get('auto_approve_content', true);
+        $autoApprove = $autoApproveValue === true || $autoApproveValue === 1 || $autoApproveValue === '1' || $autoApproveValue === 'true';
+        $status = $autoApprove ? 'published' : 'pending';
+
         $track = Track::create([
             'artist_id'       => $artist->id,
             'album_id'        => $albumId,
@@ -140,21 +151,24 @@ class TrackController extends Controller
             'file_path'       => $path320,
             'cover_image'     => $coverPath,
             'duration'        => $duration,
-            'track_number'    => $request->track_number,
             'lyrics'          => $request->lyrics,
             'is_explicit'     => $request->boolean('is_explicit'),
-            'is_downloadable' => $request->boolean('is_downloadable'),
+            'is_downloadable' => \App\Models\Setting::get('allow_download_free', true) || \App\Models\Setting::get('allow_download_premium', true),
             'is_for_sale'     => $request->boolean('is_for_sale'),
             'price'           => $request->is_for_sale ? $request->price : null,
             'discount_price'  => $request->is_for_sale ? $request->discount_price : null,
             'preview_seconds' => $request->preview_seconds,
-            'status'          => $request->status,
-            'published_at'    => $request->status === 'published' ? now() : null,
+            'status'          => $status,
+            'published_at'    => $status === 'published' ? now() : null,
         ]);
 
         $this->incrementSubscriptionUsage($artist, $file320SizeMb);
 
-        return redirect()->route('artist.tracks')->with('success', 'آهنگ «' . $track->title . '» با موفقیت آپلود شد.');
+        $msg = $status === 'pending' 
+            ? 'آهنگ «' . $track->title . '» با موفقیت آپلود شد و پس از تایید مدیر منتشر می‌شود.'
+            : 'آهنگ «' . $track->title . '» با موفقیت آپلود و منتشر شد.';
+
+        return redirect()->route('artist.tracks')->with('success', $msg);
     }
 
     public function edit(Track $track): View
@@ -178,21 +192,36 @@ class TrackController extends Controller
             'cover_image'     => 'nullable|image|max:5120',
             'album_id'        => 'nullable|exists:albums,id',
             'genre_id'        => 'nullable|exists:genres,id',
-            'track_number'    => 'nullable|integer|min:1',
             'release_date'    => 'nullable|string',
             'lyrics'          => 'nullable|string',
             'is_explicit'     => 'nullable|boolean',
-            'is_downloadable' => 'nullable|boolean',
             'is_for_sale'     => 'nullable|boolean',
             'price'           => 'nullable|integer|min:0',
             'discount_price'  => 'nullable|integer|min:0',
             'preview_seconds' => 'nullable|integer|min:0|max:300',
-            'status'          => 'required|in:draft,published',
+        ], [
+            'file_320.file' => 'فایل آپلود شده معتبر نیست.',
+            'file_320.mimes' => 'فرمت فایل باید یکی از موارد زیر باشد: MP3، MP4، OGG، FLAC، WAV یا M4A.',
+            'file_320.max' => 'حجم فایل صوتی نباید بیشتر از ۱۰۰ مگابایت باشد.',
+            'file_128.file' => 'فایل آپلود شده معتبر نیست.',
+            'file_128.mimes' => 'فرمت فایل باید یکی از موارد زیر باشد: MP3، MP4، OGG، FLAC، WAV یا M4A.',
+            'file_128.max' => 'حجم فایل صوتی نباید بیشتر از ۵۰ مگابایت باشد.',
+            'cover_image.image' => 'فایل کاور باید تصویر باشد.',
+            'cover_image.max' => 'حجم تصویر کاور نباید بیشتر از ۵ مگابایت باشد.',
         ]);
 
         $releaseDate = $request->release_date
             ? Jalali::toGregorianString($request->release_date)
             : null;
+
+        $autoApproveValue = \App\Models\Setting::get('auto_approve_content', true);
+        $autoApprove = $autoApproveValue === true || $autoApproveValue === 1 || $autoApproveValue === '1' || $autoApproveValue === 'true';
+        // Only change status to pending if track is not already published
+        if (!$autoApprove && $track->status !== 'published') {
+            $status = 'pending';
+        } else {
+            $status = $track->status;
+        }
 
         $data = [
             'title'           => $request->title,
@@ -200,17 +229,15 @@ class TrackController extends Controller
             'genre_id'        => $request->genre_id,
             'release_date'    => $releaseDate,
             'lyrics'          => $request->lyrics,
-            'track_number'    => $request->track_number,
             'is_explicit'     => $request->boolean('is_explicit'),
-            'is_downloadable' => $request->boolean('is_downloadable'),
             'is_for_sale'     => $request->boolean('is_for_sale'),
             'price'           => $request->is_for_sale ? $request->price : null,
             'discount_price'  => $request->is_for_sale ? $request->discount_price : null,
             'preview_seconds' => $request->preview_seconds,
-            'status'          => $request->status,
+            'status'          => $status,
         ];
 
-        if ($request->status === 'published' && $track->status !== 'published') {
+        if ($status === 'published' && $track->status !== 'published') {
             $data['published_at'] = now();
         }
 

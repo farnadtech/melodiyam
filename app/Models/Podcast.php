@@ -15,7 +15,7 @@ class Podcast extends Model
     use HasFactory, SoftDeletes, HasSlug;
 
     protected $fillable = [
-        'user_id', 'title', 'slug', 'description', 'cover_image',
+        'user_id', 'artist_id', 'title', 'slug', 'description', 'cover_image',
         'category', 'language', 'status', 'is_explicit', 'is_featured',
         'subscribers_count',
     ];
@@ -44,6 +44,11 @@ class Podcast extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function artist(): BelongsTo
+    {
+        return $this->belongsTo(Artist::class);
     }
 
     public function episodes(): HasMany

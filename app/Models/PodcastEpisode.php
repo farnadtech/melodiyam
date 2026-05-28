@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class PodcastEpisode extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasSlug;
 
     protected $fillable = [
         'podcast_id', 'title', 'slug', 'description', 'show_notes',
@@ -17,6 +19,18 @@ class PodcastEpisode extends Model
         'season_number', 'episode_number', 'status', 'published_at',
         'is_explicit', 'is_premium_only', 'play_count', 'like_count',
     ];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('title')
+            ->saveSlugsTo('slug');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     protected function casts(): array
     {
@@ -45,6 +59,11 @@ class PodcastEpisode extends Model
         return $this->morphMany(Comment::class, 'commentable');
     }
 
+    public function earnings(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ArtistEarning::class, 'playable');
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
@@ -57,11 +76,44 @@ class PodcastEpisode extends Model
 
     public function formattedDuration(): string
     {
+        if (!$this->duration || $this->duration <= 0) {
+            return '--:--';
+        }
         $hours = floor($this->duration / 3600);
         $minutes = floor(($this->duration % 3600) / 60);
         $seconds = $this->duration % 60;
         return $hours > 0
             ? sprintf('%d:%02d:%02d', $hours, $minutes, $seconds)
             : sprintf('%d:%02d', $minutes, $seconds);
+    }
+
+    public function getStreamUrl(): ?string
+    {
+        if ($this->file_url) {
+            return $this->file_url;
+        }
+        if ($this->file_path) {
+            return route('podcast.episode.stream', $this);
+        }
+        return null;
+    }
+
+    public function getEffectiveStreamPath(): ?string
+    {
+        if ($this->file_path && file_exists(storage_path('app/public/' . $this->file_path))) {
+            return storage_path('app/public/' . $this->file_path);
+        }
+        return null;
+    }
+
+    public function getCoverUrl(): string
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        if ($this->podcast?->cover_image) {
+            return asset('storage/' . $this->podcast->cover_image);
+        }
+        return asset('images/default-cover.png');
     }
 }

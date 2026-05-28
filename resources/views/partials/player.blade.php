@@ -164,8 +164,14 @@
                     >
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate" x-text="$store.player.currentTrack?.title || ''"></p>
-                    <p class="text-xs text-surface-500 dark:text-surface-400 truncate" x-text="$store.player.currentTrack?.artist || ''"></p>
+                    <span class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate block hover:text-primary-500 transition-colors cursor-pointer"
+                       x-text="$store.player.currentTrack?.title || ''"
+                       @click.stop="let u=$store.player.currentTrack?.cover_page; if(u){ Livewire.navigate(u); }"
+                    ></span>
+                    <span class="text-xs text-surface-500 dark:text-surface-400 truncate block hover:text-primary-400 transition-colors cursor-pointer"
+                       x-text="$store.player.currentTrack?.artist || ''"
+                       @click.stop="let u=$store.player.currentTrack?.artist_url; if(u){ Livewire.navigate(u); }"
+                    ></span>
                 </div>
                 {{-- Like button --}}
                 <button
@@ -312,8 +318,14 @@
                     <img x-bind:src="$store.player.currentTrack?.cover || '/images/default-cover.png'" class="w-full h-full object-cover" alt="">
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="$store.player.currentTrack?.title"></p>
-                    <p class="text-xs text-surface-400 truncate" x-text="$store.player.currentTrack?.artist"></p>
+                    <span class="text-sm font-medium text-surface-900 dark:text-white truncate block hover:text-primary-500 transition-colors cursor-pointer"
+                       x-text="$store.player.currentTrack?.title"
+                       @click.stop="let u=$store.player.currentTrack?.cover_page; if(u){ Livewire.navigate(u); }"
+                    ></span>
+                    <span class="text-xs text-surface-400 truncate block hover:text-primary-400 transition-colors cursor-pointer"
+                       x-text="$store.player.currentTrack?.artist"
+                       @click.stop="let u=$store.player.currentTrack?.artist_url; if(u){ Livewire.navigate(u); }"
+                    ></span>
                 </div>
                 {{-- Shuffle --}}
                 <button @click="$store.player.toggleShuffle()" class="p-1.5">

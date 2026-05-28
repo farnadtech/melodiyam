@@ -59,7 +59,14 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('phone')->label('موبایل')->searchable(),
                 Tables\Columns\TextColumn::make('email')->label('ایمیل')->searchable(),
                 Tables\Columns\BadgeColumn::make('type')->label('نوع')
-                    ->colors(['primary' => 'listener', 'success' => 'artist', 'danger' => 'admin', 'warning' => 'moderator']),
+                    ->colors(['primary' => 'listener', 'success' => 'artist', 'danger' => 'admin', 'warning' => 'moderator'])
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'listener' => 'شنونده',
+                        'artist' => 'هنرمند',
+                        'admin' => 'مدیر',
+                        'moderator' => 'ناظر',
+                        default => $state,
+                    }),
                 Tables\Columns\IconColumn::make('is_active')->label('فعال')->boolean(),
                 Tables\Columns\IconColumn::make('is_premium')->label('پریمیوم')->boolean(),
                 Tables\Columns\TextColumn::make('created_at')->label('تاریخ ثبت')->dateTime('Y/m/d')->sortable(),

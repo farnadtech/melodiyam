@@ -21,6 +21,16 @@ class AlbumResource extends Resource
     protected static ?string $pluralModelLabel = 'آلبوم‌ها';
     protected static ?int $navigationSort = 2;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('status', 'pending')->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::where('status', 'pending')->count() > 0 ? 'warning' : null;
+    }
+
     public static function form(Schema $form): Schema
     {
         return $form->schema([
@@ -38,7 +48,12 @@ class AlbumResource extends Resource
             ])->columns(2),
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
                 Forms\Components\Select::make('status')->label('وضعیت')
-                    ->options(['draft' => 'پیش‌نویس', 'published' => 'منتشر', 'archived' => 'بایگانی'])->required(),
+                    ->options([
+                        'draft' => 'پیش‌نویس',
+                        'pending' => 'در انتظار تایید',
+                        'published' => 'منتشر',
+                        'archived' => 'بایگانی'
+                    ])->required(),
                 Forms\Components\Toggle::make('is_explicit')->label('نامناسب'),
                 Forms\Components\Toggle::make('is_featured')->label('ویژه'),
             ])->columns(3),
@@ -74,9 +89,28 @@ class AlbumResource extends Resource
                 Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular()->disk('public'),
                 Tables\Columns\TextColumn::make('title')->label('عنوان')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('artist.display_name')->label('هنرمند')->searchable(),
-                Tables\Columns\BadgeColumn::make('type')->label('نوع'),
+                Tables\Columns\BadgeColumn::make('type')->label('نوع')
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'album' => 'آلبوم',
+                        'single' => 'سینگل',
+                        'ep' => 'EP',
+                        'compilation' => 'کامپایل',
+                        default => $state,
+                    }),
                 Tables\Columns\BadgeColumn::make('status')->label('وضعیت')
-                    ->colors(['gray' => 'draft', 'success' => 'published', 'danger' => 'archived']),
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'draft' => 'پیش‌نویس',
+                        'pending' => 'در انتظار تایید',
+                        'published' => 'منتشر',
+                        'archived' => 'بایگانی',
+                        default => $state,
+                    })
+                    ->colors([
+                        'gray' => 'draft',
+                        'warning' => 'pending',
+                        'success' => 'published',
+                        'danger' => 'archived'
+                    ]),
                 Tables\Columns\TextColumn::make('play_count')->label('پخش')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('release_date')->label('ریلیز')
                     ->formatStateUsing(fn ($state) => $state ? Jalali::format($state, 'Y/m/d') : '-')

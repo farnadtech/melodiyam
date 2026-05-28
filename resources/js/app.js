@@ -33,7 +33,11 @@ function registerAlpineStuff(Alpine) {
                     this.audio.pause();
                     this.isPlaying = false;
                     this.previewLimitReached = true;
-                    this.showPurchaseModal(t);
+                    if (t.isPremium) {
+                        this.showPremiumModal(t);
+                    } else {
+                        this.showPurchaseModal(t);
+                    }
                 }
             });
 
@@ -54,11 +58,6 @@ function registerAlpineStuff(Alpine) {
                 this.recordStream(false);
             });
 
-            // Record stream when Livewire navigates (SPA navigation)
-            document.addEventListener('livewire:navigating', () => {
-                this.recordStream(false);
-            });
-
             // Periodic recording every 30 seconds for long sessions
             setInterval(() => {
                 if (this.isPlaying && this.currentTrack) {
@@ -75,6 +74,12 @@ function registerAlpineStuff(Alpine) {
             }
 
             if (track) {
+                // If premium-only with no preview, show upgrade modal immediately
+                if (track.isPremium && !(track.previewSeconds > 0)) {
+                    this.showPremiumModal(track);
+                    return;
+                }
+
                 const prevId = this.currentTrack?.id;
                 const isTrackChange = prevId && prevId !== track.id;
 
@@ -98,10 +103,10 @@ function registerAlpineStuff(Alpine) {
         },
 
         showPurchaseModal(track) {
-            // Remove any existing modal
             const old = document.getElementById('preview-purchase-modal');
             if (old) old.remove();
 
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--admin-primary').trim() || '#0ea5e9';
             const hasDiscount = track.discountPrice && track.discountPrice !== track.price;
             const price = hasDiscount ? track.discountPrice : track.price;
             const originalPrice = hasDiscount ? track.price : null;
@@ -112,20 +117,47 @@ function registerAlpineStuff(Alpine) {
             modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);direction:rtl;';
             modal.innerHTML = `
                 <div style="background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);">
-                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(99,102,241,.15);border:2px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                        <svg width="28" height="28" fill="none" stroke="#818cf8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <div style="width:64px;height:64px;border-radius:50%;background:${primary}26;border:2px solid ${primary}55;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <svg width="28" height="28" fill="none" stroke="${primary}" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     </div>
                     <h3 style="color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;">پیش‌نمایش به پایان رسید</h3>
                     <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">برای شنیدن کامل «${track.title}» آهنگ را خریداری کنید</p>
                     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px;">
                         ${originalPrice ? `<span style="color:#64748b;text-decoration:line-through;font-size:13px;">${originalPrice.toLocaleString()}</span>` : ''}
-                        <span style="color:#818cf8;font-size:22px;font-weight:800;">${price.toLocaleString()} ت</span>
+                        <span style="color:${primary};font-size:22px;font-weight:800;">${price.toLocaleString()} ت</span>
                     </div>
                     <div style="display:flex;gap:10px;justify-content:center;">
                         <button onclick="document.getElementById('preview-purchase-modal').remove()" style="padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;">بستن</button>
-                        <a href="${purchaseUrl}" style="padding:10px 24px;border-radius:10px;background:#6366f1;color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                        <a href="${purchaseUrl}" style="padding:10px 24px;border-radius:10px;background:${primary};color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             خرید آهنگ
+                        </a>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+        },
+
+        showPremiumModal(track) {
+            const old = document.getElementById('preview-premium-modal');
+            if (old) old.remove();
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--admin-primary').trim() || '#0ea5e9';
+            const purchaseUrl = track.purchaseUrl || '/premium';
+            const modal = document.createElement('div');
+            modal.id = 'preview-premium-modal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);direction:rtl;';
+            modal.innerHTML = `
+                <div style="background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid ${primary}44;">
+                    <div style="width:64px;height:64px;border-radius:50%;background:${primary}26;border:2px solid ${primary}66;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <svg width="28" height="28" fill="${primary}" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </div>
+                    <h3 style="color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;">پیش‌نمایش به پایان رسید</h3>
+                    <p style="color:#94a3b8;font-size:13px;margin-bottom:24px;">برای شنیدن کامل «${track.title}» اشتراک پریمیوم تهیه کنید</p>
+                    <div style="display:flex;gap:10px;justify-content:center;">
+                        <button onclick="document.getElementById('preview-premium-modal').remove()" style="padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;">بستن</button>
+                        <a href="${purchaseUrl}" style="padding:10px 24px;border-radius:10px;background:${primary};color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            ارتقا به پریمیوم
                         </a>
                     </div>
                 </div>`;
@@ -209,13 +241,8 @@ function registerAlpineStuff(Alpine) {
                 this.queueIndex = (this.queueIndex + 1) % this.queue.length;
             }
             const track = this.queue[this.queueIndex];
-            // If ad is playing, increment track_count and set pending track
+            // If ad is playing, set pending track
             if (window._adCurrentlyPlaying) {
-                const adComponent = document.querySelector('[x-data*="adPlaying"]')?.__x;
-                if (adComponent) {
-                    const count = adComponent.getTrackCount() + 1;
-                    adComponent.setTrackCount(count);
-                }
                 window._adPendingTrack = track;
                 return;
             }
@@ -231,13 +258,8 @@ function registerAlpineStuff(Alpine) {
             if (this.queue.length === 0) return;
             this.queueIndex = (this.queueIndex - 1 + this.queue.length) % this.queue.length;
             const track = this.queue[this.queueIndex];
-            // If ad is playing, increment track_count and set pending track
+            // If ad is playing, set pending track
             if (window._adCurrentlyPlaying) {
-                const adComponent = document.querySelector('[x-data*="adPlaying"]')?.__x;
-                if (adComponent) {
-                    const count = adComponent.getTrackCount() + 1;
-                    adComponent.setTrackCount(count);
-                }
                 window._adPendingTrack = track;
                 return;
             }
@@ -319,6 +341,10 @@ function registerAlpineStuff(Alpine) {
             localStorage.setItem('theme_dark', this.dark);
             document.documentElement.classList.toggle('dark', this.dark);
         }
+    });
+    // ── Global Events ──
+    window.addEventListener('play-track', (e) => {
+        Alpine.store('player').play(e.detail);
     });
 }
 

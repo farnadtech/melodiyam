@@ -115,14 +115,25 @@
             </div>
         </a>
 
+        <a href="{{ route('artist.podcasts.create') }}" wire:navigate
+           class="glass-card rounded-2xl p-5 flex items-center gap-4 hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-700 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/50 transition-colors">
+                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+            </div>
+            <div>
+                <p class="font-semibold text-surface-900 dark:text-white">پادکست جدید</p>
+                <p class="text-xs text-surface-500 mt-0.5">یک پادکست بسازید</p>
+            </div>
+        </a>
+
         <a href="{{ route('artist.analytics') }}" wire:navigate
-           class="glass-card rounded-2xl p-5 flex items-center gap-4 hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-700 transition-all group">
-            <div class="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50 transition-colors">
-                <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+           class="glass-card rounded-2xl p-5 flex items-center gap-4 hover:ring-2 hover:ring-emerald-300 dark:hover:ring-emerald-700 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
+                <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
             <div>
                 <p class="font-semibold text-surface-900 dark:text-white">آمار و درآمد</p>
-                <p class="text-xs text-surface-500 mt-0.5">مشاهده فروش و پخش</p>
+                <p class="text-xs text-surface-500 mt-0.5">مشاهده فروش، پخش و درآمد</p>
             </div>
         </a>
     </div>
@@ -153,6 +164,20 @@
             <a href="{{ route('artist.albums') }}" wire:navigate
                class="mt-4 flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400 hover:text-primary-500 transition-colors">
                 <span>مدیریت آلبوم‌ها</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold text-surface-900 dark:text-white">پادکست‌های من</h2>
+                <a href="{{ route('artist.podcasts.index') }}" wire:navigate class="text-xs text-primary-500 hover:underline">مشاهده همه</a>
+            </div>
+            <p class="text-3xl font-bold text-surface-900 dark:text-white">{{ $artist->podcasts()->count() }}</p>
+            <p class="text-xs text-surface-500 mt-1">پادکست ایجاد شده</p>
+            <a href="{{ route('artist.podcasts.index') }}" wire:navigate
+               class="mt-4 flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400 hover:text-primary-500 transition-colors">
+                <span>مدیریت پادکست‌ها</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>

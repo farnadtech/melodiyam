@@ -81,7 +81,7 @@
                     <span class="text-xs text-surface-400">{{ number_format($track->play_count) }} پخش</span>
                     <span class="text-xs text-surface-400">{{ $track->formattedDuration() }}</span>
                     <button
-                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($artist->display_name) }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }} })"
+                        @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($artist->display_name) }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track->slug ?? $track->id) }}', artist_url: '{{ route('artist.show', $artist->slug) }}', duration: {{ $track->duration }} })"
                         class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center transition-opacity"
                     >
                         <svg class="w-3.5 h-3.5 text-white mr-[-1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>

@@ -24,7 +24,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">عنوان آهنگ <span class="text-rose-500">*</span></label>
-                <input type="text" name="title" value="{{ old('title') }}" required
+                <input type="text" name="title" required
                        class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
 
@@ -34,7 +34,7 @@
                     <select name="album_id" class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="">بدون آلبوم</option>
                         @foreach($albums as $album)
-                        <option value="{{ $album->id }}" @selected(old('album_id') == $album->id)>{{ $album->title }}</option>
+                        <option value="{{ $album->id }}">{{ $album->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -43,28 +43,13 @@
                     <select name="genre_id" class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="">انتخاب ژانر</option>
                         @foreach($genres as $genre)
-                        <option value="{{ $genre->id }}" @selected(old('genre_id') == $genre->id)>{{ $genre->name_fa ?: $genre->name }}</option>
+                        <option value="{{ $genre->id }}">{{ $genre->name_fa ?: $genre->name }}</option>
                         @endforeach
                     </select>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">شماره ترک</label>
-                    <input type="number" name="track_number" value="{{ old('track_number') }}" min="1"
-                           class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                </div>
-                <x-jalali-date-input name="release_date" label="تاریخ انتشار (شمسی)" />
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">وضعیت <span class="text-rose-500">*</span></label>
-                <select name="status" required class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="draft" @selected(old('status','draft')==='draft')>پیش‌نویس</option>
-                    <option value="published" @selected(old('status')==='published')>منتشرشده</option>
-                </select>
-            </div>
+            <x-jalali-date-input name="release_date" label="تاریخ انتشار (شمسی)" />
         </div>
 
         <div class="glass-card rounded-2xl p-6 space-y-5">
@@ -92,11 +77,11 @@
             </div>
         </div>
 
-        <div class="glass-card rounded-2xl p-6 space-y-5" x-data="{ forSale: {{ old('is_for_sale') ? 'true' : 'false' }} }">
+        <div class="glass-card rounded-2xl p-6 space-y-5" x-data="{ forSale: false }">
             <h2 class="font-semibold text-surface-900 dark:text-white border-b border-surface-200 dark:border-surface-700 pb-3">قیمت‌گذاری</h2>
 
             <div class="flex items-center gap-3">
-                <input type="checkbox" name="is_for_sale" id="is_for_sale" value="1" x-model="forSale" @change="forSale = $event.target.checked" {{ old('is_for_sale') ? 'checked' : '' }}
+                <input type="checkbox" name="is_for_sale" id="is_for_sale" value="1" x-model="forSale" @change="forSale = $event.target.checked"
                        class="w-4 h-4 rounded accent-primary-500">
                 <label for="is_for_sale" class="text-sm font-medium text-surface-700 dark:text-surface-300 cursor-pointer">این آهنگ قابل فروش است</label>
             </div>
@@ -104,29 +89,25 @@
             <div x-show="forSale" x-cloak class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">قیمت (تومان)</label>
-                    <input type="number" name="price" value="{{ old('price') }}" min="0"
+                    <input type="number" name="price" min="0"
                            class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">قیمت با تخفیف (تومان)</label>
-                    <input type="number" name="discount_price" value="{{ old('discount_price') }}" min="0"
+                    <input type="number" name="discount_price" min="0"
                            class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">ثانیه‌های پیش‌نمایش</label>
-                    <input type="number" name="preview_seconds" value="{{ old('preview_seconds', 30) }}" min="0" max="300"
+                    <input type="number" name="preview_seconds" value="30" min="0" max="300"
                            class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 
             <div class="flex items-center gap-6">
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="is_explicit" value="1" {{ old('is_explicit') ? 'checked' : '' }} class="w-4 h-4 rounded accent-primary-500">
+                    <input type="checkbox" name="is_explicit" value="1" class="w-4 h-4 rounded accent-primary-500">
                     <span class="text-sm text-surface-700 dark:text-surface-300">محتوای بزرگسال (Explicit)</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="is_downloadable" value="1" {{ old('is_downloadable', true) ? 'checked' : '' }} class="w-4 h-4 rounded accent-primary-500">
-                    <span class="text-sm text-surface-700 dark:text-surface-300">قابل دانلود</span>
                 </label>
             </div>
         </div>
@@ -134,7 +115,7 @@
         <div class="glass-card rounded-2xl p-6 space-y-4">
             <h2 class="font-semibold text-surface-900 dark:text-white border-b border-surface-200 dark:border-surface-700 pb-3">متن آهنگ (اختیاری)</h2>
             <textarea name="lyrics" rows="8" placeholder="متن آهنگ را اینجا بنویسید..."
-                      class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y">{{ old('lyrics') }}</textarea>
+                      class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"></textarea>
         </div>
 
         <div class="flex items-center gap-3">

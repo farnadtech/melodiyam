@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\EarningsSetting;
 use App\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
@@ -36,6 +37,15 @@ class Settings extends Page implements HasForms
     public function mount(): void
     {
         $settings = Setting::pluck('value', 'key')->toArray();
+        
+        // Add earnings settings from separate table
+        $earningsSettings = EarningsSetting::getSettings();
+        $settings['earnings_enabled'] = $earningsSettings->is_enabled;
+        $settings['earnings_plays_threshold'] = $earningsSettings->plays_threshold;
+        $settings['earnings_amount_toman'] = $earningsSettings->earning_amount_toman;
+        $settings['earnings_min_payout'] = $earningsSettings->min_payout_toman;
+        $settings['earnings_payout_description'] = $earningsSettings->payout_description;
+        
         $this->form->fill($settings);
     }
 
@@ -72,6 +82,16 @@ class Settings extends Page implements HasForms
 
                     // ── Tab 2: Auth & Registration ──
                     Tab::make('👤 ثبت‌نام و احراز هویت')->schema([
+                        Section::make('روش احراز هویت')->schema([
+                            Select::make('auth_type')
+                                ->label('روش ورود و ثبت‌نام')
+                                ->options([
+                                    'password' => 'رمز عبور + ایمیل/موبایل',
+                                    'otp' => 'کد OTP + موبایل',
+                                ])
+                                ->default('password')
+                                ->helperText('انتخاب روش احراز هویت برای کاربران'),
+                        ])->columns(1),
                         Section::make('تنظیمات ثبت‌نام')->schema([
                             Toggle::make('allow_registration')->label('ثبت‌نام آزاد'),
                             Toggle::make('email_verification')->label('تأیید ایمیل اجباری'),
@@ -94,8 +114,16 @@ class Settings extends Page implements HasForms
                             TextInput::make('free_stream_limit')->label('سقف پخش رایگان (۰ = نامحدود)')->numeric(),
                             Toggle::make('allow_download_free')->label('دانلود برای کاربران رایگان'),
                             Toggle::make('allow_download_premium')->label('دانلود برای کاربران پریمیوم'),
+                            TextInput::make('premium_preview_seconds')
+                                ->label('پیش‌نمایش محتوای پریمیوم (ثانیه)')
+                                ->numeric()->default(30)->minValue(0)->suffix('ثانیه')
+                                ->helperText('مدت پیش‌نمایش رایگان برای آهنگ‌ها و قسمت‌های پادکست پریمیوم. ۰ = بدون پیش‌نمایش'),
                         ])->columns(3),
                         Section::make('آپلود و صفحه اصلی')->schema([
+                            Toggle::make('auto_approve_content')
+                                ->label('تأیید خودکار محتوا')
+                                ->helperText('در صورت غیرفعال بودن، آهنگ‌ها، آلبوم‌ها و پادکست‌های هنرمندان باید توسط مدیر تایید شوند.')
+                                ->default(false),
                             TextInput::make('max_upload_size_mb')->label('حداکثر حجم آپلود (MB)')->numeric(),
                             TextInput::make('featured_tracks_count')->label('تعداد آهنگ‌های ویژه')->numeric(),
                             TextInput::make('home_new_releases')->label('تعداد جدیدترین‌ها در خانه')->numeric(),
@@ -383,6 +411,36 @@ class Settings extends Page implements HasForms
                         ])->columns(2),
                     ]),
 
+                    // ── Tab 11: Artist Earnings ──
+                    Tab::make('💰 درآمد هنرمندان')->schema([
+                        Section::make('فعال‌سازی سیستم درآمدزایی')->schema([
+                            Toggle::make('earnings_enabled')
+                                ->label('سیستم درآمدزایی فعال باشد')
+                                ->helperText('با فعال کردن این گزینه، هنرمندان به ازای پخش آهنگ‌ها و پادکست‌هایشان درآمد کسب می‌کنند'),
+                        ])->columns(1),
+                        Section::make('تنظیمات پرداخت')->schema([
+                            TextInput::make('earnings_plays_threshold')
+                                ->label('تعداد پخش برای کسب درآمد (n)')
+                                ->numeric()->default(100)
+                                ->suffix('پخش')
+                                ->helperText('به ازای هر n پخش، مبلغ x تومان به حساب هنرمند واریز می‌شود'),
+                            TextInput::make('earnings_amount_toman')
+                                ->label('مبلغ درآمد به ازای n پخش (x)')
+                                ->numeric()->default(500)
+                                ->suffix('تومان'),
+                            TextInput::make('earnings_min_payout')
+                                ->label('حداقل درخواست برداشت')
+                                ->numeric()->default(50000)
+                                ->suffix('تومان'),
+                        ])->columns(3),
+                        Section::make('توضیحات پرداخت')->schema([
+                            Textarea::make('earnings_payout_description')
+                                ->label('توضیحات نحوه پرداخت به هنرمندان')
+                                ->rows(3)
+                                ->placeholder('مثلاً: پرداخت‌ها هر ماه ۱۵ ام شمسی انجام می‌شود...'),
+                        ]),
+                    ]),
+
                 ]),
             ]);
     }
@@ -391,6 +449,28 @@ class Settings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
+        // Save earnings settings separately
+        $earningsKeys = ['earnings_enabled', 'earnings_plays_threshold', 'earnings_amount_toman', 'earnings_min_payout', 'earnings_payout_description'];
+        $earningsData = [];
+        foreach ($earningsKeys as $key) {
+            if (isset($data[$key])) {
+                $earningsData[str_replace('earnings_', '', $key)] = $data[$key];
+                unset($data[$key]);
+            }
+        }
+        
+        if (!empty($earningsData)) {
+            $earningsSettings = EarningsSetting::getSettings();
+            $earningsSettings->update([
+                'is_enabled' => $earningsData['enabled'] ?? false,
+                'plays_threshold' => $earningsData['plays_threshold'] ?? 100,
+                'earning_amount_toman' => $earningsData['amount_toman'] ?? 500,
+                'min_payout_toman' => $earningsData['min_payout'] ?? 50000,
+                'payout_description' => $earningsData['payout_description'] ?? null,
+            ]);
+        }
+
+        // Save other settings
         foreach ($data as $key => $value) {
             Setting::set($key, is_bool($value) ? ($value ? '1' : '0') : $value);
         }

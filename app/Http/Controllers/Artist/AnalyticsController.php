@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Artist;
 
 use App\Helpers\Jalali;
 use App\Http\Controllers\Controller;
+use App\Models\ArtistEarning;
+use App\Models\EarningsSetting;
 use App\Models\Sale;
 use App\Models\Track;
 use App\Models\WalletTransaction;
@@ -69,9 +71,33 @@ class AnalyticsController extends Controller
             ];
         }
 
+        // Stream-based earnings (ArtistEarning model)
+        $earningsSettings      = EarningsSetting::getSettings();
+        $totalStreamEarnings   = $artist->getTotalEarningsToman();
+        $monthStreamEarnings   = $artist->earnings()
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('earning_amount_toman');
+        $totalPlays            = $artist->tracks()->sum('play_count');
+        $recentStreamEarnings  = $artist->earnings()->with('playable')->latest()->take(10)->get();
+
+        // Next earning milestone for each track
+        $nextMilestone = null;
+        if ($earningsSettings->is_enabled && $earningsSettings->plays_threshold > 0) {
+            $topTrack = $artist->tracks()->orderByDesc('play_count')->first();
+            if ($topTrack) {
+                $plays = $topTrack->play_count;
+                $threshold = $earningsSettings->plays_threshold;
+                $remaining = $threshold - ($plays % $threshold);
+                if ($remaining === $threshold) $remaining = 0;
+                $nextMilestone = ['track' => $topTrack->title, 'remaining' => $remaining];
+            }
+        }
+
         return view('artist.analytics', compact(
             'artist', 'topTracks', 'totalEarnings', 'monthEarnings',
-            'recentSales', 'walletBalance', 'streamChart'
+            'recentSales', 'walletBalance', 'streamChart',
+            'earningsSettings', 'totalStreamEarnings', 'monthStreamEarnings',
+            'totalPlays', 'recentStreamEarnings', 'nextMilestone'
         ));
     }
 }

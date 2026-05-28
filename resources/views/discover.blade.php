@@ -13,33 +13,45 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @foreach($newReleases as $track)
                     @php
-                        $dIsPaid = $track->is_for_sale && $track->price;
+                        $dIsPremiumOnly = (bool) $track->is_premium_only;
+                        $dIsPremiumUser = auth()->user()?->isPremium() ?? false;
+                        $dPremiumPreview = $dIsPremiumOnly && !$dIsPremiumUser
+                            ? (int) \App\Models\Setting::get('premium_preview_seconds', 30)
+                            : 0;
+                        $dIsPaid = !$dIsPremiumOnly && $track->is_for_sale && $track->price;
                         $dPreview = $track->preview_seconds ?? 0;
-                        $dCanPlay = !$dIsPaid;
+                        $dCanPlay = !$dIsPaid && (!$dIsPremiumOnly || $dIsPremiumUser);
                         $dPurchaseUrl = route('purchase', ['type' => 'track', 'id' => $track->id]);
+                        $trackUrl = route('track.show', $track);
+                        $dArtistUrl = $track->artist ? route('artist.show', $track->artist->slug) : '';
                     @endphp
-                    <div class="glass-card rounded-2xl p-4 hover:scale-105 transition-transform group cursor-pointer"
-                        x-data
-                        x-on:click="@if($dIsPaid && $dPreview == 0)$store.player.showPurchaseModal({ title: '{{ e($track->title) }}', price: {{ $track->discount_price ?: $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $dPurchaseUrl }}' })@else$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, previewSeconds: {{ $dPreview }}, canPlay: {{ $dCanPlay ? 'true' : 'false' }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $dPurchaseUrl }}' })@endif"
-                    >
+                    <div class="glass-card rounded-2xl p-4 hover:scale-105 transition-transform group relative">
                         <div class="aspect-square rounded-xl overflow-hidden mb-3 bg-surface-200 dark:bg-surface-700 relative">
                             <img src="{{ $track->cover_image ? asset('storage/'.$track->cover_image) : asset('images/default-cover.png') }}"
                                 alt="{{ $track->title }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                @if($dIsPaid && $dPreview == 0)
-                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                @else
-                                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                @endif
-                            </div>
-                            @if($dIsPaid)
-                            <div class="absolute top-2 left-2 bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            @if($dIsPremiumOnly)
+                            <div class="absolute top-2 left-2 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10">پریمیوم</div>
+                            @elseif($dIsPaid)
+                            <div class="absolute top-2 left-2 bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10">
                                 {{ number_format($track->discount_price ?: $track->price) }} ت
                             </div>
                             @endif
+                            {{-- Play button overlay centered on cover --}}
+                            <button type="button"
+                                x-data
+                                @click.stop="@if($dIsPremiumOnly && !$dIsPremiumUser)$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ $trackUrl }}', artist_url: '{{ $dArtistUrl }}', duration: {{ $track->duration }}, previewSeconds: {{ $dPremiumPreview }}, canPlay: false, isPremium: true, purchaseUrl: '{{ route('premium') }}' })@elseif($dIsPaid && $dPreview == 0)$store.player.showPurchaseModal({ title: '{{ e($track->title) }}', price: {{ $track->discount_price ?: $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $dPurchaseUrl }}' })@else$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ $trackUrl }}', artist_url: '{{ $dArtistUrl }}', duration: {{ $track->duration }}, previewSeconds: {{ $dPreview }}, canPlay: {{ $dCanPlay ? 'true' : 'false' }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $dPurchaseUrl }}' })@endif"
+                                class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                @if($dIsPaid && $dPreview == 0)
+                                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                @else
+                                <svg class="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                @endif
+                            </button>
                         </div>
-                        <p class="font-medium text-surface-900 dark:text-white text-sm truncate">{{ $track->title }}</p>
-                        <p class="text-xs text-surface-500 truncate mt-1">{{ $track->artist->display_name ?? '' }}</p>
+                        <a href="{{ $trackUrl }}" wire:navigate class="block">
+                            <p class="font-medium text-surface-900 dark:text-white text-sm truncate hover:text-primary-500 transition-colors">{{ $track->title }}</p>
+                            <p class="text-xs text-surface-500 truncate mt-1">{{ $track->artist->display_name ?? '' }}</p>
+                        </a>
                     </div>
                 @endforeach
             </div>

@@ -116,6 +116,11 @@ class Track extends Model
         return $this->hasMany(Stream::class);
     }
 
+    public function earnings(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ArtistEarning::class, 'playable');
+    }
+
     // ── Scopes ──
 
     public function scopePublished($query)

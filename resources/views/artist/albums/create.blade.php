@@ -61,14 +61,6 @@
                        class="w-full text-sm text-surface-600 dark:text-surface-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/30 dark:file:text-primary-400">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">وضعیت</label>
-                <select name="status" required class="w-full rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="draft" @selected(old('status','draft')==='draft')>پیش‌نویس</option>
-                    <option value="published" @selected(old('status')==='published')>منتشرشده</option>
-                </select>
-            </div>
-
             <div class="flex items-center gap-3">
                 <input type="checkbox" name="is_explicit" id="al_explicit" value="1" {{ old('is_explicit') ? 'checked' : '' }} class="w-4 h-4 rounded accent-primary-500">
                 <label for="al_explicit" class="text-sm text-surface-700 dark:text-surface-300 cursor-pointer">محتوای بزرگسال (Explicit)</label>

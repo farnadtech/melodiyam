@@ -22,7 +22,15 @@
                     <button
                         @click="$store.player.playQueue([
                             @foreach($playlist->tracks as $track)
-                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ ($track->is_for_sale && $track->price) ? 'false' : 'true' }}, previewSeconds: {{ $track->preview_seconds ?? 0 }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
+                            @php
+                                $qIsPremiumOnly = (bool) $track->is_premium_only;
+                                $qIsPremiumUser = auth()->user()?->isPremium() ?? false;
+                                $qPremiumPreview = $qIsPremiumOnly && !$qIsPremiumUser ? (int) \App\Models\Setting::get('premium_preview_seconds', 30) : 0;
+                                $qIsPaid = !$qIsPremiumOnly && $track->is_for_sale && $track->price;
+                                $qCanPlay = (!$qIsPremiumOnly || $qIsPremiumUser) && !$qIsPaid;
+                                $qPreview = $qIsPremiumOnly ? $qPremiumPreview : ($track->preview_seconds ?? 0);
+                            @endphp
+                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist->slug) : '' }}', duration: {{ $track->duration }}, canPlay: {{ $qCanPlay ? 'true' : 'false' }}, previewSeconds: {{ $qPreview }}, isPremium: {{ $qIsPremiumOnly && !$qIsPremiumUser ? 'true' : 'false' }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ $qIsPremiumOnly ? route('premium') : route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
                             @endforeach
                         ], 0)"
                         class="w-12 h-12 rounded-full bg-primary-500 hover:bg-primary-400 hover:scale-105 flex items-center justify-center shadow-lg shadow-primary-500/30 transition-all"
@@ -32,7 +40,15 @@
                     <button
                         @click="let tracks = [
                             @foreach($playlist->tracks as $track)
-                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ ($track->is_for_sale && $track->price) ? 'false' : 'true' }}, previewSeconds: {{ $track->preview_seconds ?? 0 }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
+                            @php
+                                $sqIsPremiumOnly = (bool) $track->is_premium_only;
+                                $sqIsPremiumUser = auth()->user()?->isPremium() ?? false;
+                                $sqPremiumPreview = $sqIsPremiumOnly && !$sqIsPremiumUser ? (int) \App\Models\Setting::get('premium_preview_seconds', 30) : 0;
+                                $sqIsPaid = !$sqIsPremiumOnly && $track->is_for_sale && $track->price;
+                                $sqCanPlay = (!$sqIsPremiumOnly || $sqIsPremiumUser) && !$sqIsPaid;
+                                $sqPreview = $sqIsPremiumOnly ? $sqPremiumPreview : ($track->preview_seconds ?? 0);
+                            @endphp
+                            { id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist->slug) : '' }}', duration: {{ $track->duration }}, canPlay: {{ $sqCanPlay ? 'true' : 'false' }}, previewSeconds: {{ $sqPreview }}, isPremium: {{ $sqIsPremiumOnly && !$sqIsPremiumUser ? 'true' : 'false' }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ $sqIsPremiumOnly ? route('premium') : route('purchase', ['type' => 'track', 'id' => $track->id]) }}' }{{ !$loop->last ? ',' : '' }}
                             @endforeach
                         ]; let shuffled = [...tracks].sort(() => Math.random() - 0.5); $store.player.playQueue(shuffled, 0)"
                         class="w-12 h-12 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 flex items-center justify-center transition-colors"
@@ -87,18 +103,28 @@
                     <p class="text-xs text-surface-400 truncate">{{ $track->artist->display_name ?? '' }}</p>
                 </div>
                 @php
-                    $plIsPaid = $track->is_for_sale && $track->price;
+                    $plIsPremiumOnly = (bool) $track->is_premium_only;
+                    $plIsPremiumUser = auth()->user()?->isPremium() ?? false;
+                    $plPremiumPreview = $plIsPremiumOnly && !$plIsPremiumUser
+                        ? (int) \App\Models\Setting::get('premium_preview_seconds', 30)
+                        : 0;
+                    $plIsPaid = !$plIsPremiumOnly && $track->is_for_sale && $track->price;
                     $plPreview = $track->preview_seconds ?? 0;
-                    $plCanPlay = !$plIsPaid ? 'true' : 'false';
+                    $plCanPlay = (!$plIsPremiumOnly || $plIsPremiumUser) && !$plIsPaid;
+                    $plPurchaseUrl = route('purchase', ['type'=>'track','id'=>$track->id]);
+                    $plCoverPage = route('track.show', $track);
+                    $plArtistUrl = $track->artist ? route('artist.show', $track->artist->slug) : '';
                 @endphp
-                @if($plIsPaid)
+                @if($plIsPremiumOnly)
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 leading-none whitespace-nowrap">پریمیوم</span>
+                @elseif($plIsPaid)
                 <span class="text-xs font-bold text-primary-500 whitespace-nowrap">{{ number_format($track->discount_price ?: $track->price) }} ت</span>
                 @else
                 <span class="text-xs text-surface-400">{{ $track->formattedDuration() }}</span>
                 @endif
                 <button
-                    @click="@if($plIsPaid && $plPreview == 0)$store.player.showPurchaseModal({ title: '{{ e($track->title) }}', price: {{ $track->discount_price ?: $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ route('purchase', ['type'=>'track','id'=>$track->id]) }}' })@else$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', duration: {{ $track->duration }}, canPlay: {{ $plCanPlay }}, previewSeconds: {{ $plPreview }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ route('purchase', ['type'=>'track','id'=>$track->id]) }}' })@endif"
-                    class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center transition-opacity"
+                    @click="@if($plIsPremiumOnly && !$plIsPremiumUser)$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ $plCoverPage }}', artist_url: '{{ $plArtistUrl }}', duration: {{ $track->duration }}, previewSeconds: {{ $plPremiumPreview }}, canPlay: false, isPremium: true, purchaseUrl: '{{ route('premium') }}' })@elseif($plIsPaid && $plPreview == 0)$store.player.showPurchaseModal({ title: '{{ e($track->title) }}', price: {{ $track->discount_price ?: $track->price }}, discountPrice: {{ $track->discount_price ?? 'null' }}, purchaseUrl: '{{ $plPurchaseUrl }}' })@else$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ $plCoverPage }}', artist_url: '{{ $plArtistUrl }}', duration: {{ $track->duration }}, canPlay: {{ $plCanPlay ? 'true' : 'false' }}, previewSeconds: {{ $plPreview }}, price: {{ $track->discount_price ?: ($track->price ?? 0) }}, purchaseUrl: '{{ $plPurchaseUrl }}' })@endif"
+                    class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full {{ $plIsPremiumOnly && !$plIsPremiumUser ? 'bg-purple-500' : 'bg-primary-500' }} flex items-center justify-center transition-opacity"
                 >
                     <svg class="w-3.5 h-3.5 text-white mr-[-1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>

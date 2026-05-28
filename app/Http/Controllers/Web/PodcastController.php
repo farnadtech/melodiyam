@@ -11,7 +11,7 @@ class PodcastController extends Controller
     public function index(): View
     {
         $podcasts = Podcast::published()
-            ->with('user')
+            ->with('artist')
             ->orderByDesc('subscribers_count')
             ->paginate(24);
 
@@ -20,7 +20,9 @@ class PodcastController extends Controller
 
     public function show(Podcast $podcast): View
     {
-        $podcast->load(['user', 'episodes' => fn($q) => $q->published()]);
-        return view('podcast.show', compact('podcast'));
+        $podcast->load(['artist', 'episodes' => fn($q) => $q->published()->orderBy('season_number', 'desc')->orderBy('episode_number', 'desc')]);
+        $isPremiumUser = auth()->user()?->isPremium() ?? false;
+        $premiumPreviewSec = (int) \App\Models\Setting::get('premium_preview_seconds', 30);
+        return view('podcast.show', compact('podcast', 'isPremiumUser', 'premiumPreviewSec'));
     }
 }

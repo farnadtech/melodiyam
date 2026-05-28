@@ -125,9 +125,9 @@
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" class="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                 <span class="text-sm font-medium text-surface-700 dark:text-surface-300">{{ auth()->user()->name }}</span>
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xs font-bold">
-                    {{ mb_substr(auth()->user()->name, 0, 1) }}
-                </div>
+                <img src="{{ auth()->user()->avatar ? asset('storage/'.auth()->user()->avatar) : asset('images/default-avatar.png') }}" 
+                     alt="{{ auth()->user()->name }}" 
+                     class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-200 dark:ring-primary-800">
             </button>
 
             {{-- Dropdown --}}

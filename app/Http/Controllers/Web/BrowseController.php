@@ -85,13 +85,36 @@ class BrowseController extends Controller
 
     private function trackData(Track $track): array
     {
+        $user = auth()->user();
+        $isPremiumUser = $user?->isPremium() ?? false;
+        $isPremiumOnly = (bool) $track->is_premium_only;
+        $premiumPreviewSec = $isPremiumOnly && !$isPremiumUser
+            ? (int) \App\Models\Setting::get('premium_preview_seconds', 30)
+            : 0;
+        $isPaid = !$isPremiumOnly && $track->is_for_sale && $track->price;
+        $previewSec = $track->preview_seconds ?? 0;
+        $canPlay = (!$isPremiumOnly || $isPremiumUser) && !$isPaid;
+        $price = $track->discount_price ?: $track->price;
+
         return [
-            'id'         => $track->id,
-            'title'      => $track->title,
-            'artist'     => $track->artist?->name ?? $track->artist?->display_name,
-            'cover'      => $track->getCoverUrl(),
-            'url'        => $track->getStreamUrl(),
-            'cover_page' => route('track.show', $track->slug),
+            'id'               => $track->id,
+            'title'            => $track->title,
+            'artist'           => $track->artist?->display_name ?? $track->artist?->name,
+            'cover'            => $track->getCoverUrl(),
+            'url'              => $track->getStreamUrl(),
+            'cover_page'       => route('track.show', $track->slug),
+            'artist_url'       => $track->artist ? route('artist.show', $track->artist->slug) : null,
+            'duration'         => $track->duration ?? 0,
+            'isPremiumOnly'    => $isPremiumOnly,
+            'premiumPreviewSec'=> $premiumPreviewSec,
+            'isPaid'           => $isPaid,
+            'previewSeconds'   => $isPremiumOnly ? $premiumPreviewSec : $previewSec,
+            'canPlay'          => $canPlay,
+            'isPremium'        => $isPremiumOnly && !$isPremiumUser,
+            'price'            => $price,
+            'purchaseUrl'      => $isPremiumOnly
+                ? route('premium')
+                : route('purchase', ['type' => 'track', 'id' => $track->id]),
         ];
     }
 

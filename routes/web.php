@@ -54,6 +54,7 @@ Route::get('/test-login', function () {
 
 // ── Audio Ad API (used by player) ──
 Route::get('/api/audio-ad', [\App\Http\Controllers\Web\AdController::class, 'getAudioAd'])->name('api.audio-ad');
+Route::get('/api/banner-ad', [\App\Http\Controllers\Web\AdController::class, 'getBannerAd'])->name('api.banner-ad');
 Route::post('/api/ad-click', [\App\Http\Controllers\Web\AdController::class, 'trackClick'])->name('ad.click.public');
 
 Route::get('/', HomeController::class)->name('home');
@@ -67,6 +68,18 @@ Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show
 
 // Audio stream with byte-range support for seeking
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
+    // Check premium-only access first
+    if ($track->is_premium_only) {
+        $user = auth()->user();
+        if (!$user || !$user->isPremium()) {
+            // Allow stream if there is a preview duration (JS enforces cutoff)
+            $premiumPreviewSec = (int) \App\Models\Setting::get('premium_preview_seconds', 30);
+            if ($premiumPreviewSec <= 0) {
+                abort(403, 'این آهنگ مخصوص کاربران پریمیوم است.');
+            }
+        }
+    }
+
     // Determine if this track requires purchase:
     // 1) Track itself is paid, OR
     // 2) Track belongs to a paid album and has no individual price override
@@ -191,15 +204,58 @@ Route::middleware(['auth'])->group(function () {
         $album->tracks()->where('id', $request->track_id)->update(['album_id' => null, 'track_number' => null]);
         return response()->json(['ok' => true]);
     })->name('filament.admin.album-track-detach');
+
+    Route::post('/admin/backfill-earnings', function () {
+        abort_if(!auth()->user()->isAdmin(), 403);
+        $settings = \App\Models\EarningsSetting::getSettings();
+        if (!$settings->is_enabled || $settings->plays_threshold <= 0) {
+            return response()->json(['error' => 'سیستم درآمد فعال نیست'], 422);
+        }
+        $tracks = \App\Models\Track::whereHas('artist')->with('artist.user')->get();
+        $processed = 0; $totalDeposited = 0;
+        foreach ($tracks as $track) {
+            $artist = $track->artist;
+            if (!$artist || $track->play_count < $settings->plays_threshold) continue;
+            $milestones  = intdiv($track->play_count, $settings->plays_threshold);
+            $totalEarned = $milestones * $settings->earning_amount_toman;
+            $existing = \App\Models\ArtistEarning::where('artist_id', $artist->id)
+                ->where('playable_id', $track->id)
+                ->where('playable_type', \App\Models\Track::class)->first();
+            $alreadyPaid = $existing ? $existing->earning_amount_toman : 0;
+            $toPay = $totalEarned - $alreadyPaid;
+            if ($toPay <= 0) continue;
+            $earning = \App\Models\ArtistEarning::updateOrCreate(
+                ['artist_id' => $artist->id, 'playable_id' => $track->id, 'playable_type' => \App\Models\Track::class],
+                ['play_count' => $track->play_count, 'earning_amount_toman' => $totalEarned, 'status' => 'paid', 'paid_at' => now()]
+            );
+            if ($artist->user) {
+                $wallet = $artist->user->getOrCreateWallet();
+                $wallet->deposit($toPay, "درآمد پخش (بازگشتی): آهنگ «{$track->title}» | {$track->play_count} پخش", $earning);
+                $totalDeposited += $toPay;
+            }
+            $processed++;
+        }
+        return response()->json(['ok' => true, 'processed' => $processed, 'deposited' => $totalDeposited]);
+    })->name('admin.backfill-earnings');
+});
+
+// Profile routes for all authenticated users
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile/edit', [\App\Http\Controllers\Web\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\Web\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 });
 
 // All specific /artist/* routes (must be BEFORE /artist/{artist})
 Route::middleware(['auth'])->prefix('artist')->group(function () {
     Route::get('/dashboard',       [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
     Route::get('/analytics',       [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
+    Route::get('/earnings', fn() => redirect()->route('artist.analytics'))->name('artist.earnings');
 
     // Subscription Plans
     Route::get('/plans', [\App\Http\Controllers\Artist\SubscriptionController::class, 'index'])->name('artist.plans');
+    Route::get('/plans/checkout/{plan}', [\App\Http\Controllers\Artist\SubscriptionController::class, 'checkout'])->name('artist.subscription.checkout');
+    Route::post('/plans/pay', [\App\Http\Controllers\Artist\SubscriptionController::class, 'pay'])->name('artist.subscription.pay');
 
     // Tracks
     Route::get('/tracks',          [\App\Http\Controllers\Artist\TrackController::class, 'index'])->name('artist.tracks');
@@ -217,6 +273,22 @@ Route::middleware(['auth'])->prefix('artist')->group(function () {
     Route::put('/albums/{album}',        [\App\Http\Controllers\Artist\AlbumController::class, 'update'])->name('artist.albums.update');
     Route::delete('/albums/{album}',     [\App\Http\Controllers\Artist\AlbumController::class, 'destroy'])->name('artist.albums.destroy');
     Route::post('/albums/{album}/reorder', [\App\Http\Controllers\Artist\AlbumController::class, 'reorderTracks'])->name('artist.albums.reorder');
+
+    // Podcasts
+    Route::get('/podcasts', [\App\Http\Controllers\Artist\PodcastController::class, 'index'])->name('artist.podcasts.index');
+    Route::get('/podcasts/create', [\App\Http\Controllers\Artist\PodcastController::class, 'create'])->name('artist.podcasts.create');
+    Route::post('/podcasts', [\App\Http\Controllers\Artist\PodcastController::class, 'store'])->name('artist.podcasts.store');
+    Route::get('/podcasts/{podcast}/edit', [\App\Http\Controllers\Artist\PodcastController::class, 'edit'])->name('artist.podcasts.edit');
+    Route::put('/podcasts/{podcast}', [\App\Http\Controllers\Artist\PodcastController::class, 'update'])->name('artist.podcasts.update');
+    Route::delete('/podcasts/{podcast}', [\App\Http\Controllers\Artist\PodcastController::class, 'destroy'])->name('artist.podcasts.destroy');
+
+    // Podcast Episodes
+    Route::get('/podcasts/{podcast}/episodes', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesIndex'])->name('artist.podcasts.episodes.index');
+    Route::get('/podcasts/{podcast}/episodes/create', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesCreate'])->name('artist.podcasts.episodes.create');
+    Route::post('/podcasts/{podcast}/episodes', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesStore'])->name('artist.podcasts.episodes.store');
+    Route::get('/podcasts/{podcast}/episodes/{episode}/edit', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesEdit'])->name('artist.podcasts.episodes.edit');
+    Route::put('/podcasts/{podcast}/episodes/{episode}', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesUpdate'])->name('artist.podcasts.episodes.update');
+    Route::delete('/podcasts/{podcast}/episodes/{episode}', [\App\Http\Controllers\Artist\PodcastController::class, 'episodesDestroy'])->name('artist.podcasts.episodes.destroy');
 });
 
 // DEBUG: Artist dashboard test
@@ -236,6 +308,55 @@ Route::middleware('auth')->group(function () {
 });
 Route::get('/podcasts', [PodcastController::class, 'index'])->name('podcasts.index');
 Route::get('/podcast/{podcast}', [PodcastController::class, 'show'])->name('podcast.show');
+
+// Podcast Episode stream
+Route::get('/stream/episode/{episode}', function (App\Models\PodcastEpisode $episode) {
+    // Check if the episode is premium-only
+    if ($episode->is_premium_only) {
+        $user = auth()->user();
+        if (!$user || !$user->isPremium()) {
+            // Allow stream if there is a preview duration (JS enforces cutoff)
+            $premiumPreviewSec = (int) \App\Models\Setting::get('premium_preview_seconds', 30);
+            if ($premiumPreviewSec <= 0) {
+                abort(403, 'این قسمت مخصوص کاربران پریمیوم است.');
+            }
+        }
+    }
+
+    $path = $episode->getEffectiveStreamPath();
+    if (!$path) {
+        abort(404);
+    }
+
+    $size = filesize($path);
+    $mime = 'audio/mpeg';
+    $headers = [
+        'Content-Type'  => $mime,
+        'Accept-Ranges' => 'bytes',
+        'Cache-Control' => 'no-store',
+    ];
+
+    $range = request()->header('Range');
+    if ($range) {
+        preg_match('/bytes=(\d+)-(\d*)/', $range, $matches);
+        $start  = intval($matches[1]);
+        $end    = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $size - 1;
+        $length = $end - $start + 1;
+
+        $headers['Content-Range']  = "bytes {$start}-{$end}/{$size}";
+        $headers['Content-Length'] = $length;
+
+        $file = fopen($path, 'rb');
+        fseek($file, $start);
+        $data = fread($file, $length);
+        fclose($file);
+
+        return response($data, 206, $headers);
+    }
+
+    $headers['Content-Length'] = $size;
+    return response()->file($path, $headers);
+})->name('podcast.episode.stream');
 
 Route::get('/premium', [SubscriptionController::class, 'plans'])->name('premium');
 Route::get('/page/{page}', [PageController::class, 'show'])->name('page.show');

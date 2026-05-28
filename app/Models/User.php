@@ -157,7 +157,7 @@ class User extends Authenticatable
 
     public function getOrCreateWallet(): Wallet
     {
-        return $this->wallet ?? $this->wallet()->create(['balance' => 0]);
+        return $this->wallet()->firstOrCreate([], ['balance' => 0]);
     }
 
     public function getAvatarUrl(): string

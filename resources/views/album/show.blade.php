@@ -56,7 +56,7 @@
                 <div class="mt-5 flex items-center gap-3 justify-center md:justify-start flex-wrap" x-data>
                     @if($freeOrAccessibleTracks->isNotEmpty())
                     <button
-                        @click="$store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'duration' => $t->duration])->toArray()) }}, 0)"
+                        @click="$store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'cover_page' => route('track.show', $t->slug ?? $t->id), 'artist_url' => $album->artist ? route('artist.show', $album->artist->slug) : '', 'duration' => $t->duration])->toArray()) }}, 0)"
                         class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-primary-500/30"
                     >
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -65,7 +65,7 @@
                     @endif
                     @if($freeOrAccessibleTracks->count() > 1)
                     <button
-                        @click="$store.player.isShuffled = true; $store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'duration' => $t->duration])->toArray()) }}, 0)"
+                        @click="$store.player.isShuffled = true; $store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'cover_page' => route('track.show', $t->slug ?? $t->id), 'artist_url' => $album->artist ? route('artist.show', $album->artist->slug) : '', 'duration' => $t->duration])->toArray()) }}, 0)"
                         class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-surface-700 dark:text-surface-200 text-sm font-semibold rounded-xl transition"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
@@ -145,6 +145,8 @@
                             'artist'         => $album->artist->display_name ?? '',
                             'url'            => $track->getStreamUrl(),
                             'cover'          => $tCover,
+                            'cover_page'     => route('track.show', $track->slug ?? $track->id),
+                            'artist_url'     => $album->artist ? route('artist.show', $album->artist->slug) : '',
                             'duration'       => $track->duration,
                             'previewSeconds' => $tHasAccess ? 0 : $tPreviewSec,
                             'canPlay'        => $tHasAccess,

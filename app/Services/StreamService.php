@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\ArtistEarning;
+use App\Models\EarningsSetting;
 use App\Models\Stream;
 use App\Models\Track;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class StreamService
 {
@@ -23,7 +26,7 @@ class StreamService
 
         // Increment play count only for significant plays (>30s or >50% of track)
         $minDuration = min(30, $track->duration * 0.5);
-        if (($metadata['duration_listened'] ?? 0) >= $minDuration) {
+        if (($metadata['duration_listened'] ?? 0) >= $minDuration && $this->canCountPlay($user, $track)) {
             $track->increment('play_count');
 
             if ($track->album_id) {
@@ -32,10 +35,71 @@ class StreamService
 
             if ($track->artist) {
                 $track->artist->increment('total_streams');
+                $this->maybeCreateEarning($track);
             }
         }
 
         return $stream;
+    }
+
+    private function canCountPlay(User $user, Track $track): bool
+    {
+        // Cooldown = max(track duration, 60s) so skipping/refreshing can't inflate count
+        $cooldown = max((int) ($track->duration ?? 60), 60);
+        $key = "play_counted:{$user->id}:{$track->id}";
+
+        if (Cache::has($key)) {
+            return false;
+        }
+
+        Cache::put($key, 1, $cooldown);
+        return true;
+    }
+
+    private function maybeCreateEarning(Track $track): void
+    {
+        $settings = EarningsSetting::getSettings();
+        if (!$settings->is_enabled || $settings->plays_threshold <= 0) {
+            return;
+        }
+
+        $artist = $track->artist;
+        // Refresh from DB to get the updated play_count after increment()
+        $currentPlays = $track->fresh()->play_count;
+
+        // Only act when we cross a new milestone
+        if ($currentPlays % $settings->plays_threshold !== 0) {
+            return;
+        }
+
+        // One aggregate record per (artist, track) — update total milestones reached
+        $totalMilestones = intdiv($currentPlays, $settings->plays_threshold);
+        $totalEarned     = $totalMilestones * $settings->earning_amount_toman;
+
+        $earning = ArtistEarning::updateOrCreate(
+            [
+                'artist_id'    => $artist->id,
+                'playable_id'  => $track->id,
+                'playable_type'=> Track::class,
+            ],
+            [
+                'play_count'           => $currentPlays,
+                'earning_amount_toman' => $totalEarned,
+                'status'               => 'paid',
+                'paid_at'              => now(),
+            ]
+        );
+
+        // Deposit only the NEW milestone increment (not the full total again)
+        $artistUser = $artist->user;
+        if ($artistUser) {
+            $wallet = $artistUser->getOrCreateWallet();
+            $wallet->deposit(
+                $settings->earning_amount_toman,
+                "درآمد پخش: {$currentPlays} پخش آهنگ «{$track->title}»",
+                $earning
+            );
+        }
     }
 
     public function addToRecentlyPlayed(User $user, $playable, int $progress = 0): void

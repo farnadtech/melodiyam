@@ -21,6 +21,16 @@ class TrackResource extends Resource
     protected static ?string $pluralModelLabel = 'آهنگ‌ها';
     protected static ?int $navigationSort = 1;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('status', 'pending')->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::where('status', 'pending')->count() > 0 ? 'warning' : null;
+    }
+
     public static function form(Schema $form): Schema
     {
         return $form->schema([
@@ -48,7 +58,13 @@ class TrackResource extends Resource
 
             \Filament\Schemas\Components\Section::make('وضعیت و انتشار')->schema([
                 Forms\Components\Select::make('status')->label('وضعیت')
-                    ->options(['draft' => 'پیش‌نویس', 'scheduled' => 'زمان‌بندی', 'published' => 'منتشر', 'archived' => 'بایگانی'])
+                    ->options([
+                        'draft' => 'پیش‌نویس',
+                        'pending' => 'در انتظار تایید',
+                        'scheduled' => 'زمان‌بندی',
+                        'published' => 'منتشر',
+                        'archived' => 'بایگانی'
+                    ])
                     ->required()->default('draft'),
                 JalaliDatePicker::make('release_date')->label('تاریخ انتشار/ریلیز (شمسی)'),
                 Forms\Components\Toggle::make('is_explicit')->label('محتوای نامناسب'),
@@ -106,7 +122,21 @@ class TrackResource extends Resource
                 Tables\Columns\TextColumn::make('artist.display_name')->label('هنرمند')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('album.title')->label('آلبوم')->limit(20),
                 Tables\Columns\BadgeColumn::make('status')->label('وضعیت')
-                    ->colors(['gray' => 'draft', 'warning' => 'scheduled', 'success' => 'published', 'danger' => 'archived']),
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'draft' => 'پیش‌نویس',
+                        'pending' => 'در انتظار تایید',
+                        'scheduled' => 'زمان‌بندی',
+                        'published' => 'منتشر',
+                        'archived' => 'بایگانی',
+                        default => $state,
+                    })
+                    ->colors([
+                        'gray' => 'draft',
+                        'warning' => 'pending',
+                        'info' => 'scheduled',
+                        'success' => 'published',
+                        'danger' => 'archived'
+                    ]),
                 Tables\Columns\TextColumn::make('play_count')->label('پخش')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('like_count')->label('لایک')->numeric()->sortable(),
                 Tables\Columns\IconColumn::make('is_featured')->label('ویژه')->boolean(),

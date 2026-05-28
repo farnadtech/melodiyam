@@ -1,6 +1,9 @@
-<x-layouts.app title="آمار و تحلیل">
-<div class="p-4 lg:p-8 space-y-8">
-    <h1 class="text-2xl font-display font-bold text-surface-900 dark:text-white">آمار و تحلیل</h1>
+<x-layouts.app title="آمار و درآمد">
+<div class="p-4 lg:p-8 space-y-8 max-w-6xl mx-auto">
+    <div>
+        <h1 class="text-2xl font-display font-bold text-surface-900 dark:text-white">آمار و درآمد</h1>
+        <p class="text-sm text-surface-500 mt-1">مشاهده آمار پخش، فروش و درآمد از پخش</p>
+    </div>
 
     @if(!$artist)
     <div class="text-center py-16"><p class="text-surface-500">پروفایل هنرمندی یافت نشد.</p></div>
@@ -17,7 +20,7 @@
             <p class="text-2xl font-bold text-surface-900 dark:text-white">{{ number_format($artist->followers_count) }}</p>
         </div>
         <div class="glass-card rounded-2xl p-5">
-            <p class="text-xs text-surface-500 mb-1">درآمد این ماه</p>
+            <p class="text-xs text-surface-500 mb-1">درآمد فروش این ماه</p>
             <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($monthEarnings) }}</p>
             <p class="text-xs text-surface-400">تومان</p>
         </div>
@@ -27,6 +30,54 @@
             <p class="text-xs text-surface-400">تومان</p>
         </div>
     </div>
+
+    {{-- Stream Earnings Section --}}
+    @if($earningsSettings->is_enabled)
+    <div>
+        <h2 class="text-lg font-bold text-surface-900 dark:text-white mb-4">درآمد از پخش</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div class="glass-card rounded-2xl p-5">
+                <p class="text-sm text-surface-500">کل درآمد پخش</p>
+                <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ number_format($totalStreamEarnings) }} <span class="text-sm font-normal text-surface-500">تومان</span></p>
+                <p class="text-xs text-surface-400 mt-1">واریز شده به کیف پول</p>
+            </div>
+            <div class="glass-card rounded-2xl p-5">
+                <p class="text-sm text-surface-500">درآمد این ماه</p>
+                <p class="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1">{{ number_format($monthStreamEarnings) }} <span class="text-sm font-normal text-surface-500">تومان</span></p>
+                <p class="text-xs text-surface-400 mt-1">واریز شده این ماه</p>
+            </div>
+            <div class="glass-card rounded-2xl p-5">
+                <p class="text-sm text-surface-500">کل پخش‌ها</p>
+                <p class="text-2xl font-bold text-surface-900 dark:text-white mt-1">{{ number_format($totalPlays) }}</p>
+                @if($nextMilestone && $nextMilestone['remaining'] > 0)
+                <p class="text-xs text-amber-500 mt-1">{{ $nextMilestone['remaining'] }} پخش تا درآمد بعدی</p>
+                @elseif($nextMilestone && $nextMilestone['remaining'] === 0)
+                <p class="text-xs text-emerald-500 mt-1">درآمد جدید واریز شد!</p>
+                @endif
+            </div>
+        </div>
+        <div class="glass-card rounded-2xl p-5 mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <p class="text-sm text-surface-600 dark:text-surface-400">
+                    نرخ درآمد: به ازای هر <span class="font-bold text-primary-500">{{ $earningsSettings->plays_threshold }}</span> پخش ←
+                    <span class="font-bold text-emerald-500">{{ number_format($earningsSettings->earning_amount_toman) }} تومان</span>
+                    خودکار به کیف پول واریز می‌شود
+                </p>
+                @if($earningsSettings->payout_description)
+                <p class="text-xs text-surface-400 mt-1">{{ $earningsSettings->payout_description }}</p>
+                @endif
+            </div>
+            <a href="{{ route('wallet') }}" wire:navigate class="flex-shrink-0 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors">
+                مشاهده کیف پول
+            </a>
+        </div>
+    </div>
+    @else
+    <div class="rounded-2xl p-5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm">
+        <p class="font-medium">سیستم درآمدزایی از پخش فعال نیست</p>
+        <p class="mt-1">در حال حاضر سیستم کسب درآمد از پخش غیرفعال است.</p>
+    </div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -108,6 +159,27 @@
         </div>
         @endif
     </div>
+
+    {{-- Stream Earnings History --}}
+    @if($earningsSettings->is_enabled && $recentStreamEarnings->isNotEmpty())
+    <div class="glass-card rounded-2xl overflow-hidden">
+        <div class="p-5 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
+            <h2 class="font-semibold text-surface-900 dark:text-white">تاریخچه درآمد از پخش</h2>
+            <span class="text-xs text-emerald-500 font-medium">همه به کیف پول واریز شده</span>
+        </div>
+        <div class="divide-y divide-surface-200 dark:divide-surface-700">
+            @foreach($recentStreamEarnings as $earning)
+            <div class="p-4 flex items-center justify-between">
+                <div>
+                    <p class="font-medium text-surface-900 dark:text-white text-sm">{{ $earning->playable?->title ?? 'آهنگ حذف شده' }}</p>
+                    <p class="text-xs text-surface-500">{{ number_format($earning->play_count) }} پخش | {{ \App\Helpers\Jalali::format($earning->created_at, 'Y/m/d') }}</p>
+                </div>
+                <p class="font-semibold text-emerald-600 dark:text-emerald-400">+ {{ number_format($earning->earning_amount_toman) }} تومان</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     @endif
 </div>

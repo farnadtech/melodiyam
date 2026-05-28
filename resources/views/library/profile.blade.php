@@ -5,9 +5,9 @@
         <div class="glass-card rounded-3xl p-6">
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                 {{-- Avatar --}}
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg flex-shrink-0">
-                    {{ mb_substr(auth()->user()->name, 0, 1) }}
-                </div>
+                <img src="{{ auth()->user()->avatar ? asset('storage/'.auth()->user()->avatar) : asset('images/default-avatar.png') }}" 
+                     alt="{{ auth()->user()->name }}" 
+                     class="w-20 h-20 rounded-2xl object-cover shadow-lg flex-shrink-0">
                 {{-- Info --}}
                 <div class="flex-1 text-center sm:text-right">
                     <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-1">
@@ -37,7 +37,7 @@
                     @endif
                 </div>
                 {{-- Edit button --}}
-                <a href="{{ route('settings') }}" wire:navigate class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+                <a href="{{ route('profile.edit') }}" wire:navigate class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 text-sm text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     ویرایش
                 </a>

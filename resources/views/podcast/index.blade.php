@@ -12,7 +12,7 @@
                 </div>
                 <div class="mt-3">
                     <p class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{{ $podcast->title }}</p>
-                    <p class="text-xs text-surface-400 truncate mt-0.5">{{ $podcast->user->name ?? '' }}</p>
+                    <p class="text-xs text-surface-400 truncate mt-0.5">{{ $podcast->artist->display_name ?? '' }}</p>
                 </div>
             </a>
             @endforeach

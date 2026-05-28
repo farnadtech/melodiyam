@@ -74,6 +74,10 @@ class AlbumController extends Controller
             $coverPath = $request->file('cover_image')->store('covers/albums', 'public');
         }
 
+        $autoApproveValue = \App\Models\Setting::get('auto_approve_content', true);
+        $autoApprove = $autoApproveValue === true || $autoApproveValue === 1 || $autoApproveValue === '1' || $autoApproveValue === 'true';
+        $status = $autoApprove ? 'published' : 'pending';
+
         $album = Album::create([
             'artist_id'       => $artist->id,
             'title'           => $request->title,
@@ -88,11 +92,15 @@ class AlbumController extends Controller
             'price'           => $request->is_for_sale ? $request->price : null,
             'discount_price'  => $request->is_for_sale ? $request->discount_price : null,
             'preview_seconds' => $request->preview_seconds,
-            'status'          => $request->status,
-            'published_at'    => $request->status === 'published' ? now() : null,
+            'status'          => $status,
+            'published_at'    => $status === 'published' ? now() : null,
         ]);
 
-        return redirect()->route('artist.albums')->with('success', 'آلبوم «' . $album->title . '» ایجاد شد.');
+        $msg = $status === 'pending' 
+            ? 'آلبوم «' . $album->title . '» ایجاد شد و پس از تایید مدیر منتشر می‌شود.'
+            : 'آلبوم «' . $album->title . '» با موفقیت ایجاد شد.';
+
+        return redirect()->route('artist.albums')->with('success', $msg);
     }
 
     public function edit(Album $album): View
@@ -121,12 +129,20 @@ class AlbumController extends Controller
             'price'           => 'nullable|integer|min:0',
             'discount_price'  => 'nullable|integer|min:0',
             'preview_seconds' => 'nullable|integer|min:0|max:300',
-            'status'          => 'required|in:draft,published',
         ]);
 
         $releaseDate = $request->release_date
             ? Jalali::toGregorianString($request->release_date)
             : null;
+
+        $autoApproveValue = \App\Models\Setting::get('auto_approve_content', true);
+        $autoApprove = $autoApproveValue === true || $autoApproveValue === 1 || $autoApproveValue === '1' || $autoApproveValue === 'true';
+        // Only change status to pending if album is not already published
+        if (!$autoApprove && $album->status !== 'published') {
+            $status = 'pending';
+        } else {
+            $status = $album->status;
+        }
 
         $data = [
             'title'           => $request->title,
@@ -140,10 +156,10 @@ class AlbumController extends Controller
             'price'           => $request->is_for_sale ? $request->price : null,
             'discount_price'  => $request->is_for_sale ? $request->discount_price : null,
             'preview_seconds' => $request->preview_seconds,
-            'status'          => $request->status,
+            'status'          => $status,
         ];
 
-        if ($request->status === 'published' && $album->status !== 'published') {
+        if ($status === 'published' && $album->status !== 'published') {
             $data['published_at'] = now();
         }
 

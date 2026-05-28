@@ -103,7 +103,8 @@ class AdvertisementResource extends Resource
                     ->numeric()
                     ->default(3)
                     ->helperText('مثلاً 3 = بعد از هر 3 آهنگ'),
-            ])->columns(2),
+            ])->columns(2)
+            ->visible(fn ($get) => $get('type') === 'audio'),
 
             Section::make('هدف‌گذاری')->schema([
                 Select::make('target_plans')

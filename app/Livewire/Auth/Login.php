@@ -3,6 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\Models\OtpCode;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,7 @@ use Livewire\Component;
 class Login extends Component
 {
     public string $loginMethod = 'email'; // 'email' or 'phone'
+    public string $authType = 'password'; // 'password' or 'otp' - from settings
 
     // Email login
     public string $email = '';
@@ -36,8 +38,28 @@ class Login extends Component
         'password.required' => 'رمز عبور الزامی است',
     ];
 
+    public function mount(): void
+    {
+        $this->authType = Setting::get('auth_type', 'password');
+        
+        // Set login method based on auth type
+        if ($this->authType === 'otp') {
+            $this->loginMethod = 'phone';
+        } else {
+            $this->loginMethod = 'email';
+        }
+    }
+
     public function switchMethod(string $method)
     {
+        // Only allow switching if auth_type is not set to a specific method
+        if ($this->authType === 'otp' && $method === 'email') {
+            return;
+        }
+        if ($this->authType === 'password' && $method === 'phone') {
+            return;
+        }
+        
         $this->loginMethod = $method;
         $this->resetErrorBag();
     }

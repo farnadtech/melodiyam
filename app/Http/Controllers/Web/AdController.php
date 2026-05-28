@@ -81,6 +81,73 @@ class AdController extends Controller
         ]);
     }
 
+    public function getBannerAd(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+
+        // کاربران پریمیوم تبلیغ بنری نمی‌بینند (اختیاری - بسته به سیاست سایت)
+        if ($user && $user->isPremium()) {
+            return response()->json(['ad' => null]);
+        }
+
+        $planSlug = $user?->activeSubscription?->plan?->slug ?? 'free';
+
+        $ads = Advertisement::active()
+            ->where('type', 'banner')
+            ->where(function ($q) use ($planSlug) {
+                $q->whereNull('target_plans')
+                  ->orWhere('target_plans', '[]')
+                  ->orWhere('target_plans', '')
+                  ->orWhereJsonContains('target_plans', $planSlug)
+                  ->orWhereJsonContains('target_plans', 'all');
+            })
+            ->whereRaw('(max_impressions IS NULL OR impressions < max_impressions)')
+            ->get();
+
+        if ($ads->isEmpty()) {
+            return response()->json(['ad' => null]);
+        }
+
+        // Weighted random based on priority
+        $totalWeight = $ads->sum('priority') ?: 1;
+        $random = mt_rand(1, $totalWeight);
+        $currentWeight = 0;
+        $ad = null;
+        foreach ($ads as $candidate) {
+            $currentWeight += $candidate->priority;
+            if ($random <= $currentWeight) {
+                $ad = $candidate;
+                break;
+            }
+        }
+        $ad = $ad ?: $ads->first();
+
+        // ثبت impression
+        AdImpression::create([
+            'advertisement_id' => $ad->id,
+            'user_id'          => $user?->id,
+            'event'            => 'impression',
+            'ip_address'       => $request->ip(),
+        ]);
+        $ad->increment('impressions');
+
+        $imageUrl = $ad->media_path
+            ? asset('storage/' . $ad->media_path)
+            : $ad->media_url;
+
+        return response()->json([
+            'ad' => [
+                'id'          => $ad->id,
+                'title'       => $ad->title,
+                'description' => $ad->description,
+                'image_url'   => $imageUrl,
+                'button_text' => $ad->button_text,
+                'button_url'  => $ad->button_url,
+                'click_url'   => $ad->click_url,
+            ]
+        ]);
+    }
+
     public function trackClick(Request $request): JsonResponse
     {
         $adId = $request->input('ad_id');

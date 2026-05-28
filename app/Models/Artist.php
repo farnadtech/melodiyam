@@ -58,6 +58,11 @@ class Artist extends Model
         return $this->hasMany(Album::class);
     }
 
+    public function podcasts(): HasMany
+    {
+        return $this->hasMany(Podcast::class);
+    }
+
     public function tracks(): HasMany
     {
         return $this->hasMany(Track::class);
@@ -86,6 +91,36 @@ class Artist extends Model
             ->where('status', 'active')
             ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->latestOfMany();
+    }
+
+    public function earnings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ArtistEarning::class);
+    }
+
+    public function pendingEarnings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->earnings()->where('status', 'pending');
+    }
+
+    public function paidEarnings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->earnings()->where('status', 'paid');
+    }
+
+    public function getTotalEarningsToman(): int
+    {
+        return $this->earnings()->sum('earning_amount_toman');
+    }
+
+    public function getPendingEarningsToman(): int
+    {
+        return $this->pendingEarnings()->sum('earning_amount_toman');
+    }
+
+    public function getPaidEarningsToman(): int
+    {
+        return $this->paidEarnings()->sum('earning_amount_toman');
     }
 
     // ── Helpers ──
@@ -123,9 +158,9 @@ class Artist extends Model
 
     public function getAvatarUrl(): string
     {
-        if ($this->cover_image) {
-            return asset('storage/' . $this->cover_image);
+        if ($this->user?->avatar) {
+            return asset('storage/' . $this->user->avatar);
         }
-        return asset('images/default-cover.png');
+        return asset('images/default-avatar.png');
     }
 }

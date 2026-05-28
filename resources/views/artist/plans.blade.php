@@ -6,6 +6,18 @@
         <p class="text-sm text-surface-500 mt-1">برای آپلود آهنگ و آلبوم یک پلن انتخاب کنید</p>
     </div>
 
+    {{-- Flash messages --}}
+    @if(session('success'))
+    <div class="rounded-2xl px-5 py-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm">
+        {{ session('success') }}
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="rounded-2xl px-5 py-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 text-sm">
+        {{ session('error') }}
+    </div>
+    @endif
+
     {{-- اشتراک فعال --}}
     @if($activeSub)
     <div class="rounded-2xl p-5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
@@ -105,8 +117,13 @@
             <div class="w-full py-2.5 rounded-xl text-center text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 cursor-default">
                 اشتراک فعال
             </div>
+            @elseif($plan->price == 0)
+            <a href="{{ route('artist.subscription.checkout', $plan) }}"
+               class="w-full py-2.5 rounded-xl text-center text-sm font-medium btn-primary block transition-colors">
+                فعال‌سازی رایگان
+            </a>
             @else
-            <a href="mailto:support@melodiyam.ir?subject=خرید پلن {{ $plan->name }}&body=درخواست خرید پلن {{ $plan->name }} به مبلغ {{ number_format($plan->price) }} تومان"
+            <a href="{{ route('artist.subscription.checkout', $plan) }}"
                class="w-full py-2.5 rounded-xl text-center text-sm font-medium btn-primary block transition-colors">
                 خرید این پلن
             </a>
@@ -117,7 +134,7 @@
     @endif
 
     <div class="text-center text-sm text-surface-400">
-        برای خرید با پشتیبانی تماس بگیرید:
+        در صورت بروز مشکل در خرید با پشتیبانی تماس بگیرید:
         <a href="mailto:support@melodiyam.ir" class="text-primary-500 hover:underline">support@melodiyam.ir</a>
     </div>
 
