@@ -146,9 +146,13 @@
                 <template x-for="track in tracks" :key="track.id">
                     <div class="group">
                         <div class="relative aspect-square rounded-xl overflow-hidden bg-surface-200 dark:bg-surface-800">
+                            {{-- Blurred background for non-square images --}}
+                            <img :src="track.cover" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+                            {{-- Main image showing fully --}}
                             <img :src="track.cover" :alt="track.title"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
+                                 class="relative z-10 w-full h-full object-contain group-hover:scale-105 transition duration-300">
+                            
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center z-20">
                                 <button
                                     x-on:click.stop="track.isPremium
                                         ? $store.player.play({ id: track.id, title: track.title, artist: track.artist, cover: track.cover, url: track.url, canPlay: false, previewSeconds: track.previewSeconds, isPremium: true, purchaseUrl: track.purchaseUrl })

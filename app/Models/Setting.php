@@ -69,6 +69,24 @@ class Setting extends Model
 
             // Sidebar Footer
             'sidebar_footer_enabled' => '1',
+
+            // Storage
+            'storage_driver' => 'local',
+            'ftp_host' => '',
+            'ftp_port' => '21',
+            'ftp_username' => '',
+            'ftp_password' => '',
+            'ftp_root' => '/',
+            'ftp_url' => '',
+
+            // SMTP
+            'smtp_host' => '',
+            'smtp_port' => '587',
+            'smtp_encryption' => 'tls',
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'mail_from_name' => 'Melodiyam',
+            'mail_from_address' => 'noreply@melodiyam.ir',
         ];
     }
 

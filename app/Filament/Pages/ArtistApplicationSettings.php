@@ -140,12 +140,6 @@ class ArtistApplicationSettings extends Page implements HasForms
                 ->icon('heroicon-o-check')
                 ->color('success')
                 ->action('save'),
-            Action::make('preview')
-                ->label('پیش‌نمایش فرم')
-                ->icon('heroicon-o-eye')
-                ->url(route('artist-application.show'))
-                ->openUrlInNewTab()
-                ->color('gray'),
         ];
     }
 

@@ -16,6 +16,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -297,10 +298,31 @@ class Settings extends Page implements HasForms
                         Section::make('تنظیمات SMTP')->schema([
                             TextInput::make('smtp_host')->label('SMTP Host'),
                             TextInput::make('smtp_port')->label('SMTP Port')->numeric(),
+                            Select::make('smtp_encryption')->label('نوع رمزنگاری')
+                                ->options([
+                                    'ssl' => 'SSL',
+                                    'tls' => 'TLS',
+                                    'none' => 'بدون رمزنگاری',
+                                ]),
                             TextInput::make('smtp_username')->label('نام کاربری SMTP'),
                             TextInput::make('smtp_password')->label('رمز SMTP')->password()->revealable(),
                             TextInput::make('mail_from_name')->label('نام فرستنده'),
                             TextInput::make('mail_from_address')->label('ایمیل فرستنده')->email(),
+                            
+                            SchemaActions::make([
+                                Action::make('test_smtp')
+                                    ->label('ارسال ایمیل تست')
+                                    ->color('info')
+                                    ->icon('heroicon-o-paper-airplane')
+                                    ->form([
+                                        TextInput::make('test_recipient')
+                                            ->label('ایمیل دریافت‌کننده')
+                                            ->email()
+                                            ->required()
+                                             ->default(fn() => auth()->user()->email),
+                                     ])
+                                     ->action(fn (array $data) => $this->testSmtpConnection($data)),
+                             ]),
                         ])->columns(3),
                     ]),
 
@@ -468,14 +490,31 @@ class Settings extends Page implements HasForms
                     Tab::make('🗄️ ذخیره‌سازی')->schema([
                         Section::make('درایور ذخیره‌سازی')->schema([
                             Select::make('storage_driver')->label('درایور')
-                                ->options(['local' => 'محلی (Local)', 's3' => 'AWS S3 / ArvanCloud']),
+                                ->options([
+                                    'local' => 'محلی (Local)',
+                                    'ftp' => 'هاست دانلود (FTP)',
+                                ])
+                                ->live(),
                         ]),
-                        Section::make('تنظیمات S3')->schema([
-                            TextInput::make('s3_key')->label('Access Key'),
-                            TextInput::make('s3_secret')->label('Secret Key')->password()->revealable(),
-                            TextInput::make('s3_region')->label('Region'),
-                            TextInput::make('s3_bucket')->label('Bucket Name'),
-                        ])->columns(2),
+                        Section::make('تنظیمات هاست دانلود')->schema([
+                            TextInput::make('ftp_host')->label('آدرس هاست (Host)')->placeholder('ftp.yoursite.com')->required(),
+                            TextInput::make('ftp_port')->label('پورت (Port)')->default(21)->numeric(),
+                            TextInput::make('ftp_username')->label('نام کاربری (Username)')->required(),
+                            TextInput::make('ftp_password')->label('رمز عبور (Password)')->password()->revealable()->required(),
+                            TextInput::make('ftp_root')->label('مسیر اصلی (Root)')->placeholder('/public_html')->default('/'),
+                            TextInput::make('ftp_url')->label('آدرس URL مستقیم')->placeholder('https://dl.yoursite.com')->required()
+                                ->helperText('آدرس عمومی برای دسترسی به فایل‌ها از مرورگر'),
+                            
+                            SchemaActions::make([
+                                Action::make('test_ftp')
+                                    ->label('تست اتصال')
+                                    ->color('info')
+                                    ->icon('heroicon-o-signal')
+                                    ->action('testFtpConnection')
+                            ]),
+                        ])
+                        ->columns(2)
+                        ->visible(fn ($get) => $get('storage_driver') === 'ftp'),
                     ]),
 
                     // ── Tab 11: Artist Earnings ──
@@ -564,6 +603,94 @@ class Settings extends Page implements HasForms
                 ->color('success')
                 ->action('save'),
         ];
+    }
+
+    public function testSmtpConnection(array $data): void
+    {
+        $formData = $this->form->getState();
+        $recipient = $data['test_recipient'];
+
+        if (empty($formData['smtp_host'])) {
+            Notification::make()
+                ->title('خطا در تنظیمات ❌')
+                ->body('لطفاً ابتدا فیلد SMTP Host را پر کنید.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp' => [
+                'transport' => 'smtp',
+                'host' => (string) $formData['smtp_host'],
+                'port' => (int) ($formData['smtp_port'] ?? 587),
+                'encryption' => ($formData['smtp_encryption'] ?? 'tls') === 'none' ? null : ($formData['smtp_encryption'] ?? 'tls'),
+                'username' => (string) ($formData['smtp_username'] ?? ''),
+                'password' => (string) ($formData['smtp_password'] ?? ''),
+                'timeout' => 10,
+            ],
+            'mail.from' => [
+                'address' => (string) ($formData['mail_from_address'] ?? 'noreply@melodiyam.ir'),
+                'name' => (string) ($formData['mail_from_name'] ?? config('app.name')),
+            ],
+        ]);
+
+        // Purge resolved mailer to apply new config
+        \Illuminate\Support\Facades\Mail::forgetMailers();
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($recipient)->send(new \App\Mail\TestMail());
+            
+            Notification::make()
+                ->title('ایمیل تست با موفقیت ارسال شد! 📧')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('خطا در ارسال ایمیل ❌')
+                ->body('لطفاً تنظیمات SMTP را بررسی کنید. خطا: ' . $e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function testFtpConnection(): void
+    {
+        $data = $this->form->getState();
+
+        config([
+            'filesystems.disks.ftp_test' => [
+                'driver' => 'ftp',
+                'host' => $data['ftp_host'],
+                'username' => $data['ftp_username'],
+                'password' => $data['ftp_password'],
+                'port' => (int) $data['ftp_port'],
+                'root' => $data['ftp_root'],
+                'passive' => true,
+                'ssl' => false,
+                'timeout' => 10,
+            ]
+        ]);
+
+        try {
+            $disk = Storage::disk('ftp_test');
+            // Try to list contents of root to verify connection
+            $disk->files('/');
+            
+            Notification::make()
+                ->title('اتصال برقرار شد! ✅')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('خطا در اتصال ❌')
+                ->body('لطفاً مشخصات هاست دانلود را بررسی کنید. خطا: ' . $e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
     }
 
     public function resetTheme(): void

@@ -13,13 +13,7 @@
                 @foreach($artists as $artist)
                     <a href="{{ route('artist.show', $artist) }}" wire:navigate class="glass-card rounded-2xl p-4 text-center hover:scale-105 transition-transform">
                         <div class="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 bg-surface-200 dark:bg-surface-700">
-                            @if($artist->user?->avatar)
-                                <img src="{{ asset('storage/'.$artist->user->avatar) }}" alt="{{ $artist->display_name }}" class="w-full h-full object-cover">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                </div>
-                            @endif
+                            <img src="{{ $artist->getAvatarUrl() }}" alt="{{ $artist->display_name }}" class="w-full h-full object-cover">
                         </div>
                         <p class="font-medium text-surface-900 dark:text-white text-sm truncate">{{ $artist->display_name }}</p>
                         <p class="text-xs text-surface-500 mt-1">{{ number_format($artist->followers_count) }} دنبال‌کننده</p>

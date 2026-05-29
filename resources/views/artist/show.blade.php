@@ -6,7 +6,7 @@
             <div class="absolute inset-0 bg-gradient-to-l from-black/30 to-transparent"></div>
             <div class="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-6">
                 <div class="w-36 h-36 md:w-48 md:h-48 rounded-full overflow-hidden shadow-2xl border-4 border-white/20 flex-shrink-0">
-                    <img src="{{ $artist->user->avatar ? asset('storage/' . $artist->user->avatar) : asset('images/default-avatar.png') }}" alt="{{ $artist->display_name }}" class="w-full h-full object-cover">
+                    <img src="{{ $artist->getAvatarUrl() }}" alt="{{ $artist->display_name }}" class="w-full h-full object-cover">
                 </div>
                 <div class="text-center md:text-right">
                     @if($artist->verification_status === 'approved')

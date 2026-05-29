@@ -1,8 +1,12 @@
 <x-layouts.app :title="$podcast->title">
     <div class="p-4 lg:p-8 space-y-8">
         <div class="flex flex-col md:flex-row gap-6 md:gap-8">
-            <div class="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 mx-auto md:mx-0">
-                <img src="{{ $podcast->cover_image ? asset('storage/' . $podcast->cover_image) : asset('images/default-cover.png') }}" alt="{{ $podcast->title }}" class="w-full h-full object-cover">
+            <div class="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 mx-auto md:mx-0 relative bg-surface-100 dark:bg-surface-800">
+                @php $podcastCover = $podcast->cover_image ? asset('storage/' . $podcast->cover_image) : asset('images/default-cover.png'); @endphp
+                {{-- Blurred background for non-square images --}}
+                <img src="{{ $podcastCover }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110">
+                {{-- Main image showing fully --}}
+                <img src="{{ $podcastCover }}" alt="{{ $podcast->title }}" class="relative z-10 w-full h-full object-contain">
             </div>
             <div class="flex flex-col justify-end text-center md:text-right"
                  x-data="{ subscribed: {{ $isSubscribed ? 'true' : 'false' }}, loading: false, count: {{ $podcast->subscribers_count }} }">

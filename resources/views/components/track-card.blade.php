@@ -1,12 +1,16 @@
 <div class="music-card" x-data>
-    <div class="music-card-cover">
+    <div class="music-card-cover relative overflow-hidden bg-surface-100 dark:bg-surface-800">
+        @php $cover = $track->getCoverUrl(); @endphp
+        {{-- Blurred background for non-square images --}}
+        <img src="{{ $cover }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+        {{-- Main image showing fully --}}
         <img
-            src="{{ $track->getCoverUrl() }}"
+            src="{{ $cover }}"
             alt="{{ $track->title }}"
-            class="w-full h-full object-cover"
+            class="relative z-10 w-full h-full object-contain"
             loading="lazy"
         >
-        <div class="play-button-overlay">
+        <div class="play-button-overlay z-20">
             @php
                 $isPremiumOnly = (bool) $track->is_premium_only;
                 $isPremiumUser = auth()->user()?->isPremium() ?? false;
@@ -62,7 +66,7 @@
             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 leading-none">ویژه</span>
             @endif
             @if($track->is_explicit)
-            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-surface-500 leading-none">E</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 leading-none">18+</span>
             @endif
         </div>
         <a href="{{ route('track.show', $track) }}" wire:navigate class="block text-sm font-medium text-surface-900 dark:text-surface-100 truncate hover:text-primary-500 transition-colors">

@@ -50,14 +50,14 @@
     <div class="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 divide-y divide-surface-100 dark:divide-surface-800 overflow-hidden">
         @foreach($tracks as $i => $track)
         <div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition cursor-pointer"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->display_name,'cover'=>$track->getCoverUrl(),'url'=>$track->getStreamUrl(),'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <span class="font-mono w-7 text-center text-sm flex-shrink-0 {{ $i===0?'text-yellow-500 font-bold':($i===1?'text-surface-400 font-bold':($i===2?'text-orange-400 font-bold':'text-surface-400')) }}">
                 {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}
             </span>
-            <img src="{{ $track->cover_url ?? asset('images/default-cover.png') }}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="">
+            <img src="{{ $track->getCoverUrl() }}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="">
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-surface-900 dark:text-white truncate">{{ $track->title }}</p>
-                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->name }}</p>
+                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->display_name }}</p>
             </div>
             <div class="text-xs text-surface-400 flex items-center gap-1 flex-shrink-0">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -72,15 +72,20 @@
     <div class="grid {{ $colClass }} gap-4">
         @foreach($tracks as $i => $track)
         <div class="relative cursor-pointer group"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->display_name,'cover'=>$track->getCoverUrl(),'url'=>$track->getStreamUrl(),'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <span class="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 text-white text-xs font-bold flex items-center justify-center">
                 {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}
             </span>
-            <img src="{{ $track->cover_url ?? asset('images/default-cover.png') }}"
-                 class="w-full aspect-square object-cover rounded-xl group-hover:brightness-75 transition" alt="{{ $track->title }}">
+            <div class="relative aspect-square overflow-hidden rounded-xl group-hover:brightness-75 transition bg-surface-100 dark:bg-surface-800">
+                @php $cover = $track->getCoverUrl(); @endphp
+                {{-- Blurred background for non-square images --}}
+                <img src="{{ $cover }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+                {{-- Main image showing fully --}}
+                <img src="{{ $cover }}" class="relative z-10 w-full h-full object-contain" alt="{{ $track->title }}">
+            </div>
             <div class="mt-2 px-1">
                 <p class="text-sm font-medium text-surface-900 dark:text-white truncate">{{ $track->title }}</p>
-                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->name }}</p>
+                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->display_name }}</p>
             </div>
         </div>
         @endforeach
@@ -91,16 +96,23 @@
     <div class="flex gap-4 overflow-x-auto scrollbar-hide pb-2 cursor-grab" x-drag-scroll>
         @foreach($tracks as $i => $track)
         <div class="flex-shrink-0 w-36 cursor-pointer group"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->display_name,'cover'=>$track->getCoverUrl(),'url'=>$track->getStreamUrl(),'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <div class="relative">
                 <span class="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 text-white text-xs font-bold flex items-center justify-center">
                     {{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}
                 </span>
-                <img src="{{ $track->cover_url ?? asset('images/default-cover.png') }}"
-                     class="w-full aspect-square object-cover rounded-xl group-hover:brightness-75 transition" alt="">
+                <div class="relative aspect-square overflow-hidden rounded-xl group-hover:brightness-75 transition bg-surface-100 dark:bg-surface-800">
+                    @php $cover = $track->getCoverUrl(); @endphp
+                    {{-- Blurred background for non-square images --}}
+                    <img src="{{ $cover }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+                    {{-- Main image showing fully --}}
+                    <img src="{{ $cover }}" class="relative z-10 w-full h-full object-contain" alt="">
+                </div>
             </div>
-            <p class="text-xs font-medium text-surface-900 dark:text-white truncate mt-2">{{ $track->title }}</p>
-            <p class="text-xs text-surface-500 truncate">{{ $track->artist?->name }}</p>
+            <div class="mt-2 px-1">
+                <p class="text-sm font-medium text-surface-900 dark:text-white truncate">{{ $track->title }}</p>
+                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->display_name }}</p>
+            </div>
         </div>
         @endforeach
     </div>

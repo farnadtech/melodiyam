@@ -23,6 +23,11 @@ class UserResource extends Resource
     public static function form(Schema $form): Schema
     {
         return $form->schema([
+            \Filament\Schemas\Components\Section::make('تصویر پروفایل')->schema([
+                Forms\Components\FileUpload::make('avatar')->label('آواتار')
+                    ->image()->avatar()->directory('avatars')->disk('public')->visibility('public')
+                    ->maxSize(2048)->columnSpanFull(),
+            ]),
             \Filament\Schemas\Components\Section::make('اطلاعات اصلی')->schema([
                 Forms\Components\TextInput::make('name')->label('نام')->required()->maxLength(255),
                 Forms\Components\TextInput::make('username')->label('نام کاربری')->maxLength(255),

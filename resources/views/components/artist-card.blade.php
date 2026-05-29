@@ -1,7 +1,7 @@
 <a href="{{ route('artist.show', $artist) }}" wire:navigate class="group text-center">
     <div class="relative mx-auto w-full aspect-square rounded-full overflow-hidden shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
         <img
-            src="{{ $artist->user->avatar ? asset('storage/' . $artist->user->avatar) : asset('images/default-avatar.png') }}"
+            src="{{ $artist->getAvatarUrl() }}"
             alt="{{ $artist->display_name }}"
             class="w-full h-full object-cover"
             loading="lazy"

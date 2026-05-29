@@ -1,10 +1,14 @@
 <div class="music-card">
     <a href="{{ route('album.show', $album) }}" wire:navigate>
-        <div class="music-card-cover">
+        <div class="music-card-cover relative overflow-hidden bg-surface-100 dark:bg-surface-800">
+            @php $cover = $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png'); @endphp
+            {{-- Blurred background for non-square images --}}
+            <img src="{{ $cover }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+            {{-- Main image showing fully --}}
             <img
-                src="{{ $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png') }}"
+                src="{{ $cover }}"
                 alt="{{ $album->title }}"
-                class="w-full h-full object-cover"
+                class="relative z-10 w-full h-full object-contain"
                 loading="lazy"
             >
         </div>

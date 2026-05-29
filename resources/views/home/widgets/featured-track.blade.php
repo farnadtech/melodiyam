@@ -94,9 +94,14 @@
                             'opacity-0 -translate-x-8 scale-95 pointer-events-none': i !== current && direction === 'prev'
                         }"
                     >
-                        <img :src="track.cover"
-                             class="w-full h-full object-cover rounded-2xl shadow-2xl ring-4 ring-white/20"
-                             :alt="track.title">
+                        <div class="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl ring-4 ring-white/20 bg-surface-100 dark:bg-surface-800">
+                            {{-- Blurred background for non-square images --}}
+                            <img :src="track.cover" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
+                            {{-- Main image showing fully --}}
+                            <img :src="track.cover"
+                                 class="relative z-10 w-full h-full object-contain"
+                                 :alt="track.title">
+                        </div>
                     </div>
                 </template>
             </div>

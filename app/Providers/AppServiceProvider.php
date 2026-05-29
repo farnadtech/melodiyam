@@ -63,6 +63,37 @@ class AppServiceProvider extends ServiceProvider
                 View::share('maintenanceMessage', $settings['maintenance_message']  ?? '');
                 View::share('premiumEnabled',     ($settings['premium_enabled']     ?? '1') === '1');
                 View::share('allowRegistration',  ($settings['allow_registration']  ?? '1') === '1');
+
+                // ── Dynamic Storage Configuration ──
+                $driver = $settings['storage_driver'] ?? 'local';
+                if ($driver === 'ftp' && !empty($settings['ftp_host'])) {
+                    config([
+                        'filesystems.disks.public.driver'   => 'ftp',
+                        'filesystems.disks.public.host'     => $settings['ftp_host'],
+                        'filesystems.disks.public.username' => $settings['ftp_username'] ?? '',
+                        'filesystems.disks.public.password' => $settings['ftp_password'] ?? '',
+                        'filesystems.disks.public.port'     => (int) ($settings['ftp_port'] ?? 21),
+                        'filesystems.disks.public.root'     => $settings['ftp_root'] ?? '/',
+                        'filesystems.disks.public.url'      => rtrim($settings['ftp_url'] ?? '', '/'),
+                        'filesystems.disks.public.passive'  => true,
+                        'filesystems.disks.public.ssl'      => false,
+                        'filesystems.disks.public.timeout'  => 30,
+                    ]);
+                }
+
+                // ── Dynamic SMTP Configuration ──
+                if (!empty($settings['smtp_host'])) {
+                    config([
+                        'mail.default' => 'smtp',
+                        'mail.mailers.smtp.host'       => $settings['smtp_host'],
+                        'mail.mailers.smtp.port'       => (int) ($settings['smtp_port'] ?? 587),
+                        'mail.mailers.smtp.encryption' => ($settings['smtp_encryption'] ?? 'tls') === 'none' ? null : ($settings['smtp_encryption'] ?? 'tls'),
+                        'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
+                        'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
+                        'mail.from.address'            => $settings['mail_from_address'] ?? 'noreply@melodiyam.ir',
+                        'mail.from.name'               => $settings['mail_from_name'] ?? config('app.name'),
+                    ]);
+                }
             } catch (\Exception $e) {
                 // silently fail if settings table not ready yet
             }

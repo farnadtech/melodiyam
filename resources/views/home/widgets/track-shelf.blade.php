@@ -93,12 +93,12 @@
     <div class="space-y-2">
         @foreach($tracks as $i => $track)
         <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition cursor-pointer group"
-             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->name,'cover'=>$track->cover_url,'url'=>$track->stream_url,'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
+             x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$track->artist?->display_name,'cover'=>$track->getCoverUrl(),'url'=>$track->getStreamUrl(),'cover_page'=>route('track.show',$track->slug ?? $track->id),'artist_url'=>$track->artist?->slug ? route('artist.show',$track->artist->slug) : '']) }})">
             <span class="text-surface-400 text-sm w-6 text-center font-mono">{{ $i + 1 }}</span>
-            <img src="{{ $track->cover_url ?? asset('images/default-cover.png') }}" class="w-10 h-10 rounded-lg object-cover" alt="">
+            <img src="{{ $track->getCoverUrl() }}" class="w-10 h-10 rounded-lg object-cover" alt="">
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-surface-900 dark:text-white truncate">{{ $track->title }}</p>
-                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->name }}</p>
+                <p class="text-xs text-surface-500 truncate">{{ $track->artist?->display_name }}</p>
             </div>
             <span class="text-xs text-surface-400">{{ gmdate('i:s', $track->duration ?? 0) }}</span>
         </div>

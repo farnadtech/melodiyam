@@ -3,8 +3,11 @@
 
         {{-- Track Header --}}
         <div class="flex flex-col md:flex-row gap-6 md:gap-8">
-            <div class="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 mx-auto md:mx-0">
-                <img src="{{ $track->getCoverUrl() }}" alt="{{ $track->title }}" class="w-full h-full object-cover">
+            <div class="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 mx-auto md:mx-0 relative bg-surface-100 dark:bg-surface-800">
+                {{-- Blurred background for non-square images --}}
+                <img src="{{ $track->getCoverUrl() }}" alt="" class="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110">
+                {{-- Main image showing fully --}}
+                <img src="{{ $track->getCoverUrl() }}" alt="{{ $track->title }}" class="relative z-10 w-full h-full object-contain">
             </div>
             <div class="flex flex-col justify-end text-center md:text-right">
                 @if($track->is_explicit)

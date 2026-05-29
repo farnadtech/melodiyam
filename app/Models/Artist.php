@@ -158,6 +158,9 @@ class Artist extends Model
 
     public function getAvatarUrl(): string
     {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
         if ($this->user?->avatar) {
             return asset('storage/' . $this->user->avatar);
         }

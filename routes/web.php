@@ -261,6 +261,8 @@ Route::middleware(['auth'])->prefix('artist')->group(function () {
     Route::get('/dashboard',       [\App\Http\Controllers\Artist\DashboardController::class, 'index'])->name('artist.dashboard');
     Route::get('/analytics',       [\App\Http\Controllers\Artist\AnalyticsController::class, 'index'])->name('artist.analytics');
     Route::get('/earnings', fn() => redirect()->route('artist.analytics'))->name('artist.earnings');
+    Route::get('/settings',        [\App\Http\Controllers\Artist\SettingsController::class, 'edit'])->name('artist.settings');
+    Route::put('/settings',        [\App\Http\Controllers\Artist\SettingsController::class, 'update'])->name('artist.settings.update');
 
     // Subscription Plans
     Route::get('/plans', [\App\Http\Controllers\Artist\SubscriptionController::class, 'index'])->name('artist.plans');

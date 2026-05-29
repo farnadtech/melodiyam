@@ -181,6 +181,16 @@ class Track extends Model
         return sprintf('%d:%02d', $minutes, $seconds);
     }
 
+    public function getStreamUrlAttribute(): ?string
+    {
+        return $this->getStreamUrl();
+    }
+
+    public function getCoverUrlAttribute(): string
+    {
+        return $this->getCoverUrl();
+    }
+
     public function getStreamUrl(): ?string
     {
         if ($this->file_url) {

@@ -27,7 +27,9 @@ class ArtistResource extends Resource
                     ->relationship('user', 'name')->required()->searchable()->preload(),
                 Forms\Components\TextInput::make('display_name')->label('نام نمایشی')->required(),
                 Forms\Components\Textarea::make('bio')->label('بیوگرافی')->rows(3),
-                Forms\Components\FileUpload::make('cover_image')->label('تصویر کاور')->image()->directory('artists')->disk('public')->visibility('public'),
+                Forms\Components\FileUpload::make('cover_image')->label('تصویر پروفایل / کاور')
+                    ->image()->avatar()->directory('artists')->disk('public')->visibility('public')
+                    ->maxSize(5120),
             ])->columns(2),
             \Filament\Schemas\Components\Section::make('شبکه‌های اجتماعی')->schema([
                 Forms\Components\TextInput::make('website')->label('وبسایت')->url(),
