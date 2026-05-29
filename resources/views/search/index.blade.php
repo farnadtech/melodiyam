@@ -22,7 +22,12 @@
             {{-- Tracks --}}
             @if(isset($results['tracks']) && $results['tracks']->isNotEmpty())
             <section>
-                <h2 class="text-lg font-bold text-surface-900 dark:text-white mb-4">آهنگ‌ها</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-surface-900 dark:text-white">آهنگ‌ها</h2>
+                </div>
+                
+                <x-sort-filters :currentSort="$sort" />
+
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     @foreach($results['tracks'] as $track)
                         @include('components.track-card', ['track' => $track])

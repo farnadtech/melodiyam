@@ -21,10 +21,49 @@
             <p class="text-surface-500 text-lg">بدون تبلیغات، کیفیت بالا، دانلود آفلاین و خیلی بیشتر</p>
         </div>
 
+        @if(isset($activeSubscription))
+        {{-- Active Subscription Info --}}
+        <div class="max-w-4xl mx-auto">
+            <div class="glass-card rounded-3xl p-6 border-2 border-amber-500/20 bg-amber-500/5">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-surface-900 dark:text-white">اشتراک فعلی: {{ $activeSubscription->plan->name_fa }}</h3>
+                            <p class="text-surface-500 text-sm mt-1">
+                                @if($activeSubscription->is_trial)
+                                    <span class="text-emerald-500 font-bold">دوره آزمایشی رایگان</span> — 
+                                @endif
+                                پایان اعتبار: {{ \Morilog\Jalali\Jalalian::fromDateTime($activeSubscription->expires_at)->format('Y/m/d') }} 
+                                <span class="mr-2 text-xs opacity-75">({{ $activeSubscription->expires_at->diffForHumans() }})</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">فعال</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Plans Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             @foreach($plans as $plan)
+            @php
+                $isTrialPlan = ($plan->trial_days ?? 0) > 0;
+                // Hide trial plan if user already used it
+                if ($isTrialPlan && ($hasUsedTrial ?? false)) continue;
+            @endphp
             <div class="relative glass-card rounded-3xl p-6 {{ $plan->is_popular ? 'ring-2 ring-primary-500 shadow-xl shadow-primary-500/10' : '' }}">
+                @php
+                    $isActivePlan = isset($activeSubscription) && $activeSubscription->plan_id === $plan->id;
+                    $isFreePlan = $plan->price <= 0 && ($plan->trial_days ?? 0) <= 0;
+                    $isUserOnPremium = isset($activeSubscription);
+                @endphp
+
                 @if($plan->is_popular)
                 <div class="absolute -top-3 right-1/2 translate-x-1/2 px-4 py-1 rounded-full bg-primary-500 text-white text-xs font-bold shadow-lg">
                     محبوب‌ترین
@@ -58,7 +97,16 @@
                     @endforeach
                 </ul>
 
-                @if($plan->price > 0 || ($plan->trial_days ?? 0) > 0)
+                @if($isActivePlan)
+                    <div class="btn-ghost border-2 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 w-full text-center font-bold cursor-default flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                        طرح فعلی شما
+                    </div>
+                @elseif($isFreePlan && !$isUserOnPremium)
+                    <div class="btn-ghost border border-surface-300 dark:border-surface-600 w-full text-center opacity-60 cursor-default">طرح فعلی</div>
+                @elseif($isFreePlan && $isUserOnPremium)
+                    <div class="btn-ghost border border-surface-200 dark:border-surface-700 w-full text-center opacity-40 cursor-default text-xs">طرح پایه</div>
+                @else
                     @auth
                     <a href="{{ route('subscription.checkout', $plan) }}" wire:navigate class="{{ $plan->is_popular ? 'btn-primary' : 'btn-ghost border border-surface-300 dark:border-surface-600' }} w-full text-center">
                         {{ ($plan->trial_days ?? 0) > 0 ? 'شروع دوره رایگان' : 'انتخاب این طرح' }}
@@ -68,28 +116,36 @@
                         ورود و {{ ($plan->trial_days ?? 0) > 0 ? 'شروع رایگان' : 'خرید' }}
                     </a>
                     @endauth
-                @else
-                    <div class="btn-ghost border border-surface-300 dark:border-surface-600 w-full text-center opacity-60 cursor-default">طرح فعلی</div>
                 @endif
             </div>
             @endforeach
         </div>
 
+        @php
+            $faqs = \App\Models\Setting::get('premium_faqs');
+            if (is_string($faqs)) {
+                $faqs = json_decode($faqs, true);
+            }
+            if (!is_array($faqs) || empty($faqs)) {
+                $faqs = [
+                    ['question' => 'آیا می‌توانم هر زمان لغو کنم؟', 'answer' => 'بله، اشتراک شما تا پایان دوره فعال باقی می‌ماند و پس از آن تمدید نخواهد شد.'],
+                    ['question' => 'آیا دانلود آفلاین امکان‌پذیر است؟', 'answer' => 'بله، در طرح پریمیوم می‌توانید آهنگ‌ها را برای پخش آفلاین دانلود کنید.'],
+                    ['question' => 'حداکثر چند دستگاه می‌توان استفاده کرد؟', 'answer' => 'بسته به طرح اشتراکی شما، از ۱ تا ۵ دستگاه همزمان پشتیبانی می‌شود.'],
+                ];
+            }
+        @endphp
+
         {{-- FAQ --}}
         <div class="max-w-2xl mx-auto" x-data="{ open: null }">
             <h2 class="text-xl font-bold text-surface-900 dark:text-white text-center mb-6">سؤالات متداول</h2>
             <div class="space-y-3">
-                @foreach([
-                    ['q' => 'آیا می‌توانم هر زمان لغو کنم؟', 'a' => 'بله، اشتراک شما تا پایان دوره فعال باقی می‌ماند و پس از آن تمدید نخواهد شد.'],
-                    ['q' => 'آیا دانلود آفلاین امکان‌پذیر است؟', 'a' => 'بله، در طرح پریمیوم می‌توانید آهنگ‌ها را برای پخش آفلاین دانلود کنید.'],
-                    ['q' => 'حداکثر چند دستگاه می‌توان استفاده کرد؟', 'a' => 'بسته به طرح اشتراکی شما، از ۱ تا ۵ دستگاه همزمان پشتیبانی می‌شود.'],
-                ] as $i => $faq)
+                @foreach($faqs as $i => $faq)
                 <div class="glass-card rounded-xl overflow-hidden">
                     <button @click="open === {{ $i }} ? open = null : open = {{ $i }}" class="w-full px-5 py-4 flex items-center justify-between text-right">
-                        <span class="font-medium text-surface-900 dark:text-white">{{ $faq['q'] }}</span>
+                        <span class="font-medium text-surface-900 dark:text-white">{{ $faq['question'] ?? ($faq['q'] ?? '') }}</span>
                         <svg class="w-5 h-5 text-surface-400 transition-transform" :class="open === {{ $i }} && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <div x-show="open === {{ $i }}" x-collapse class="px-5 pb-4 text-sm text-surface-500">{{ $faq['a'] }}</div>
+                    <div x-show="open === {{ $i }}" x-collapse class="px-5 pb-4 text-sm text-surface-500">{{ $faq['answer'] ?? ($faq['a'] ?? '') }}</div>
                 </div>
                 @endforeach
             </div>

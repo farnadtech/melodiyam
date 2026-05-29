@@ -64,12 +64,17 @@
         </section>
         @endif
 
-        {{-- Top Tracks --}}
-        @if($topTracks->isNotEmpty())
+        {{-- Tracks --}}
+        @if($tracks->isNotEmpty())
         <section>
-            <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-4">محبوب‌ترین آهنگ‌ها</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white">آهنگ‌ها</h2>
+            </div>
+            
+            <x-sort-filters :currentSort="$sort" />
+
             <div class="divide-y divide-surface-200 dark:divide-surface-800 rounded-2xl overflow-hidden">
-                @foreach($topTracks as $i => $track)
+                @foreach($tracks as $i => $track)
                 <div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group" x-data>
                     <span class="text-sm text-surface-400 w-6 text-center">{{ $i + 1 }}</span>
                     <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
@@ -88,6 +93,10 @@
                     </button>
                 </div>
                 @endforeach
+            </div>
+
+            <div class="mt-6">
+                {{ $tracks->links() }}
             </div>
         </section>
         @endif

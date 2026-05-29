@@ -43,7 +43,12 @@ class Genre extends Model
         return $this->hasMany(Album::class);
     }
 
-    public function tracks(): BelongsToMany
+    public function tracks(): HasMany
+    {
+        return $this->hasMany(Track::class);
+    }
+
+    public function allTracks(): BelongsToMany
     {
         return $this->belongsToMany(Track::class, 'genre_track');
     }

@@ -36,13 +36,20 @@ class PlaylistController extends Controller
         if ($playlist->visibility === 'private' && $playlist->user_id !== auth()->id()) {
             abort(403);
         }
-        $playlist->load(['user', 'tracks.artist']);
+        
+        $sort = request('sort', 'newest');
+        $playlist->load(['user']);
+        
+        $tracks = $playlist->tracks()
+            ->with('artist')
+            ->sort($sort)
+            ->get();
 
         $isLiked = auth()->check()
             ? auth()->user()->likes()->where('likeable_type', Playlist::class)->where('likeable_id', $playlist->id)->exists()
             : false;
 
-        return view('playlist.show', compact('playlist', 'isLiked'));
+        return view('playlist.show', compact('playlist', 'tracks', 'sort', 'isLiked'));
     }
 
     public function create(): View

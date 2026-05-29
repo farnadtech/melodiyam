@@ -36,8 +36,27 @@ class Settings extends Page implements HasForms
 
     public function mount(): void
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $this->form->fill($this->getSettingsForForm());
+    }
+
+    protected function getSettingsForForm(): array
+    {
+        $dbSettings = Setting::pluck('value', 'key')->toArray();
+        $defaults = Setting::defaults();
         
+        // Merge defaults with database values
+        $settings = array_merge($defaults, $dbSettings);
+
+        // Handle JSON values
+        foreach ($settings as $key => $value) {
+            if (is_string($value) && (str_starts_with($value, '[') || str_starts_with($value, '{'))) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $settings[$key] = $decoded;
+                }
+            }
+        }
+
         // Add earnings settings from separate table
         $earningsSettings = EarningsSetting::getSettings();
         $settings['earnings_enabled'] = $earningsSettings->is_enabled;
@@ -45,8 +64,8 @@ class Settings extends Page implements HasForms
         $settings['earnings_amount_toman'] = $earningsSettings->earning_amount_toman;
         $settings['earnings_min_payout'] = $earningsSettings->min_payout_toman;
         $settings['earnings_payout_description'] = $earningsSettings->payout_description;
-        
-        $this->form->fill($settings);
+
+        return $settings;
     }
 
     public function form(Schema $form): Schema
@@ -72,7 +91,28 @@ class Settings extends Page implements HasForms
                                 ->image()->directory('settings')->disk('public')->visibility('public'),
                             FileUpload::make('site_favicon')->label('فاوآیکون')
                                 ->image()->directory('settings')->disk('public')->visibility('public'),
+                            Toggle::make('show_site_name_in_sidebar')
+                                ->label('نمایش نام سایت در کنار لوگو')
+                                ->default(true),
+                            TextInput::make('logo_height_px')
+                                ->label('ارتفاع لوگو (پیکسل)')
+                                ->numeric()
+                                ->default(40)
+                                ->suffix('px')
+                                ->helperText('حداقل: ۲۰، حداکثر: ۱۵۰. برای حفظ ریسپانسیو، ارتفاع در موبایل محدود می‌شود.'),
                         ])->columns(2),
+
+                        Section::make('سوالات متداول صفحه پریمیوم')->schema([
+                            \Filament\Forms\Components\Repeater::make('premium_faqs')
+                                ->label('سوالات متداول')
+                                ->schema([
+                                    TextInput::make('question')->label('سوال')->required(),
+                                    Textarea::make('answer')->label('پاسخ')->required(),
+                                ])
+                                ->columns(1)
+                                ->itemLabel(fn (array $state): ?string => $state['question'] ?? null)
+                                ->collapsible(),
+                        ]),
 
                         Section::make('تعمیر و نگهداری')->schema([
                             Toggle::make('maintenance_mode')->label('حالت تعمیر')->onColor('danger'),
@@ -397,7 +437,34 @@ class Settings extends Page implements HasForms
                             ])->columns(2),
                     ]),
 
-                    // ── Tab 10: Storage ──
+                    // ── Tab 10: Sidebar Footer ──
+                    Tab::make('📑 فوتر سایدبار')->schema([
+                        Section::make('بخش فوتر سایدبار')
+                            ->description('این بخش قبل از بنرهای پایین سایدبار نمایش داده می‌شود و می‌تواند شامل لینک‌های مفید و متن کوتاه باشد.')
+                            ->schema([
+                                Toggle::make('sidebar_footer_enabled')
+                                    ->label('فعال بودن بخش فوتر')
+                                    ->default(true),
+                                
+                                Textarea::make('sidebar_footer_description')
+                                    ->label('متن توضیحی کوتاه')
+                                    ->rows(2)
+                                    ->placeholder('مثلاً: تمامی حقوق برای ملودیام محفوظ است.'),
+                                
+                                \Filament\Forms\Components\Repeater::make('sidebar_footer_links')
+                                    ->label('لینک‌های مفید')
+                                    ->schema([
+                                        TextInput::make('label')->label('عنوان لینک')->required(),
+                                        TextInput::make('url')->label('آدرس (URL)')->required(),
+                                    ])
+                                    ->columns(2)
+                                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                                    ->addActionLabel('+ افزودن لینک')
+                                    ->collapsible(),
+                            ]),
+                    ]),
+
+                    // ── Tab 11: Storage ──
                     Tab::make('🗄️ ذخیره‌سازی')->schema([
                         Section::make('درایور ذخیره‌سازی')->schema([
                             Select::make('storage_driver')->label('درایور')
@@ -501,36 +568,28 @@ class Settings extends Page implements HasForms
 
     public function resetTheme(): void
     {
-        $defaults = [
-            'theme_primary'       => '#0ea5e9',
-            'theme_secondary'     => '#8b5cf6',
-            'theme_accent'        => '#d946ef',
-            'theme_danger'        => '#ef4444',
-            'theme_success'       => '#10b981',
-            'theme_bg_light'      => '#f8fafc',
-            'theme_bg_dark'       => '#020617',
-            'theme_surface_light' => '#ffffff',
-            'theme_surface_dark'  => '#0f172a',
-            'theme_gradient_from' => '#0ea5e9',
-            'theme_gradient_to'   => '#d946ef',
-            'theme_player_bg'     => '#1a1a2e',
-            'theme_font_fa'       => 'Vazirmatn',
-            'theme_font_en'       => 'Inter',
-            'theme_radius'        => 'md',
+        $allDefaults = Setting::defaults();
+        $themeKeys = [
+            'theme_primary', 'theme_secondary', 'theme_accent', 'theme_danger', 'theme_success',
+            'theme_bg_light', 'theme_bg_dark', 'theme_surface_light', 'theme_surface_dark',
+            'theme_gradient_from', 'theme_gradient_to', 'theme_player_bg',
+            'theme_font_fa', 'theme_font_en', 'theme_radius',
         ];
 
-        foreach ($defaults as $key => $value) {
-            Setting::set($key, $value);
+        foreach ($themeKeys as $key) {
+            if (isset($allDefaults[$key])) {
+                Setting::set($key, $allDefaults[$key]);
+            }
         }
 
         Cache::flush();
 
         // reload form with new values
-        $this->form->fill(Setting::pluck('value', 'key')->toArray());
+        $this->form->fill($this->getSettingsForForm());
 
         Notification::make()
             ->title('رنگ‌ها به حالت پیش‌فرض بازگشتند 🎨')
-            ->success()
+            ->info()
             ->send();
     }
 

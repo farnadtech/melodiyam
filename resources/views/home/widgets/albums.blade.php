@@ -1,14 +1,15 @@
 @php
-    $cfg = $section->config ?? [];
-    $limit  = (int)($cfg['limit']   ?? 8);
-    $cols   = (int)($cfg['columns'] ?? 6);
+    $cfg = $section->config;
+    $limit  = (int)($cfg['limit']);
+    $cols   = (int)($cfg['columns']);
     $sortBy = $cfg['sort_by'] ?? 'release_date';
-    $showSeeAll = (bool)($cfg['show_see_all'] ?? false);
-    $seeAllUrl  = $cfg['see_all_url'] ?? route('browse');
+    $showSeeAll = (bool)($cfg['show_see_all'] ?? true);
+    $seeAllUrl  = !empty($cfg['see_all_url']) ? $cfg['see_all_url'] : route('albums.index', ['sort' => $sortBy]);
+    $seeAllLabel = $cfg['see_all_label'] ?? 'مشاهده همه';
 
     $albums = \App\Models\Album::published()
         ->with('artist')
-        ->orderByDesc($sortBy)
+        ->sort($sortBy)
         ->take($limit)->get();
 
     $colClass = match($cols) {
@@ -29,7 +30,7 @@
             </h2>
         </div>
         @if($showSeeAll)
-        <a href="{{ $seeAllUrl }}" wire:navigate class="btn-ghost text-sm">مشاهده همه</a>
+        <a href="{{ $seeAllUrl }}" wire:navigate class="btn-ghost text-sm">{{ $seeAllLabel }}</a>
         @endif
     </div>
     <div class="grid {{ $colClass }} gap-4">

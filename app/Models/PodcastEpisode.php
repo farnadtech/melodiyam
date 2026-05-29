@@ -17,7 +17,7 @@ class PodcastEpisode extends Model
         'podcast_id', 'title', 'slug', 'description', 'show_notes',
         'cover_image', 'file_path', 'file_url', 'duration',
         'season_number', 'episode_number', 'status', 'published_at',
-        'is_explicit', 'is_premium_only', 'play_count', 'like_count',
+        'is_explicit', 'is_premium_only', 'is_downloadable', 'play_count', 'like_count',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -38,6 +38,7 @@ class PodcastEpisode extends Model
             'published_at' => 'datetime',
             'is_explicit' => 'boolean',
             'is_premium_only' => 'boolean',
+            'is_downloadable' => 'boolean',
             'duration' => 'integer',
             'play_count' => 'integer',
             'like_count' => 'integer',
@@ -69,6 +70,25 @@ class PodcastEpisode extends Model
         return $query->where('status', 'published');
     }
 
+    public function scopeSort($query, $sort = 'newest')
+    {
+        $query->reorder();
+        
+        switch ($sort) {
+            case 'most_played':
+                return $query->orderByDesc('play_count')->orderByDesc('created_at');
+            case 'most_popular':
+                return $query->orderByDesc('like_count')->orderByDesc('created_at');
+            case 'most_comments':
+                return $query->withCount('comments')->orderByDesc('comments_count')->orderByDesc('created_at');
+            case 'oldest':
+                return $query->orderByRaw('published_at IS NULL ASC, published_at ASC')->orderBy('created_at');
+            case 'newest':
+            default:
+                return $query->orderByRaw('published_at IS NULL ASC, published_at DESC')->orderByDesc('created_at');
+        }
+    }
+
     public function getFormattedDurationAttribute(): string
     {
         return $this->formattedDuration();
@@ -76,6 +96,16 @@ class PodcastEpisode extends Model
 
     public function formattedDuration(): string
     {
+        if (!$this->duration || $this->duration <= 0) {
+            $path = $this->getEffectiveStreamPath();
+            if ($path && file_exists($path)) {
+                $this->duration = \App\Helpers\AudioHelper::getDuration($path);
+                if ($this->duration > 0) {
+                    $this->save();
+                }
+            }
+        }
+
         if (!$this->duration || $this->duration <= 0) {
             return '--:--';
         }
@@ -115,5 +145,16 @@ class PodcastEpisode extends Model
             return asset('storage/' . $this->podcast->cover_image);
         }
         return asset('images/default-cover.png');
+    }
+
+    public function getDownloadUrl(): ?string
+    {
+        if ($this->file_url) {
+            return $this->file_url;
+        }
+        if ($this->file_path && file_exists(storage_path('app/public/' . $this->file_path))) {
+            return asset('storage/' . $this->file_path);
+        }
+        return null;
     }
 }

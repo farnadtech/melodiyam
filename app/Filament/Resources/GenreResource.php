@@ -26,7 +26,11 @@ class GenreResource extends Resource
             Forms\Components\TextInput::make('name_fa')->label('نام فارسی')->required(),
             Forms\Components\TextInput::make('icon')->label('آیکون'),
             Forms\Components\ColorPicker::make('color')->label('رنگ'),
-            Forms\Components\FileUpload::make('cover_image')->label('تصویر')->image()->directory('genres'),
+            Forms\Components\FileUpload::make('cover_image')
+                ->label('تصویر')
+                ->image()
+                ->directory('genres')
+                ->disk('public'),
             Forms\Components\TextInput::make('sort_order')->label('ترتیب')->numeric()->default(0),
             Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
         ]);
@@ -36,6 +40,7 @@ class GenreResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('cover_image')->label('تصویر')->circular(),
                 Tables\Columns\ColorColumn::make('color')->label('رنگ'),
                 Tables\Columns\TextColumn::make('name_fa')->label('نام فارسی')->searchable(),
                 Tables\Columns\TextColumn::make('name')->label('نام انگلیسی')->searchable(),

@@ -7,22 +7,20 @@
                 <img src="{{ $track->getCoverUrl() }}" alt="{{ $track->title }}" class="w-full h-full object-cover">
             </div>
             <div class="flex flex-col justify-end text-center md:text-right">
+                @if($track->is_explicit)
+                <div class="mb-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 w-fit mx-auto md:mx-0">
+                    <span class="flex items-center justify-center w-5 h-5 rounded bg-red-500 text-white text-[10px] font-bold">18+</span>
+                    <span class="text-[11px] font-bold">مناسب برای زیر ۱۸ سال نیست</span>
+                </div>
+                @endif
                 <p class="text-xs font-medium text-surface-500 uppercase tracking-wider mb-2">آهنگ</p>
                 <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-2">{{ $track->title }}</h1>
-                @if($track->is_featured || $track->is_explicit)
+                @if($track->is_featured)
                 <div class="flex items-center gap-2 justify-center md:justify-start mb-3">
-                    @if($track->is_featured)
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/30">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                         ویژه
                     </span>
-                    @endif
-                    @if($track->is_explicit)
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        نامناسب
-                    </span>
-                    @endif
                 </div>
                 @endif
                 <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start text-sm text-surface-500">
@@ -175,6 +173,13 @@
                     @auth
                     <x-report-button type="track" :id="$track->id" />
                     @endauth
+
+                    {{-- Download button --}}
+                    @if($canDownload)
+                    <a href="{{ route('track.download', $track) }}" class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors" title="دانلود">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </a>
+                    @endif
 
                     {{-- Share button --}}
                     <div class="relative">

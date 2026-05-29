@@ -1,20 +1,25 @@
 @php
-    $isFiltered   = !empty($activeGenres) || (isset($sortBy) && $sortBy !== 'play_count');
-    $activeGenreModels = $isFiltered && !empty($activeGenres)
+    $isFiltered   = !empty($activeGenres);
+    $activeGenreModels = $isFiltered
         ? \App\Models\Genre::whereIn('slug', $activeGenres)->get()->keyBy('slug')
         : collect();
 
     $sortLabels = [
-        'play_count'   => 'پرشنیده‌ترین',
-        'release_date' => 'جدیدترین',
-        'created_at'   => 'تازه‌اضافه‌شده',
+        'newest'        => 'جدیدترین ها',
+        'most_played'   => 'پربازدیدترین ها',
+        'play_count'    => 'پربازدیدترین ها',
+        'most_popular'  => 'محبوب ترین ها',
+        'like_count'    => 'محبوب ترین ها',
+        'most_comments' => 'پربحث ترین ها',
+        'oldest'        => 'قدیمی ترین ها',
+        'recommended'   => 'پیشنهادی ها',
     ];
-    $sortLabel = $sortLabels[$sortBy ?? 'play_count'] ?? 'پرشنیده‌ترین';
+    $sortLabel = $sortLabels[$sortBy ?? 'newest'] ?? 'جدیدترین ها';
 
     if ($isFiltered) {
         $genreNames = $activeGenreModels->map(fn($g) => $g->name_fa)->values()->implode('، ');
         $pageTitle    = $genreNames ?: 'همه ژانرها';
-        $pageSubtitle = $sortLabel . ($genreNames ? ' در ' . $genreNames : '');
+        $pageSubtitle = 'نمایش بر اساس ' . $sortLabel;
     }
 @endphp
 <x-layouts.app :title="$isFiltered ? ($pageTitle ?? 'نتایج') : 'مرور موسیقی'">
@@ -51,14 +56,14 @@
 
         @else
             {{-- Default browse header --}}
-            <div>
+            <div class="mb-8">
                 <h1 class="text-2xl lg:text-3xl font-display font-bold text-surface-900 dark:text-white">مرور موسیقی</h1>
                 <p class="text-surface-500 mt-1">ژانرها و محبوب‌ترین آهنگ‌ها را کشف کنید</p>
             </div>
 
             {{-- Genres Grid --}}
-            <section>
-                <h2 class="text-lg font-bold text-surface-900 dark:text-white mb-4">ژانرها</h2>
+            <section class="mb-12">
+                <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-6">ژانرها</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     @foreach($genres as $genre)
                         @include('components.genre-card', ['genre' => $genre])
@@ -67,7 +72,6 @@
             </section>
         @endif
 
-        {{-- Tracks with infinite scroll --}}
         @php
             $initialTracks = $tracks->map(function($t) {
                 $isPaid = $t->is_for_sale && $t->price;
@@ -88,12 +92,19 @@
             })->values()->toArray();
             $hasMore   = $tracks->hasMorePages();
             $nextPage  = 2;
-            $apiUrl    = url()->current() . '/tracks.json?' . http_build_query(request()->except('page'));
+            $apiUrl    = route('browse.tracks.json') . '?' . http_build_query(request()->except('page'));
         @endphp
 
-        <section
-            x-data="{
-                tracks: {{ Js::from($initialTracks) }},
+        {{-- Tracks with infinite scroll --}}
+        <section class="space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-100 dark:border-surface-800 pb-4">
+                <h2 class="text-xl lg:text-2xl font-bold font-display text-surface-900 dark:text-white">آهنگ‌ها</h2>
+                <x-sort-filters :currentSort="$sortBy" />
+            </div>
+
+            <div
+                x-data="{
+                    tracks: {{ Js::from($initialTracks) }},
                 hasMore: {{ $hasMore ? 'true' : 'false' }},
                 loading: false,
                 page: 2,

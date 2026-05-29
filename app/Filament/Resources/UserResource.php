@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Helpers\Jalali;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -37,6 +38,17 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('city')->label('شهر'),
             ])->columns(2),
 
+            \Filament\Schemas\Components\Section::make('تغییر رمز عبور')->schema([
+                Forms\Components\TextInput::make('password')
+                    ->label('رمز عبور جدید')
+                    ->password()
+                    ->dehydrateStateUsing(fn ($state) => \Hash::make($state))
+                    ->dehydrated(fn ($state) => filled($state))
+                    ->required(fn (string $context): bool => $context === 'create')
+                    ->minLength(8)
+                    ->helperText('در صورت ویرایش، اگر خالی بگذارید رمز قبلی حفظ می‌شود.'),
+            ]),
+
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
                 Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
                 Forms\Components\Toggle::make('is_premium')->label('پریمیوم'),
@@ -69,7 +81,9 @@ class UserResource extends Resource
                     }),
                 Tables\Columns\IconColumn::make('is_active')->label('فعال')->boolean(),
                 Tables\Columns\IconColumn::make('is_premium')->label('پریمیوم')->boolean(),
-                Tables\Columns\TextColumn::make('created_at')->label('تاریخ ثبت')->dateTime('Y/m/d')->sortable(),
+                Tables\Columns\TextColumn::make('created_at')->label('تاریخ ثبت')
+                    ->formatStateUsing(fn ($state) => $state ? Jalali::format($state, 'Y/m/d') : '-')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')->label('نوع')

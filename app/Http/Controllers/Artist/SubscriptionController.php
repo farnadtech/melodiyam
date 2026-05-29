@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Artist;
 use App\Models\ArtistPlan;
 use App\Models\ArtistSubscription;
+use App\Models\Coupon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -60,11 +61,25 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'plan_id' => 'required|exists:artist_plans,id',
             'email'   => 'required|email',
+            'coupon_code' => 'nullable|string',
         ]);
 
         $plan = ArtistPlan::findOrFail($validated['plan_id']);
+        $user = auth()->user();
 
-        // TODO: Zarinpal payment integration
+        $grossPrice = $plan->price;
+        $finalPrice = $grossPrice;
+        $coupon = null;
+
+        if ($validated['coupon_code']) {
+            $coupon = Coupon::where('code', $validated['coupon_code'])->first();
+            if ($coupon && $coupon->isValidForUser($user, 'artist_plans', $grossPrice)) {
+                $discount = $coupon->calculateDiscount($grossPrice);
+                $finalPrice = max(0, $grossPrice - $discount);
+            }
+        }
+
+        // TODO: Zarinpal payment integration with $finalPrice
         // For now, create subscription as paid (demo mode)
         ArtistSubscription::create([
             'artist_id'    => $artist->id,
@@ -75,8 +90,13 @@ class SubscriptionController extends Controller
             'tracks_used'  => 0,
             'albums_used'  => 0,
             'storage_used_mb' => 0,
-            'payment_ref'  => 'demo_' . uniqid(),
+            'payment_ref'  => 'demo_' . uniqid() . ($coupon ? "_cp_{$coupon->code}" : ""),
         ]);
+
+        if ($coupon) {
+            $coupon->increment('used_count');
+            $coupon->users()->attach($user->id, ['used_at' => now()]);
+        }
 
         return redirect()->route('artist.plans')
             ->with('success', "پلن {$plan->name} با موفقیت خریداری و فعال شد!");

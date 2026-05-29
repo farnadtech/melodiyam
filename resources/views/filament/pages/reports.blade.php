@@ -10,7 +10,7 @@
         .rpt-kpi-card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); display:flex; align-items:flex-start; gap:14px; }
         .rpt-kpi-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .rpt-kpi-label { font-size:11px; color:#9ca3af; margin-bottom:2px; }
-        .rpt-kpi-val { font-size:22px; font-weight:700; color:#111827; line-height:1.2; }
+        .rpt-kpi-val { font-size:22px; font-weight:700; color:#111827; line-height:1.2; word-break:break-all; overflow-wrap:break-word; }
         .rpt-kpi-unit { font-size:11px; color:#9ca3af; }
         .rpt-two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
         @media(max-width:900px){ .rpt-two-col { grid-template-columns:1fr; } }
@@ -70,7 +70,8 @@
             ['label'=>'کل شارژها',        'value'=>number_format($stats['totalDeposits']),        'unit'=>'تومان', 'bg'=>'#d1fae5', 'ic'=>'#059669', 'path'=>'M12 4.5v15m7.5-7.5h-15'],
             ['label'=>'کل برداشت‌ها',     'value'=>number_format($stats['totalWithdrawals']),     'unit'=>'تومان', 'bg'=>'#fee2e2', 'ic'=>'#dc2626', 'path'=>'M19.5 12h-15'],
             ['label'=>'کمیسیون پلتفرم',   'value'=>number_format($stats['totalCommission']),     'unit'=>'تومان', 'bg'=>'#dbeafe', 'ic'=>'#2563eb', 'path'=>'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9'],
-            ['label'=>'درآمد هنرمندان',   'value'=>number_format($stats['artistEarnings']),      'unit'=>'تومان', 'bg'=>'#ede9fe', 'ic'=>'#7c3aed', 'path'=>'M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303'],
+            ['label'=>'درآمد فروش',       'value'=>number_format($stats['artistEarnings']),      'unit'=>'تومان', 'bg'=>'#ede9fe', 'ic'=>'#7c3aed', 'path'=>'M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303'],
+            ['label'=>'درآمد پخش',       'value'=>number_format($stats['streamingEarnings']),   'unit'=>'تومان', 'bg'=>'#fce7f3', 'ic'=>'#db2777', 'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
             ['label'=>'تعداد فروش',       'value'=>number_format($stats['salesCount']),          'unit'=>'عدد',   'bg'=>'#fef3c7', 'ic'=>'#d97706', 'path'=>'M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75'],
             ['label'=>'کاربران جدید',     'value'=>number_format($stats['newUsers']),            'unit'=>'نفر',   'bg'=>'#cffafe', 'ic'=>'#0891b2', 'path'=>'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07'],
             ['label'=>'تراکنش در انتظار','value'=>number_format($stats['pendingTransactions']),  'unit'=>'عدد',   'bg'=>'#ffedd5', 'ic'=>'#ea580c', 'path'=>'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z'],
@@ -142,6 +143,34 @@
                     <div style="text-align:left;flex-shrink:0;padding-right:4px;">
                         <div class="rpt-artist-num">{{ number_format($artist->total_sales) }}</div>
                         <div class="rpt-artist-sub">{{ $artist->sales_count }} فروش</div>
+                    </div>
+                </div>
+                @endforeach
+                @endif
+            </div>
+
+            {{-- Streaming Earnings by Artist --}}
+            <div class="rpt-card">
+                <div class="rpt-card-title">درآمد پخش هنرمندان</div>
+                @if($stats['streamingByArtist']->isEmpty())
+                <div class="rpt-empty">هنوز درآمد پخشی ثبت نشده</div>
+                @else
+                @php $maxE = $stats['streamingByArtist']->first()?->total_earnings ?? 1; @endphp
+                @foreach($stats['streamingByArtist'] as $i => $item)
+                <div class="rpt-artist-row">
+                    <div class="rpt-artist-rank"
+                         style="{{ $i===0 ? 'background:#db2777;color:#fff' : ($i===1 ? 'background:#d1d5db;color:#374151' : ($i===2 ? 'background:#fb923c;color:#fff' : 'background:#f3f4f6;color:#6b7280')) }}">
+                        {{ $i+1 }}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="rpt-artist-name">{{ $item->artist?->display_name ?? 'هنرمند #'.$item->artist_id }}</div>
+                        <div class="rpt-artist-bar-wrap">
+                            <div class="rpt-artist-bar" style="width:{{ $maxE>0 ? round($item->total_earnings/$maxE*100) : 0 }}%;background:#db2777;"></div>
+                        </div>
+                    </div>
+                    <div style="text-align:left;flex-shrink:0;padding-right:4px;">
+                        <div class="rpt-artist-num">{{ number_format($item->total_earnings) }}</div>
+                        <div class="rpt-artist-sub">{{ number_format($item->total_plays) }} پخش</div>
                     </div>
                 </div>
                 @endforeach

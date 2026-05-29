@@ -43,7 +43,7 @@ class AlbumResource extends Resource
                 Forms\Components\Select::make('type')->label('نوع')
                     ->options(['album' => 'آلبوم', 'single' => 'سینگل', 'ep' => 'EP', 'compilation' => 'کامپایل'])->required(),
                 Forms\Components\Textarea::make('description')->label('توضیحات')->rows(2),
-                Forms\Components\FileUpload::make('cover_image')->label('تصویر کاور')->image()->directory('albums')->disk('public')->visibility('public'),
+                Forms\Components\FileUpload::make('cover_image')->label('تصویر کاور')->image()->directory('albums')->disk('public')->visibility('public')->maxSize(5120),
                 JalaliDatePicker::make('release_date')->label('تاریخ ریلیز (شمسی)'),
             ])->columns(2),
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
@@ -54,7 +54,7 @@ class AlbumResource extends Resource
                         'published' => 'منتشر',
                         'archived' => 'بایگانی'
                     ])->required(),
-                Forms\Components\Toggle::make('is_explicit')->label('نامناسب'),
+                Forms\Components\Toggle::make('is_explicit')->label('محتوای نامناسب'),
                 Forms\Components\Toggle::make('is_featured')->label('ویژه'),
             ])->columns(3),
 

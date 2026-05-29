@@ -56,6 +56,32 @@ class Reports extends Page
 
             $pendingTransactions = WalletTransaction::where('status', 'pending')->count();
 
+            $streamingEarnings = \App\Models\ArtistEarning::where('status', 'paid')
+                ->where('created_at', '>=', $from)
+                ->sum('earning_amount_toman');
+
+            // Streaming earnings by artist
+            $streamingByArtistRaw = DB::table('artist_earnings')
+                ->select('artist_id',
+                    DB::raw('SUM(play_count) as total_plays'),
+                    DB::raw('SUM(earning_amount_toman) as total_earnings')
+                )
+                ->where('status', 'paid')
+                ->where('created_at', '>=', $from)
+                ->whereNotNull('artist_id')
+                ->groupBy('artist_id')
+                ->orderByDesc('total_earnings')
+                ->limit(10)
+                ->get();
+
+            $artistIds = $streamingByArtistRaw->pluck('artist_id');
+            $artists = \App\Models\Artist::whereIn('id', $artistIds)->get()->keyBy('id');
+
+            $streamingByArtist = $streamingByArtistRaw->map(function ($row) use ($artists) {
+                $row->artist = $artists->get($row->artist_id);
+                return $row;
+            });
+
             $dailyRevenue = WalletTransaction::where('type', 'deposit')
                 ->where('status', 'approved')
                 ->where('created_at', '>=', now()->subDays(30))
@@ -98,7 +124,7 @@ class Reports extends Page
         return compact(
             'totalDeposits', 'totalWithdrawals', 'totalCommission',
             'artistEarnings', 'salesCount', 'newUsers',
-            'pendingTransactions', 'dailyRevenue', 'topArtists'
+            'pendingTransactions', 'streamingEarnings', 'streamingByArtist', 'dailyRevenue', 'topArtists'
         );
     }
 }

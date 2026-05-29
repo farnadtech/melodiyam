@@ -9,7 +9,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use getID3;
 
 class PodcastController extends Controller
 {
@@ -192,13 +191,8 @@ class PodcastController extends Controller
         $path = $request->file('file')->store('podcasts/episodes/audio', 'public');
 
         // Get duration
-        $duration = 0;
-        try {
-            $fullPath = Storage::disk('public')->path($path);
-            $id3 = new getID3();
-            $info = $id3->analyze($fullPath);
-            $duration = (int) round($info['playtime_seconds'] ?? 0);
-        } catch (\Throwable $e) {}
+        $fullPath = Storage::disk('public')->path($path);
+        $duration = \App\Helpers\AudioHelper::getDuration($fullPath);
 
         $coverPath = null;
         if ($request->hasFile('cover_image')) {
@@ -265,12 +259,8 @@ class PodcastController extends Controller
             $data['file_path'] = $request->file('file')->store('podcasts/episodes/audio', 'public');
 
             // Update duration
-            try {
-                $fullPath = Storage::disk('public')->path($data['file_path']);
-                $id3 = new getID3();
-                $info = $id3->analyze($fullPath);
-                $data['duration'] = (int) round($info['playtime_seconds'] ?? 0);
-            } catch (\Throwable $e) {}
+            $fullPath = Storage::disk('public')->path($data['file_path']);
+            $data['duration'] = \App\Helpers\AudioHelper::getDuration($fullPath);
         }
 
         if ($request->hasFile('cover_image')) {

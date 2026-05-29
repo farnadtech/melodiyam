@@ -1,8 +1,7 @@
 @php
     $widgetMap = [
         'hero'               => 'home.widgets.hero',
-        'new_releases'       => 'home.widgets.track-shelf',
-        'trending'           => 'home.widgets.track-shelf',
+        'track_shelf'        => 'home.widgets.track-shelf',
         'top_charts'         => 'home.widgets.top-charts',
         'featured_artists'   => 'home.widgets.artists',
         'featured_playlists' => 'home.widgets.playlists',

@@ -23,6 +23,14 @@
     $abBtn   = \App\Models\Setting::get('artist_banner_btn_text', 'شروع کنید');
     $abUrl   = (string)(\App\Models\Setting::get('artist_banner_btn_url') ?: '/become-artist');
     $abColor = (string)(\App\Models\Setting::get('artist_banner_text_color') ?: '#ffffff');
+
+    // Sidebar footer vars
+    $sfEnabled = \App\Models\Setting::get('sidebar_footer_enabled', '1') === '1';
+    $sfDesc = \App\Models\Setting::get('sidebar_footer_description');
+    $sfLinks = \App\Models\Setting::get('sidebar_footer_links', []);
+    if (is_string($sfLinks)) {
+        $sfLinks = json_decode($sfLinks, true) ?: [];
+    }
 @endphp
 
 {{-- Desktop Sidebar --}}
@@ -38,12 +46,21 @@
     {{-- Logo --}}
     <div class="p-6 border-b border-surface-200 dark:border-surface-800">
         <a href="{{ url('/') }}" wire:navigate class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                </svg>
-            </div>
-            <span class="text-xl font-bold font-display text-gradient">ملودیام</span>
+            @if($siteLogo)
+                <img src="{{ $siteLogo }}" alt="{{ $siteName }}" 
+                     style="height: {{ $logoHeight }}px; max-height: 150px;" 
+                     class="w-auto object-contain">
+            @else
+                <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white flex-shrink-0">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+            @endif
+            
+            @if($showSiteName)
+                <span class="text-xl font-bold font-display text-gradient">{{ $siteName }}</span>
+            @endif
         </a>
     </div>
 
@@ -124,6 +141,11 @@
             <a href="{{ url('/library/artists') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('library/artists*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span>هنرمندان</span>
+            </a>
+
+            <a href="{{ url('/library/podcasts') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('library/podcasts*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                <span>پادکست‌های من</span>
             </a>
 
             <a href="{{ url('/library/history') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('library/history*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
@@ -230,6 +252,27 @@
     @auth
     <div class="sticky bottom-0 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800 transition-transform duration-300 space-y-0" :class="playerActive ? 'translate-y-[-80px]' : 'translate-y-0'">
 
+        {{-- Sidebar Footer (Links & Text) --}}
+        @if($sfEnabled)
+        <div class="px-5 py-5 border-b border-surface-100 dark:border-surface-800/50 bg-surface-50/30 dark:bg-surface-800/10">
+            @if($sfLinks)
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+                @foreach($sfLinks as $link)
+                <a href="{{ $link['url'] }}" wire:navigate class="text-[11px] font-medium text-surface-400 hover:text-primary-500 transition-all flex items-center gap-1.5 group/link">
+                    <span class="w-1 h-1 rounded-full bg-surface-300 dark:bg-surface-700 group-hover/link:bg-primary-500 transition-colors"></span>
+                    {{ $link['label'] }}
+                </a>
+                @endforeach
+            </div>
+            @endif
+            @if($sfDesc)
+            <div class="pt-3 border-t border-surface-100 dark:border-surface-800/50">
+                <p class="text-[10px] text-surface-400 leading-relaxed text-justify opacity-80">{{ $sfDesc }}</p>
+            </div>
+            @endif
+        </div>
+        @endif
+
         {{-- بنر تبلیغاتی داینامیک (Advertisement Model) --}}
         <div x-data="{
             ad: null,
@@ -326,12 +369,21 @@
         {{-- Mobile header --}}
         <div class="p-6 flex items-center justify-between border-b border-surface-200 dark:border-surface-800">
             <a href="{{ url('/') }}" wire:navigate @click="mobileSidebar = false" class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                    </svg>
-                </div>
-                <span class="text-xl font-bold font-display text-gradient">ملودیام</span>
+                @if($siteLogo)
+                    <img src="{{ $siteLogo }}" alt="{{ $siteName }}" 
+                         style="height: {{ min($logoHeight, 60) }}px; max-height: 80px;" 
+                         class="w-auto object-contain">
+                @else
+                    <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white flex-shrink-0">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                        </svg>
+                    </div>
+                @endif
+                
+                @if($showSiteName)
+                    <span class="text-xl font-bold font-display text-gradient">{{ $siteName }}</span>
+                @endif
             </a>
             <button @click="mobileSidebar = false" class="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,6 +462,13 @@
                     <span>پلی‌لیست‌ها</span>
                 </a>
 
+                <a href="{{ url('/library/podcasts') }}" wire:navigate @click="mobileSidebar = false" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                    </svg>
+                    <span>پادکست‌های من</span>
+                </a>
+
                 <a href="{{ url('/library/history') }}" wire:navigate @click="mobileSidebar = false" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -448,6 +507,27 @@
 
             {{-- Mobile Banners --}}
             @auth
+                {{-- Sidebar Footer (Mobile) --}}
+                @if($sfEnabled)
+                <div class="px-4 py-5 mt-4 border-t border-surface-200 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/20 rounded-2xl">
+                    @if($sfLinks)
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                        @foreach($sfLinks as $link)
+                        <a href="{{ $link['url'] }}" wire:navigate @click="mobileSidebar = false" class="text-xs font-medium text-surface-400 hover:text-primary-500 transition-all flex items-center gap-2 group/mlink">
+                            <span class="w-1 h-1 rounded-full bg-surface-300 dark:bg-surface-700 group-hover/mlink:bg-primary-500 transition-colors"></span>
+                            {{ $link['label'] }}
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
+                    @if($sfDesc)
+                    <div class="pt-2 border-t border-surface-100 dark:border-surface-800/50">
+                        <p class="text-[10px] text-surface-400 leading-relaxed opacity-80">{{ $sfDesc }}</p>
+                    </div>
+                    @endif
+                </div>
+                @endif
+
                 {{-- بنر هنرمند شو --}}
                 @if($abEnabled && auth()->user()->isListener())
                 <div class="pt-3 mt-2">

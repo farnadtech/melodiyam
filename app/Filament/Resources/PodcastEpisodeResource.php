@@ -47,7 +47,8 @@ class PodcastEpisodeResource extends Resource
                     ->image()->directory('podcasts/episodes/covers')->disk('public'),
                 Forms\Components\FileUpload::make('file_path')->label('فایل صوتی')
                     ->directory('podcasts/episodes/audio')->disk('public')
-                    ->acceptedFileTypes(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg']),
+                    ->acceptedFileTypes(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'])
+                    ->maxSize(102400),
                 Forms\Components\TextInput::make('file_url')->label('یا URL فایل')->url(),
                 Forms\Components\TextInput::make('duration')->label('مدت زمان (ثانیه)')
                     ->numeric()->default(0)->helperText('0 = خودکار محاسبه می‌شود'),
@@ -63,6 +64,7 @@ class PodcastEpisodeResource extends Resource
             \Filament\Schemas\Components\Section::make('تنظیمات')->schema([
                 Forms\Components\Toggle::make('is_explicit')->label('محتوای نامناسب'),
                 Forms\Components\Toggle::make('is_premium_only')->label('فقط پریمیوم'),
+                Forms\Components\Toggle::make('is_downloadable')->label('قابل دانلود'),
             ])->columns(2),
 
             \Filament\Schemas\Components\Section::make('وضعیت انتشار')->schema([
@@ -70,8 +72,7 @@ class PodcastEpisodeResource extends Resource
                     ->options([
                         'draft' => 'پیش‌نویس',
                         'pending' => 'در انتظار تایید',
-                        'published' => 'منتشر شده',
-                        'scheduled' => 'زمان‌بندی'
+                        'published' => 'منتشر شده'
                     ])
                     ->required()->default('draft'),
                 JalaliDatePicker::make('published_at')->label('تاریخ انتشار (شمسی)'),
@@ -92,14 +93,12 @@ class PodcastEpisodeResource extends Resource
                         'draft' => 'پیش‌نویس',
                         'pending' => 'در انتظار تایید',
                         'published' => 'منتشر شده',
-                        'scheduled' => 'زمان‌بندی',
                         default => $state,
                     })
                     ->colors([
                         'gray' => 'draft',
                         'warning' => 'pending',
-                        'success' => 'published',
-                        'info' => 'scheduled'
+                        'success' => 'published'
                     ]),
                 Tables\Columns\TextColumn::make('play_count')->label('پخش')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('published_at')->label('تاریخ انتشار')
@@ -110,7 +109,7 @@ class PodcastEpisodeResource extends Resource
                 Tables\Filters\SelectFilter::make('podcast_id')->label('پادکست')
                     ->relationship('podcast', 'title')->searchable()->preload(),
                 Tables\Filters\SelectFilter::make('status')->label('وضعیت')
-                    ->options(['draft' => 'پیش‌نویس', 'published' => 'منتشر', 'scheduled' => 'زمان‌بندی']),
+                    ->options(['draft' => 'پیش‌نویس', 'published' => 'منتشر شده']),
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),

@@ -7,22 +7,20 @@
                 <img src="{{ $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png') }}" alt="{{ $album->title }}" class="w-full h-full object-cover">
             </div>
             <div class="flex flex-col justify-end text-center md:text-right">
+                @if($album->is_explicit)
+                <div class="mb-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 w-fit mx-auto md:mx-0">
+                    <span class="flex items-center justify-center w-5 h-5 rounded bg-red-500 text-white text-[10px] font-bold">18+</span>
+                    <span class="text-[11px] font-bold">مناسب برای زیر ۱۸ سال نیست</span>
+                </div>
+                @endif
                 <p class="text-xs font-medium text-surface-500 uppercase tracking-wider mb-2">{{ $album->type === 'single' ? 'سینگل' : 'آلبوم' }}</p>
                 <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-surface-900 dark:text-white mb-2">{{ $album->title }}</h1>
-                @if($album->is_featured || $album->is_explicit)
+                @if($album->is_featured)
                 <div class="flex items-center gap-2 justify-center md:justify-start mb-3">
-                    @if($album->is_featured)
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/30">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                         ویژه
                     </span>
-                    @endif
-                    @if($album->is_explicit)
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        نامناسب
-                    </span>
-                    @endif
                 </div>
                 @endif
                 <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start text-sm text-surface-500">
@@ -53,7 +51,12 @@
                     });
                     $coverUrl = $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png');
                 @endphp
-                <div class="mt-5 flex items-center gap-3 justify-center md:justify-start flex-wrap" x-data>
+                <div class="mt-5 flex items-center gap-3 justify-center md:justify-start flex-wrap" x-data="{ liked: {{ $userLikedAlbum ? 'true' : 'false' }}, likeCount: {{ $album->like_count ?? 0 }}, toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
+                    {{-- Toast notification --}}
+                    <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
+                        <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
+                    </div>
+
                     @if($freeOrAccessibleTracks->isNotEmpty())
                     <button
                         @click="$store.player.playQueue({{ json_encode($freeOrAccessibleTracks->values()->map(fn($t) => ['id' => $t->id, 'title' => $t->title, 'artist' => $album->artist->display_name ?? '', 'url' => $t->getStreamUrl(), 'cover' => $coverUrl, 'cover_page' => route('track.show', $t->slug ?? $t->id), 'artist_url' => $album->artist ? route('artist.show', $album->artist->slug) : '', 'duration' => $t->duration])->toArray()) }}, 0)"
@@ -72,6 +75,31 @@
                         پخش تصادفی
                     </button>
                     @endif
+
+                    {{-- Like button --}}
+                    @auth
+                    <button @click="
+                        fetch('{{ route('like.toggle') }}', {
+                            method: 'POST',
+                            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'album', id: {{ $album->id }}})
+                        }).then(r => r.json()).then(d => { liked = d.liked; likeCount += d.liked ? 1 : -1; })
+                    " class="p-2.5 rounded-xl border transition-colors flex items-center gap-2" :class="liked ? 'border-rose-500 text-rose-500 bg-rose-50 dark:bg-rose-500/10' : 'border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500 text-surface-700 dark:text-surface-200'">
+                        <svg class="w-5 h-5" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span class="text-sm font-medium" x-text="liked ? 'پسندیده شده' : 'پسندیدن'"></span>
+                        <span x-show="likeCount > 0" class="text-xs opacity-60" x-text="likeCount"></span>
+                    </button>
+                    @else
+                    <a href="{{ route('login') }}" wire:navigate class="p-2.5 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500 text-surface-700 dark:text-surface-200 transition-colors flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span class="text-sm font-medium">پسندیدن</span>
+                        <span x-show="likeCount > 0" class="text-xs opacity-60" x-text="likeCount"></span>
+                    </a>
+                    @endauth
                 </div>
 
                 {{-- Buy Album Button --}}
@@ -115,8 +143,10 @@
 
         {{-- Track List --}}
         <section>
+            <x-sort-filters :currentSort="$sort" />
+            
             <div class="divide-y divide-surface-200 dark:divide-surface-800 rounded-2xl overflow-hidden">
-                @foreach($album->tracks as $track)
+                @foreach($tracks as $track)
                 @php
                     // Set album on track so getCoverUrl() uses album cover without extra query
                     $track->setRelation('album', $album);

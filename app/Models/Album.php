@@ -94,6 +94,29 @@ class Album extends Model
         return $query->where('is_featured', true);
     }
 
+    public function scopeSort($query, $sort = 'newest')
+    {
+        $query->reorder();
+
+        switch ($sort) {
+            case 'most_played':
+            case 'play_count':
+                return $query->orderByDesc('play_count')->orderByDesc('created_at');
+            case 'most_popular':
+            case 'like_count':
+                return $query->orderByDesc('like_count')->orderByDesc('created_at');
+            case 'oldest':
+                return $query->orderByRaw('release_date IS NULL ASC, release_date ASC')->orderBy('created_at');
+            case 'release_date':
+                return $query->orderByRaw('release_date IS NULL ASC, release_date DESC')->orderByDesc('created_at');
+            case 'created_at':
+                return $query->orderByDesc('created_at');
+            case 'newest':
+            default:
+                return $query->orderByRaw('release_date IS NULL ASC, release_date DESC')->orderByDesc('created_at');
+        }
+    }
+
     // ── Helpers ──
 
     public function getTotalDurationAttribute(): int

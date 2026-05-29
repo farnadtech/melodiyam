@@ -87,6 +87,11 @@ class User extends Authenticatable
         return $this->hasMany(Follow::class);
     }
 
+    public function downloads(): HasMany
+    {
+        return $this->hasMany(Download::class);
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
@@ -105,6 +110,16 @@ class User extends Authenticatable
     public function podcasts(): HasMany
     {
         return $this->hasMany(Podcast::class);
+    }
+
+    public function podcastSubscriptions(): HasMany
+    {
+        return $this->hasMany(PodcastSubscription::class);
+    }
+
+    public function subscribedPodcasts()
+    {
+        return $this->belongsToMany(Podcast::class, 'podcast_subscriptions');
     }
 
     public function notifications(): HasMany
@@ -134,9 +149,19 @@ class User extends Authenticatable
         return $this->type === 'moderator';
     }
 
+    public function hasUsedTrial(): bool
+    {
+        return $this->subscriptions()->where('is_trial', true)->exists();
+    }
+
     public function isPremium(): bool
     {
         return $this->is_premium && $this->premium_expires_at?->isFuture();
+    }
+
+    public function canDownload(): bool
+    {
+        return $this->activeSubscription?->plan?->includes_downloads ?? false;
     }
 
     public function hasLiked($likeable): bool

@@ -16,11 +16,11 @@
             <div class="flex flex-col items-center md:items-start gap-4 md:w-64 flex-shrink-0">
                 <a href="{{ route('artist.show', $artist->slug) }}" wire:navigate>
                     <img src="{{ $artist->avatar_url ?? asset('images/default-artist.png') }}"
-                         class="w-32 h-32 rounded-full object-cover ring-4 ring-primary-500/30 shadow-xl" alt="{{ $artist->name }}">
+                         class="w-32 h-32 rounded-full object-cover ring-4 ring-primary-500/30 shadow-xl" alt="{{ $artist->display_name }}">
                 </a>
                 <div class="text-center md:text-right">
                     <div class="text-xs text-primary-500 font-medium mb-1">{{ $section->title_fa }}</div>
-                    <h3 class="text-2xl font-bold text-surface-900 dark:text-white">{{ $artist->name }}</h3>
+                    <h3 class="text-2xl font-bold text-surface-900 dark:text-white">{{ $artist->display_name }}</h3>
                     @if($artist->followers_count)
                     <p class="text-sm text-surface-500 mt-1">{{ number_format($artist->followers_count) }} دنبال‌کننده</p>
                     @endif
@@ -43,7 +43,7 @@
                 <div class="space-y-1">
                     @foreach($topTracks as $i => $track)
                     <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/50 dark:hover:bg-white/5 transition cursor-pointer"
-                         x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$artist->name,'cover'=>$track->cover_url,'url'=>$track->stream_url]) }})">
+                         x-on:click="$store.player.play({{ json_encode(['id'=>$track->id,'title'=>$track->title,'artist'=>$artist->display_name,'cover'=>$track->cover_url,'url'=>$track->stream_url]) }})">
                         <span class="text-surface-400 text-xs w-4 text-center">{{ $i + 1 }}</span>
                         <img src="{{ $track->cover_url ?? asset('images/default-cover.png') }}" class="w-9 h-9 rounded-lg object-cover" alt="">
                         <div class="flex-1 min-w-0">

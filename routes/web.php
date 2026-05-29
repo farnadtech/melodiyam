@@ -59,12 +59,13 @@ Route::post('/api/ad-click', [\App\Http\Controllers\Web\AdController::class, 'tr
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
-Route::get('/browse/tracks.json', [BrowseController::class, 'tracksJson'])->name('browse.tracks-json');
-Route::get('/browse/genre/{genre}', [BrowseController::class, 'genre'])->name('browse.genre');
-Route::get('/browse/genre/{genre}/tracks.json', [BrowseController::class, 'genreTracksJson'])->name('browse.genre-tracks-json');
+Route::get('/browse/tracks.json', [BrowseController::class, 'tracksJson'])->name('browse.tracks.json');
+Route::get('/browse/genre/{genre:slug}/tracks.json', [BrowseController::class, 'genreTracksJson'])->name('browse.genre.tracks.json');
+Route::get('/browse/genre/{genre:slug}', [BrowseController::class, 'genre'])->name('browse.genre');
 Route::get('/search', SearchController::class)->name('search');
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');
+Route::get('/track/{track}/download', [TrackController::class, 'download'])->name('track.download');
 
 // Audio stream with byte-range support for seeking
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
@@ -129,6 +130,15 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     }
 
     $path = $track->getEffectiveStreamPath();
+    
+    // Check for quality request
+    $requestedQuality = request('quality');
+    if ($requestedQuality === 'medium' && $track->file_path_128 && file_exists(storage_path('app/public/' . $track->file_path_128))) {
+        $path = storage_path('app/public/' . $track->file_path_128);
+    } elseif ($requestedQuality === 'high' && $track->file_path_320 && file_exists(storage_path('app/public/' . $track->file_path_320))) {
+        $path = storage_path('app/public/' . $track->file_path_320);
+    }
+
     if (!$path) {
         abort(404);
     }
@@ -308,6 +318,8 @@ Route::middleware('auth')->group(function () {
 });
 Route::get('/podcasts', [PodcastController::class, 'index'])->name('podcasts.index');
 Route::get('/podcast/{podcast}', [PodcastController::class, 'show'])->name('podcast.show');
+Route::post('/podcast/{podcast}/subscribe', [PodcastController::class, 'toggleSubscription'])->name('podcast.subscribe');
+Route::get('/podcast/episode/{episode}/download', [PodcastController::class, 'downloadEpisode'])->name('podcast.episode.download');
 
 // Podcast Episode stream
 Route::get('/stream/episode/{episode}', function (App\Models\PodcastEpisode $episode) {
@@ -359,7 +371,7 @@ Route::get('/stream/episode/{episode}', function (App\Models\PodcastEpisode $epi
 })->name('podcast.episode.stream');
 
 Route::get('/premium', [SubscriptionController::class, 'plans'])->name('premium');
-Route::get('/page/{page}', [PageController::class, 'show'])->name('page.show');
+Route::get('/p/{page:slug}', [PageController::class, 'show'])->name('page.show');
 
 // ── Auth Routes ──
 Route::middleware('guest')->group(function () {
@@ -384,7 +396,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/library/history', [LibraryController::class, 'history'])->name('library.history');
     Route::get('/library/albums', [LibraryController::class, 'albums'])->name('library.albums');
     Route::get('/library/artists', [LibraryController::class, 'artists'])->name('library.artists');
+    Route::get('/library/podcasts', [LibraryController::class, 'podcasts'])->name('library.podcasts');
     Route::get('/library/downloads', [LibraryController::class, 'downloads'])->name('library.downloads');
+    Route::post('/library/validate-coupon', [LibraryController::class, 'validateCoupon'])->name('coupon.validate');
 
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
     Route::post('/wallet/deposit', [WalletController::class, 'depositRequest'])->name('wallet.deposit');
@@ -405,24 +419,32 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Stream recording (web version - session auth)
-    Route::post('/stream/record', function (StreamService $streamService) {
+    Route::post('/stream/record', function (App\Services\StreamService $streamService) {
         request()->validate([
-            'track_id' => 'required|exists:tracks,id',
+            'track_id' => 'nullable|exists:tracks,id',
+            'episode_id' => 'nullable|exists:podcast_episodes,id',
             'duration_listened' => 'required|integer|min:0',
             'completed' => 'boolean',
         ]);
 
-        $track = \App\Models\Track::findOrFail(request('track_id'));
-
-        $stream = $streamService->recordStream(auth()->user(), $track, [
-            'duration_listened' => request('duration_listened'),
-            'completed' => request('completed', false),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'device_type' => 'web',
-        ]);
-
-        $streamService->addToRecentlyPlayed(auth()->user(), $track, request('duration_listened'));
+        if (request('episode_id')) {
+            $episode = \App\Models\PodcastEpisode::findOrFail(request('episode_id'));
+            $streamService->recordEpisodeStream(auth()->user(), $episode, [
+                'duration_listened' => request('duration_listened'),
+                'completed' => request('completed', false),
+            ]);
+            $streamService->addToRecentlyPlayed(auth()->user(), $episode, request('duration_listened'));
+        } else if (request('track_id')) {
+            $track = \App\Models\Track::findOrFail(request('track_id'));
+            $streamService->recordStream(auth()->user(), $track, [
+                'duration_listened' => request('duration_listened'),
+                'completed' => request('completed', false),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'device_type' => 'web',
+            ]);
+            $streamService->addToRecentlyPlayed(auth()->user(), $track, request('duration_listened'));
+        }
 
         return response()->json(['success' => true]);
     })->name('stream.record');
@@ -580,6 +602,8 @@ Route::middleware('auth')->group(function () {
             $existing->delete();
             if ($validated['type'] === 'track') {
                 \App\Models\Track::where('id', $validated['id'])->decrement('like_count');
+            } elseif ($validated['type'] === 'album') {
+                \App\Models\Album::where('id', $validated['id'])->decrement('like_count');
             }
             return response()->json(['liked' => false]);
         }
@@ -591,6 +615,8 @@ Route::middleware('auth')->group(function () {
 
         if ($validated['type'] === 'track') {
             \App\Models\Track::where('id', $validated['id'])->increment('like_count');
+        } elseif ($validated['type'] === 'album') {
+            \App\Models\Album::where('id', $validated['id'])->increment('like_count');
         }
 
         return response()->json(['liked' => true]);

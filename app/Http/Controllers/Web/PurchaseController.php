@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Album;
 use App\Models\CommissionRule;
+use App\Models\Coupon;
 use App\Models\Sale;
 use App\Models\Track;
 use Illuminate\Http\Request;
@@ -55,6 +56,7 @@ class PurchaseController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:track,album',
             'id'   => 'required|integer',
+            'coupon_code' => 'nullable|string',
         ]);
 
         $user = auth()->user();
@@ -84,9 +86,21 @@ class PurchaseController extends Controller
             return back()->with('info', 'این محتوا را قبلاً خریده‌اید.');
         }
 
-        $finalPrice = (int) ($item->discount_price ?: $item->price);
+        $grossPrice = (int) ($item->discount_price ?: $item->price);
+        $finalPrice = $grossPrice;
+        $coupon = null;
 
-        if ($finalPrice <= 0) {
+        if ($validated['coupon_code']) {
+            $coupon = Coupon::where('code', $validated['coupon_code'])->first();
+            if ($coupon && $coupon->isValidForUser($user, $validated['type'] . 's', $grossPrice)) {
+                $discount = $coupon->calculateDiscount($grossPrice);
+                $finalPrice = max(0, $grossPrice - $discount);
+            } else {
+                return back()->with('error', 'کد تخفیف معتبر نیست یا منقضی شده است.');
+            }
+        }
+
+        if ($finalPrice < 0) {
             return back()->with('error', 'قیمت معتبر نیست.');
         }
 
@@ -115,17 +129,19 @@ class PurchaseController extends Controller
         $sellerId = $artist?->user_id ?? 1; // fallback به ادمین
 
         // کسر از کیف پول خریدار
-        $wallet->decrement('balance', $finalPrice);
-        $wallet->transactions()->create([
-            'type'          => 'purchase',
-            'amount'        => $finalPrice,
-            'balance_after' => $wallet->fresh()->balance,
-            'description'   => 'خرید: ' . $item->title,
-            'status'        => 'approved',
-        ]);
+        if ($finalPrice > 0) {
+            $wallet->decrement('balance', $finalPrice);
+            $wallet->transactions()->create([
+                'type'          => 'purchase',
+                'amount'        => $finalPrice,
+                'balance_after' => $wallet->fresh()->balance,
+                'description'   => 'خرید: ' . $item->title . ($coupon ? " (با کد تخفیف: {$coupon->code})" : ""),
+                'status'        => 'approved',
+            ]);
+        }
 
         // واریز به کیف پول هنرمند (اگر user_id داره)
-        if ($sellerId && $sellerId !== $user->id) {
+        if ($sellerId && $sellerId !== $user->id && $netAmount > 0) {
             $sellerUser = \App\Models\User::find($sellerId);
             if ($sellerUser) {
                 $sellerWallet = $sellerUser->getOrCreateWallet();
@@ -146,13 +162,19 @@ class PurchaseController extends Controller
             'seller_id'         => $sellerId,
             'saleable_type'     => get_class($item),
             'saleable_id'       => $item->id,
-            'gross_amount'      => $finalPrice,
+            'gross_amount'      => $grossPrice,
             'commission_amount' => $commissionAmount,
             'net_amount'        => $netAmount,
             'commission_rule_id' => $rule?->id,
             'status'            => 'completed',
             'payment_method'    => 'wallet',
         ]);
+
+        // ثبت استفاده از کوپن
+        if ($coupon) {
+            $coupon->increment('used_count');
+            $coupon->users()->attach($user->id, ['used_at' => now()]);
+        }
 
         return back()->with('success', '«' . $item->title . '» با موفقیت خریداری شد!');
     }

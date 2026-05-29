@@ -7,24 +7,30 @@
         'url'        => $t->getStreamUrl(),
         'cover_page' => route('track.show', $t->slug),
     ])->values()->toArray();
-    $apiUrl = route('browse.genre-tracks-json', $genre->slug) . '?' . http_build_query(request()->except('page'));
+    $apiUrl = route('browse.genre.tracks.json', $genre->slug) . '?' . http_build_query(request()->except('page'));
 @endphp
 <x-layouts.app :title="$genre->name_fa">
     <div class="p-4 lg:p-8 space-y-8">
 
         {{-- Genre Header --}}
-        <div class="relative overflow-hidden rounded-3xl p-8 lg:p-12" style="background-color: {{ $genre->color ?? '#6366f1' }}">
-            <div class="absolute inset-0 bg-gradient-to-l from-black/30 to-transparent"></div>
+        <div class="relative overflow-hidden rounded-3xl p-8 lg:p-12 flex flex-col items-center justify-center text-center min-h-[200px] lg:min-h-[300px]" style="background-color: {{ $genre->color ?? '#6366f1' }}">
+            @if($genre->cover_image)
+            <img src="{{ asset('storage/' . $genre->cover_image) }}" alt="{{ $genre->name_fa }}" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/40"></div>
+            @endif
             <div class="relative z-10">
-                <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-white">{{ $genre->name_fa }}</h1>
-                <p class="text-white/80 mt-2">{{ $genre->name }}</p>
+                <h1 class="text-3xl lg:text-6xl font-display font-extrabold text-white drop-shadow-2xl">{{ $genre->name_fa }}</h1>
+                <p class="text-white/90 mt-4 text-lg lg:text-xl font-medium drop-shadow-lg">{{ $genre->name }}</p>
             </div>
         </div>
 
         {{-- Tracks with infinite scroll --}}
-        <section
-            x-data="{
-                tracks: {{ Js::from($initialTracks) }},
+        <section class="space-y-6">
+            <x-sort-filters :currentSort="$sortBy" />
+
+            <div
+                x-data="{
+                    tracks: {{ Js::from($initialTracks) }},
                 hasMore: {{ $tracks->hasMorePages() ? 'true' : 'false' }},
                 loading: false,
                 page: 2,
@@ -87,6 +93,7 @@
             </div>
 
             <div x-ref="sentinel" class="h-4"></div>
+        </div>
         </section>
     </div>
 </x-layouts.app>

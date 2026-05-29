@@ -40,18 +40,19 @@ class ArtistController extends Controller
     public function show(Artist $artist): View
     {
         $artist->load('user');
+        $sort = request('sort', 'newest');
 
-        $topTracks = $artist->tracks()
+        $tracks = $artist->tracks()
             ->published()
-            ->orderByDesc('play_count')
-            ->take(10)
-            ->get();
+            ->sort($sort)
+            ->paginate(24)
+            ->withQueryString();
 
         $albums = $artist->albums()
             ->published()
             ->orderByDesc('release_date')
             ->get();
 
-        return view('artist.show', compact('artist', 'topTracks', 'albums'));
+        return view('artist.show', compact('artist', 'tracks', 'albums', 'sort'));
     }
 }

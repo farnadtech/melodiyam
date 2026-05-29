@@ -38,8 +38,16 @@ class AppServiceProvider extends ServiceProvider
                 // share with all Blade views
                 View::share('siteName',        $settings['site_name']        ?? config('app.name'));
                 View::share('siteDescription', $settings['site_description'] ?? '');
-                View::share('siteLogo',        $settings['site_logo']        ? asset('storage/' . $settings['site_logo']) : null);
-                View::share('siteFavicon',     $settings['site_favicon']     ? asset('storage/' . $settings['site_favicon']) : null);
+                
+                $logo = $settings['site_logo'] ?? null;
+                View::share('siteLogo',        $logo ? asset('storage/' . $logo) : null);
+                
+                $favicon = $settings['site_favicon'] ?? null;
+                View::share('siteFavicon',     $favicon ? asset('storage/' . $favicon) : asset('images/favicon.ico'));
+
+                View::share('showSiteName',       ($settings['show_site_name_in_sidebar'] ?? '1') === '1');
+                View::share('logoHeight',         (int) ($settings['logo_height_px'] ?? 40));
+
                 View::share('metaTitle',       $settings['meta_title']       ?? config('app.name'));
                 View::share('metaDescription', $settings['meta_description'] ?? '');
                 View::share('metaKeywords',    $settings['meta_keywords']    ?? '');

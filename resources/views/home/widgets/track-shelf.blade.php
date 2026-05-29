@@ -1,12 +1,12 @@
 @php
-    $cfg     = $section->config ?? [];
-    $limit   = (int)($cfg['limit']   ?? 6);
-    $cols    = (int)($cfg['columns'] ?? 6);
-    $layout  = $cfg['layout']        ?? 'grid';
-    $sortBy  = $cfg['sort_by']       ?? 'release_date';
+    $cfg     = $section->config;
+    $limit   = (int)($cfg['limit']);
+    $cols    = (int)($cfg['columns']);
+    $layout  = $cfg['layout'];
+    $sortBy  = $cfg['sort_by'];
     $genreSlugs = array_filter((array)($cfg['genre_filter'] ?? []));
-    $showSeeAll = (bool)($cfg['show_see_all'] ?? true);
-    $seeAllLabel = $cfg['see_all_label'] ?? 'مشاهده همه';
+    $showSeeAll = (bool)($cfg['show_see_all']);
+    $seeAllLabel = $cfg['see_all_label'];
 
     // Auto-build see_all_url based on type + genre filters + sort
     if (!empty($cfg['see_all_url'])) {
@@ -17,7 +17,7 @@
             'release_date' => 'release_date',
             'created_at'   => 'created_at',
             'play_count'   => 'play_count',
-            'like_count'   => 'play_count', // browse page doesn't have like sort, fallback to play_count
+            'like_count'   => 'like_count',
         ];
         $sortParam = $sortMap[$sortBy] ?? 'play_count';
 
@@ -50,7 +50,7 @@
         if ($type === 'trending') {
             $q->where('created_at', '>=', now()->subDays(30));
         }
-        $q->orderByDesc($sortBy === 'like_count' ? 'play_count' : $sortBy);
+        $q->sort($sortBy);
         return $q->take($limit)->get();
     };
 

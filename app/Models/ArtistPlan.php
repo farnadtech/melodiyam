@@ -13,18 +13,19 @@ class ArtistPlan extends Model
 
     protected $fillable = [
         'name', 'slug', 'description', 'price', 'duration_days',
-        'max_tracks', 'max_albums', 'max_storage_mb', 'is_active', 'sort_order',
+        'max_tracks', 'max_albums', 'max_storage_mb', 'includes_downloads', 'is_active', 'sort_order',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active'      => 'boolean',
-            'price'          => 'integer',
-            'duration_days'  => 'integer',
-            'max_tracks'     => 'integer',
-            'max_albums'     => 'integer',
-            'max_storage_mb' => 'integer',
+            'is_active'         => 'boolean',
+            'includes_downloads' => 'boolean',
+            'price'              => 'integer',
+            'duration_days'      => 'integer',
+            'max_tracks'         => 'integer',
+            'max_albums'         => 'integer',
+            'max_storage_mb'     => 'integer',
         ];
     }
 

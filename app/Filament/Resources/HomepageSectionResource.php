@@ -53,13 +53,17 @@ class HomepageSectionResource extends Resource
                     Select::make('type')
                         ->label('نوع ویجت')
                         ->required()
-                        ->reactive()
+                        ->live()
+                        ->afterStateUpdated(function ($state, $set, $get) {
+                            $defaults = \App\Models\HomepageSection::getDefaultConfig($state);
+                            $currentConfig = $get('config') ?: [];
+                            $set('config', array_merge($defaults, $currentConfig));
+                        })
                         ->options([
                             'hero'              => '🎯 هیرو (بنر اصلی)',
-                            'new_releases'      => '🆕 تازه‌ترین‌ها',
-                            'trending'          => '🔥 پرطرفدارها',
-                            'featured_artists'  => '🎤 هنرمندان ویژه',
-                            'featured_playlists'=> '🎵 پلی‌لیست‌های ویژه',
+                            'track_shelf'       => '🎼 قفسه آهنگ‌ها',
+                            'featured_artists'  => '🎤 هنرمندان',
+                            'featured_playlists'=> '🎵 پلی‌لیست‌ها',
                             'genres'            => '🎸 ژانرها',
                             'latest_albums'     => '💿 آلبوم‌های جدید',
                             'top_charts'        => '📊 چارت برتر',
@@ -105,7 +109,7 @@ class HomepageSectionResource extends Resource
             // ── Track/Album shelf config (shared) ──
             Section::make('تنظیمات شلف')
                 ->visible(fn ($get) => in_array($get('type'), [
-                    'new_releases','trending','latest_albums','top_charts'
+                    'track_shelf', 'latest_albums'
                 ]))
                 ->schema([
                     Grid::make(3)->schema([
@@ -196,7 +200,7 @@ class HomepageSectionResource extends Resource
                 ->schema([
                     Select::make('config.artist_id')
                         ->label('هنرمند')
-                        ->options(fn () => \App\Models\Artist::where('verification_status','approved')->pluck('name','id')->toArray())
+                        ->options(fn () => \App\Models\Artist::where('verification_status','approved')->pluck('display_name','id')->toArray())
                         ->searchable()
                         ->required(),
                     Textarea::make('config.spotlight_text')->label('متن معرفی')->rows(3),
@@ -226,13 +230,21 @@ class HomepageSectionResource extends Resource
             Section::make('تنظیمات چارت')
                 ->visible(fn ($get) => $get('type') === 'top_charts')
                 ->schema([
-                    Grid::make(2)->schema([
+                    Grid::make(3)->schema([
                         TextInput::make('config.limit')->label('تعداد')->numeric()->default(10)->minValue(1)->maxValue(50),
+                        Select::make('config.columns')
+                            ->label('تعداد ستون')
+                            ->options(['2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶'])
+                            ->default('6'),
                         Select::make('config.period')
                             ->label('بازه زمانی')
-                            ->options(['7'=>'هفت روز','30'=>'یک ماه','90'=>'سه ماه','365'=>'یک سال'])
+                            ->options(['7' => 'هفت روز', '30' => 'یک ماه', '90' => 'سه ماه', '365' => 'یک سال'])
                             ->default('30'),
                     ]),
+                    Toggle::make('config.show_see_all')->label('نمایش دکمه «مشاهده همه»')->default(true),
+                    TextInput::make('config.see_all_url')
+                        ->label('لینک «مشاهده همه» (خالی = خودکار)')
+                        ->placeholder('خودکار بر اساس نوع'),
                 ]),
 
             // ── Custom tracks config ──
@@ -257,7 +269,7 @@ class HomepageSectionResource extends Resource
                                 Select::make('id')
                                     ->label('آهنگ')
                                     ->options(fn () => \App\Models\Track::published()->with('artist')
-                                        ->get()->mapWithKeys(fn($t) => [$t->id => $t->title . ' — ' . ($t->artist?->name ?? '')])->toArray())
+                                        ->get()->mapWithKeys(fn($t) => [$t->id => $t->title . ' — ' . ($t->artist?->display_name ?? '')])->toArray())
                                     ->searchable()
                                     ->required(),
                             ])
@@ -272,7 +284,7 @@ class HomepageSectionResource extends Resource
                                 Select::make('id')
                                     ->label('آلبوم')
                                     ->options(fn () => \App\Models\Album::published()->with('artist')
-                                        ->get()->mapWithKeys(fn($a) => [$a->id => $a->title . ' — ' . ($a->artist?->name ?? '')])->toArray())
+                                        ->get()->mapWithKeys(fn($a) => [$a->id => $a->title . ' — ' . ($a->artist?->display_name ?? '')])->toArray())
                                     ->searchable()
                                     ->required(),
                             ])
@@ -327,7 +339,7 @@ class HomepageSectionResource extends Resource
                             Select::make('id')
                                 ->label('آهنگ')
                                 ->options(fn () => \App\Models\Track::published()->with('artist')
-                                    ->get()->mapWithKeys(fn($t) => [$t->id => $t->title . ' — ' . ($t->artist?->name ?? '')])->toArray())
+                                    ->get()->mapWithKeys(fn($t) => [$t->id => $t->title . ' — ' . ($t->artist?->display_name ?? '')])->toArray())
                                 ->searchable()->required(),
                         ])
                         ->addActionLabel('افزودن آهنگ')
@@ -354,10 +366,9 @@ class HomepageSectionResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn ($state) => match($state) {
                         'hero'               => '🎯 هیرو',
-                        'new_releases'       => '🆕 تازه‌ترین',
-                        'trending'           => '🔥 ترند',
+                        'track_shelf'        => '🎼 قفسه آهنگ‌ها',
                         'featured_artists'   => '🎤 هنرمندان',
-                        'featured_playlists' => '🎵 پلی‌لیست',
+                        'featured_playlists' => '🎵 پلی‌لیست‌ها',
                         'genres'             => '🎸 ژانر',
                         'latest_albums'      => '💿 آلبوم',
                         'top_charts'         => '📊 چارت',

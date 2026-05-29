@@ -24,6 +24,12 @@ function registerAlpineStuff(Alpine) {
             this.audio = new Audio();
             this.audio.volume = this.volume / 100;
 
+            // Load quality preference
+            this.quality = localStorage.getItem('playback_quality') || 'auto';
+            window.addEventListener('quality-changed', (e) => {
+                this.quality = e.detail;
+            });
+
             this.audio.addEventListener('timeupdate', () => {
                 this.currentTime = this.audio.currentTime;
 
@@ -86,7 +92,15 @@ function registerAlpineStuff(Alpine) {
                 this.currentTrack = track;
                 this.previewLimitReached = false;
                 if (this.audio) {
-                    this.audio.src = track.url;
+                    let streamUrl = track.url;
+                    // Append quality param if it's a local stream and quality is set
+                    if (streamUrl.includes('/stream/track/')) {
+                        const q = localStorage.getItem('playback_quality') || 'auto';
+                        if (q !== 'auto') {
+                            streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'quality=' + q;
+                        }
+                    }
+                    this.audio.src = streamUrl;
                     this.audio.load();
                 }
 
@@ -177,6 +191,19 @@ function registerAlpineStuff(Alpine) {
 
             console.log('Recording stream:', this.currentTrack.id, 'listened:', listened, 'completed:', completed);
 
+            const payload = {
+                duration_listened: listened,
+                completed: completed
+            };
+
+            // Handle both tracks and podcast episodes
+            const idStr = String(this.currentTrack.id);
+            if (idStr.startsWith('episode-')) {
+                payload.episode_id = idStr.replace('episode-', '');
+            } else {
+                payload.track_id = idStr;
+            }
+
             fetch('/stream/record', {
                 method: 'POST',
                 headers: {
@@ -184,11 +211,7 @@ function registerAlpineStuff(Alpine) {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrf
                 },
-                body: JSON.stringify({
-                    track_id: this.currentTrack.id,
-                    duration_listened: listened,
-                    completed: completed
-                })
+                body: JSON.stringify(payload)
             }).catch(() => {});
         },
 

@@ -108,6 +108,47 @@
             @endif
         @endif
 
+        {{-- Subscription Status --}}
+        @if(isset($activeSubscription))
+        <div class="glass-card rounded-2xl p-5 border border-amber-500/20 bg-amber-500/5">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-surface-900 dark:text-white text-sm">اشتراک فعال: {{ $activeSubscription->plan->name_fa }}</p>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">فعال</span>
+                    </div>
+                    <p class="text-xs text-surface-500 mt-1">
+                        @if($activeSubscription->is_trial)
+                            <span class="text-emerald-500 font-bold">دوره آزمایشی رایگان</span> — 
+                        @endif
+                        انقضا: {{ \Morilog\Jalali\Jalalian::fromDateTime($activeSubscription->expires_at)->format('Y/m/d') }} 
+                        <span class="mr-1 opacity-75">({{ $activeSubscription->expires_at->diffForHumans() }})</span>
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('premium') }}" wire:navigate class="mt-4 block text-center py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-400 hover:bg-surface-200 transition-colors">
+                مدیریت اشتراک
+            </a>
+        </div>
+        @else
+        <a href="{{ route('premium') }}" wire:navigate
+           class="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-l from-amber-500/10 to-orange-500/10 border border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-all group">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform text-white">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-surface-900 dark:text-white text-sm">ارتقا به پریمیوم</p>
+                <p class="text-xs text-surface-500 mt-0.5">بدون تبلیغات، کیفیت بالا و دانلود آفلاین</p>
+            </div>
+            <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        @endif
+
         {{-- Quick Links --}}
         <div class="glass-card rounded-2xl divide-y divide-surface-200 dark:divide-surface-700">
             <a href="{{ url('/library/liked') }}" wire:navigate class="flex items-center justify-between p-4 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors rounded-t-2xl">

@@ -56,6 +56,11 @@ class Podcast extends Model
         return $this->hasMany(PodcastEpisode::class)->orderByDesc('episode_number');
     }
 
+    public function subscriptions()
+    {
+        return $this->hasMany(PodcastSubscription::class);
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published');

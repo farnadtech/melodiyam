@@ -91,8 +91,11 @@
         </div>
 
         {{-- Track List --}}
-        <div class="divide-y divide-surface-200 dark:divide-surface-800 rounded-2xl overflow-hidden">
-            @foreach($playlist->tracks as $i => $track)
+        <div class="space-y-4">
+            <x-sort-filters :currentSort="$sort" />
+            
+            <div class="divide-y divide-surface-200 dark:divide-surface-800 rounded-2xl overflow-hidden">
+                @foreach($tracks as $i => $track)
             <div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group" x-data>
                 <span class="text-sm text-surface-400 w-6 text-center">{{ $i + 1 }}</span>
                 <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">

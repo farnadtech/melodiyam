@@ -49,7 +49,12 @@
                             </button>
                         </div>
                         <a href="{{ $trackUrl }}" wire:navigate class="block">
-                            <p class="font-medium text-surface-900 dark:text-white text-sm truncate hover:text-primary-500 transition-colors">{{ $track->title }}</p>
+                            <div class="flex items-center gap-1.5">
+                                <p class="font-medium text-surface-900 dark:text-white text-sm truncate hover:text-primary-500 transition-colors">{{ $track->title }}</p>
+                                @if($track->is_explicit)
+                                <span class="text-[10px] font-bold px-1 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 leading-none">18+</span>
+                                @endif
+                            </div>
                             <p class="text-xs text-surface-500 truncate mt-1">{{ $track->artist->display_name ?? '' }}</p>
                         </a>
                     </div>
@@ -81,7 +86,10 @@
         {{-- New Albums --}}
         @if($newAlbums->isNotEmpty())
         <section>
-            <h2 class="text-lg font-bold text-surface-900 dark:text-white mb-4">جدیدترین آلبوم‌ها</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-surface-900 dark:text-white">جدیدترین آلبوم‌ها</h2>
+                <a href="{{ route('albums.index', ['sort' => 'newest']) }}" wire:navigate class="text-sm text-primary-500 hover:underline">مشاهده همه</a>
+            </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 @foreach($newAlbums as $album)
                 <a href="{{ route('album.show', $album) }}" wire:navigate
@@ -93,6 +101,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z"/>
                             </svg>
                         </div>
+                        @if($album->is_explicit)
+                        <div class="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10">18+</div>
+                        @endif
                         @if($album->is_for_sale && $album->price)
                         <div class="absolute top-2 left-2 bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {{ number_format($album->discount_price ?? $album->price) }} ت

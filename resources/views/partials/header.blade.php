@@ -24,15 +24,30 @@
         </div>
 
         {{-- Search Bar --}}
-        <div class="hidden md:block relative">
-            <form action="{{ route('search') }}" method="GET" class="relative">
+        <div x-data="{ open: false, query: '', results: [], loading: false, debounceTimer: null }" class="hidden md:block relative">
+            <div class="relative">
                 <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
                 <input
                     type="text"
-                    name="q"
-                    value="{{ request('q') }}"
+                    x-model="query"
+                    @focus="open = true"
+                    @input="
+                        clearTimeout(debounceTimer);
+                        if(query.length >= 2) {
+                            debounceTimer = setTimeout(() => {
+                                loading = true;
+                                fetch('/api/v1/search?q=' + encodeURIComponent(query))
+                                    .then(r => r.json())
+                                    .then(d => { results = d; loading = false; })
+                                    .catch(() => { results = []; loading = false; });
+                            }, 300);
+                        } else {
+                            results = [];
+                        }
+                    "
+                    @keydown.escape="open = false"
                     placeholder="جستجوی آهنگ، هنرمند، آلبوم..."
                     class="w-64 lg:w-80 pr-10 pl-4 py-2.5 rounded-full text-sm
                            bg-surface-100 dark:bg-surface-800 border-0
@@ -41,7 +56,127 @@
                            focus:outline-none focus:ring-2 focus:ring-primary-500/50
                            transition-all duration-200"
                 >
-            </form>
+            </div>
+
+            {{-- Search Results Dropdown --}}
+            <div
+                x-cloak
+                x-show="open && (query.length >= 2 || results.tracks?.length || results.artists?.length || results.albums?.length || results.playlists?.length || results.podcasts?.length)"
+                @click.away="open = false"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 z-50 overflow-hidden"
+            >
+                <template x-if="loading">
+                    <div class="px-4 py-8 text-center text-sm text-surface-400">
+                        <svg class="animate-spin h-5 w-5 mx-auto mb-2 text-primary-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        در حال جستجو...
+                    </div>
+                </template>
+
+                <template x-if="!loading && (!results.tracks?.length && !results.artists?.length && !results.albums?.length && !results.playlists?.length && !results.podcasts?.length)">
+                    <div class="px-4 py-8 text-center text-sm text-surface-400">
+                        نتیجه‌ای یافت نشد
+                    </div>
+                </template>
+
+                <template x-if="!loading">
+                    <div class="max-h-96 overflow-y-auto">
+                        <!-- Tracks -->
+                        <template x-if="results.tracks?.length">
+                            <div>
+                                <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">آهنگ‌ها</div>
+                                <template x-for="track in results.tracks" :key="track.id">
+                                    <a :href="'/track/' + track.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
+                                        <img :src="track.cover ? '/storage/' + track.cover : '/images/default-cover.png'" :alt="track.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="track.title"></p>
+                                            <p class="text-xs text-surface-500 truncate" x-text="track.artist?.display_name"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Artists -->
+                        <template x-if="results.artists?.length">
+                            <div>
+                                <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">هنرمندان</div>
+                                <template x-for="artist in results.artists" :key="artist.id">
+                                    <a :href="'/artist/' + artist.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
+                                        <img :src="artist.avatar ? '/storage/' + artist.avatar : '/images/default-avatar.png'" :alt="artist.display_name" class="w-10 h-10 rounded-full object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="artist.display_name"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Albums -->
+                        <template x-if="results.albums?.length">
+                            <div>
+                                <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">آلبوم‌ها</div>
+                                <template x-for="album in results.albums" :key="album.id">
+                                    <a :href="'/album/' + album.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
+                                        <img :src="album.cover ? '/storage/' + album.cover : '/images/default-cover.png'" :alt="album.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="album.title"></p>
+                                            <p class="text-xs text-surface-500 truncate" x-text="album.artist?.display_name"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Playlists -->
+                        <template x-if="results.playlists?.length">
+                            <div>
+                                <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">پلی‌لیست‌ها</div>
+                                <template x-for="playlist in results.playlists" :key="playlist.id">
+                                    <a :href="'/playlist/' + playlist.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
+                                        <img :src="playlist.cover_image ? '/storage/' + playlist.cover_image : '/images/default-cover.png'" :alt="playlist.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="playlist.title"></p>
+                                            <p class="text-xs text-surface-500 truncate" x-text="playlist.user?.name"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Podcasts -->
+                        <template x-if="results.podcasts?.length">
+                            <div>
+                                <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">پادکست‌ها</div>
+                                <template x-for="podcast in results.podcasts" :key="podcast.id">
+                                    <a :href="'/podcast/' + podcast.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
+                                        <img :src="podcast.cover_image ? '/storage/' + podcast.cover_image : '/images/default-cover.png'" :alt="podcast.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="podcast.title"></p>
+                                            <p class="text-xs text-surface-500 truncate" x-text="podcast.artist?.display_name"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- View All Results Link -->
+                        <div x-show="query.length >= 2" class="px-4 py-3 border-t border-surface-200 dark:border-surface-700">
+                            <a :href="'/search?q=' + encodeURIComponent(query)" @click="open = false" class="block text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors">
+                                مشاهده همه نتایج
+                            </a>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 

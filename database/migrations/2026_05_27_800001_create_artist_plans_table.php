@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('max_tracks')->default(0)->comment('0 = unlimited');
             $table->unsignedInteger('max_albums')->default(0)->comment('0 = unlimited');
             $table->unsignedBigInteger('max_storage_mb')->default(0)->comment('0 = unlimited');
+            $table->boolean('includes_downloads')->default(false)->comment('Plan includes download capability');
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();

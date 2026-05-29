@@ -1,11 +1,11 @@
 @php
-    $cfg        = $section->config ?? [];
-    $sortBy     = $cfg['sort_by']  ?? 'play_count';
-    $limit      = (int)($cfg['limit'] ?? 5);
+    $cfg        = $section->config;
+    $sortBy     = $cfg['sort_by'];
+    $limit      = (int)($cfg['limit']);
     $genreSlugs = array_filter((array)($cfg['genre_filter'] ?? []));
-    $autoplay   = (bool)($cfg['autoplay'] ?? true);
-    $interval   = (int)($cfg['autoplay_interval'] ?? 5);
-    $showPlay   = (bool)($cfg['show_play_btn'] ?? true);
+    $autoplay   = (bool)($cfg['autoplay']);
+    $interval   = (int)($cfg['autoplay_interval']);
+    $showPlay   = (bool)($cfg['show_play_btn']);
 
     if ($sortBy === 'manual') {
         $manualIds = collect($cfg['manual_track_ids'] ?? [])->pluck('id')->filter()->values();
@@ -20,10 +20,7 @@
         if (!empty($genreSlugs)) {
             $query->whereHas('genres', fn($q) => $q->whereIn('slug', $genreSlugs));
         }
-        if ($sortBy === 'play_count') {
-            $query->where('created_at', '>=', now()->subDays(90));
-        }
-        $query->orderByDesc($sortBy);
+        $query->sort($sortBy);
         $tracks = $query->take($limit)->get();
     }
 

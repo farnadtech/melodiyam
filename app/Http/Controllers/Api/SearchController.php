@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Track;
 use App\Models\Artist;
 use App\Models\Album;
+use App\Models\Playlist;
+use App\Models\Podcast;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,6 +29,14 @@ class SearchController extends Controller
             'artists' => Artist::where('display_name', 'like', "%{$q}%")
                 ->take(5)->get(['id', 'display_name', 'slug']),
             'albums' => Album::published()
+                ->where('title', 'like', "%{$q}%")
+                ->with('artist:id,display_name')
+                ->take(5)->get(),
+            'playlists' => Playlist::public()
+                ->where('title', 'like', "%{$q}%")
+                ->with('user:id,name')
+                ->take(5)->get(),
+            'podcasts' => Podcast::published()
                 ->where('title', 'like', "%{$q}%")
                 ->with('artist:id,display_name')
                 ->take(5)->get(),

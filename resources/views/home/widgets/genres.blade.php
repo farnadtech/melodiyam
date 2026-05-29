@@ -1,10 +1,12 @@
 @php
-    $cfg = $section->config ?? [];
-    $limit = (int)($cfg['limit'] ?? 12);
-    $cols  = (int)($cfg['columns'] ?? 6);
-    $showCount = (bool)($cfg['show_count'] ?? false);
+    $cfg = $section->config;
+    $limit = (int)($cfg['limit']);
+    $cols  = (int)($cfg['columns']);
+    $showCount = (bool)($cfg['show_count']);
 
-    $genres = \App\Models\Genre::active()->ordered()->take($limit)->get();
+    $genres = \App\Models\Genre::active()->ordered()
+        ->when($showCount, fn($q) => $q->withCount('tracks'))
+        ->take($limit)->get();
 
     $colClass = match($cols) {
         3 => 'grid-cols-2 sm:grid-cols-3',

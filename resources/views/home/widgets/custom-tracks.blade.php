@@ -1,8 +1,8 @@
 @php
-    $cfg     = $section->config ?? [];
-    $layout  = $cfg['layout']   ?? 'grid';
-    $cols    = (int)($cfg['columns'] ?? 6);
-    $showSeeAll = (bool)($cfg['show_see_all'] ?? false);
+    $cfg     = $section->config;
+    $layout  = $cfg['layout'];
+    $cols    = (int)($cfg['columns']);
+    $showSeeAll = (bool)($cfg['show_see_all']);
 
     $trackIds    = collect($cfg['track_ids']    ?? [])->pluck('id')->filter()->values();
     $albumIds    = collect($cfg['album_ids']    ?? [])->pluck('id')->filter()->values();

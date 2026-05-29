@@ -23,6 +23,16 @@
                 </div>
             </a>
 
+            <a href="{{ route('library.podcasts') }}" wire:navigate class="glass-card rounded-2xl p-6 flex items-center gap-4 hover:scale-[1.02] transition-transform">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                </div>
+                <div>
+                    <p class="font-bold text-surface-900 dark:text-white">پادکست‌های من</p>
+                    <p class="text-sm text-surface-500">دنبال‌شده‌های شما</p>
+                </div>
+            </a>
+
             <a href="{{ route('library.history') }}" wire:navigate class="glass-card rounded-2xl p-6 flex items-center gap-4 hover:scale-[1.02] transition-transform">
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
                     <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

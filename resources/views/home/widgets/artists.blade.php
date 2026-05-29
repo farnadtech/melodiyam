@@ -1,8 +1,8 @@
 @php
-    $cfg = $section->config ?? [];
-    $limit = (int)($cfg['limit'] ?? 8);
-    $cols  = (int)($cfg['columns'] ?? 8);
-    $featuredOnly = (bool)($cfg['featured_only'] ?? true);
+    $cfg = $section->config;
+    $limit = (int)($cfg['limit']);
+    $cols  = (int)($cfg['columns']);
+    $featuredOnly = (bool)($cfg['featured_only']);
 
     $query = \App\Models\Artist::where('verification_status','approved');
     if ($featuredOnly) $query->where('is_featured', true);

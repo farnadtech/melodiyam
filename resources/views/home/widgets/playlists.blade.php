@@ -1,8 +1,8 @@
 @php
-    $cfg = $section->config ?? [];
-    $limit = (int)($cfg['limit'] ?? 6);
-    $cols  = (int)($cfg['columns'] ?? 6);
-    $featuredOnly = (bool)($cfg['featured_only'] ?? true);
+    $cfg = $section->config;
+    $limit = (int)($cfg['limit']);
+    $cols  = (int)($cfg['columns']);
+    $featuredOnly = (bool)($cfg['featured_only']);
 
     $query = \App\Models\Playlist::public()->with('user');
     if ($featuredOnly) $query->featured();

@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use getID3;
 
 class TrackController extends Controller
 {
@@ -113,15 +112,8 @@ class TrackController extends Controller
         $path128 = $request->hasFile('file_128') ? $request->file('file_128')->store('tracks/128', 'public') : null;
 
         // Get duration from file
-        $duration = 0;
-        try {
-            $fullPath = Storage::disk('public')->path($path320);
-            if (class_exists(\getID3::class)) {
-                $id3 = new \getID3();
-                $info = $id3->analyze($fullPath);
-                $duration = (int) round($info['playtime_seconds'] ?? 0);
-            }
-        } catch (\Throwable $e) {}
+        $fullPath = Storage::disk('public')->path($path320);
+        $duration = \App\Helpers\AudioHelper::getDuration($fullPath);
 
         $coverPath = null;
         if ($request->hasFile('cover_image')) {

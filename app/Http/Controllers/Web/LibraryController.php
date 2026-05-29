@@ -3,10 +3,38 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LibraryController extends Controller
 {
+    public function validateCoupon(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+            'amount' => 'required|numeric',
+            'category' => 'nullable|string'
+        ]);
+
+        $coupon = Coupon::where('code', $request->code)->first();
+
+        if (!$coupon) {
+            return response()->json(['error' => 'کد تخفیف معتبر نیست.'], 422);
+        }
+
+        if (!$coupon->isValidForUser(auth()->user(), $request->category, $request->amount)) {
+            return response()->json(['error' => 'شما مجاز به استفاده از این کد تخفیف نیستید یا شرایط آن را ندارید.'], 422);
+        }
+
+        $discount = $coupon->calculateDiscount($request->amount);
+
+        return response()->json([
+            'discount' => $discount,
+            'final_amount' => $request->amount - $discount,
+            'message' => 'کد تخفیف با موفقیت اعمال شد.'
+        ]);
+    }
     public function index(): View
     {
         return view('library.index');
@@ -14,13 +42,25 @@ class LibraryController extends Controller
 
     public function liked(): View
     {
-        $tracks = auth()->user()->likes()
-            ->where('likeable_type', \App\Models\Track::class)
-            ->with('likeable.artist')
-            ->latest()
-            ->paginate(50);
+        $sort = request('sort', 'newest');
+        
+        $tracks = \App\Models\Track::join('likes', 'tracks.id', '=', 'likes.likeable_id')
+            ->where('likes.user_id', auth()->id())
+            ->where('likes.likeable_type', \App\Models\Track::class)
+            ->select('tracks.*', 'likes.created_at as liked_at')
+            ->with('artist');
 
-        return view('library.liked', compact('tracks'));
+        if ($sort === 'newest') {
+            $tracks->orderByDesc('liked_at');
+        } elseif ($sort === 'oldest') {
+            $tracks->orderBy('liked_at');
+        } else {
+            $tracks->sort($sort);
+        }
+
+        $tracks = $tracks->paginate(50);
+
+        return view('library.liked', compact('tracks', 'sort'));
     }
 
     public function playlists(): View
@@ -77,9 +117,33 @@ class LibraryController extends Controller
         return view('library.artists', compact('artists'));
     }
 
+    public function podcasts(): View
+    {
+        $podcasts = auth()->user()->subscribedPodcasts()
+            ->with('artist')
+            ->orderByDesc('subscribers_count')
+            ->get();
+
+        return view('library.podcasts', compact('podcasts'));
+    }
+
     public function downloads(): View
     {
-        return view('library.downloads');
+        $sort = request('sort', 'newest');
+
+        $downloads = \App\Models\Download::where('user_id', auth()->id())
+            ->with(['downloadable.artist'])
+            ->select('*');
+
+        if ($sort === 'newest') {
+            $downloads->orderByDesc('created_at');
+        } elseif ($sort === 'oldest') {
+            $downloads->orderBy('created_at');
+        }
+
+        $items = $downloads->paginate(50);
+
+        return view('library.downloads', compact('items', 'sort'));
     }
 
     public function queue(): View
@@ -119,7 +183,9 @@ class LibraryController extends Controller
         $playlistCount = \App\Models\Playlist::where('user_id', $user->id)->count();
         $followCount   = \App\Models\Follow::where('user_id', $user->id)->count();
         $application   = \App\Models\ArtistApplication::where('user_id', $user->id)->first();
-        return view('library.profile', compact('likeCount', 'playlistCount', 'followCount', 'application'));
+        $activeSubscription = $user->activeSubscription()->with('plan')->first();
+        
+        return view('library.profile', compact('likeCount', 'playlistCount', 'followCount', 'application', 'activeSubscription'));
     }
 
     public function settings(): View

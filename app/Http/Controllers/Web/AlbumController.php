@@ -12,18 +12,26 @@ class AlbumController extends Controller
 {
     public function index(): View
     {
+        $sort = request('sort', 'newest');
+
         $albums = Album::with('artist')
             ->where('status', 'published')
             ->withCount('tracks')
-            ->latest()
+            ->sort($sort)
             ->paginate(24);
 
-        return view('album.index', compact('albums'));
+        return view('album.index', compact('albums', 'sort'));
     }
 
     public function show(Album $album): View
     {
-        $album->load(['artist', 'tracks.artist', 'genre']);
+        $sort = request('sort', 'newest');
+        $album->load(['artist', 'genre']);
+        
+        $tracks = $album->tracks()
+            ->with('artist')
+            ->sort($sort)
+            ->get();
 
         $user = auth()->user();
         $hasPlanAccess = $user && $user->activeSubscription?->plan?->includes_paid_content;
@@ -32,8 +40,14 @@ class AlbumController extends Controller
         $purchasedTrackIds = [];
         $purchasedAlbumIds = [];
         $albumAlreadyBought = false;
+        $userLikedAlbum = false;
 
         if ($user) {
+            $userLikedAlbum = $user->likes()
+                ->where('likeable_type', Album::class)
+                ->where('likeable_id', $album->id)
+                ->exists();
+
             $purchasedTrackIds = Sale::where('buyer_id', $user->id)
                 ->where('saleable_type', Track::class)
                 ->where('status', 'completed')
@@ -47,8 +61,8 @@ class AlbumController extends Controller
         }
 
         return view('album.show', compact(
-            'album', 'hasPlanAccess',
-            'purchasedTrackIds', 'albumAlreadyBought'
+            'album', 'tracks', 'sort', 'hasPlanAccess',
+            'purchasedTrackIds', 'albumAlreadyBought', 'userLikedAlbum'
         ));
     }
 }

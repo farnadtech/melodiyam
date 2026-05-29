@@ -133,6 +133,33 @@ class Track extends Model
         return $query->where('is_featured', true);
     }
 
+    public function scopeSort($query, $sort = 'newest')
+    {
+        $query->reorder();
+
+        switch ($sort) {
+            case 'most_played':
+            case 'play_count':
+                return $query->orderByDesc('play_count')->orderByDesc('created_at');
+            case 'most_popular':
+            case 'like_count':
+                return $query->orderByDesc('like_count')->orderByDesc('created_at');
+            case 'most_comments':
+                return $query->withCount('comments')->orderByDesc('comments_count')->orderByDesc('created_at');
+            case 'oldest':
+                return $query->orderByRaw('release_date IS NULL ASC, release_date ASC')->orderBy('created_at');
+            case 'recommended':
+                return $query->orderByDesc('is_featured')->orderByDesc('like_count')->orderByDesc('created_at');
+            case 'release_date':
+                return $query->orderByRaw('release_date IS NULL ASC, release_date DESC')->orderByDesc('created_at');
+            case 'created_at':
+                return $query->orderByDesc('created_at');
+            case 'newest':
+            default:
+                return $query->orderByRaw('release_date IS NULL ASC, release_date DESC')->orderByDesc('created_at');
+        }
+    }
+
     public function scopeTrending($query)
     {
         return $query->published()
@@ -185,5 +212,19 @@ class Track extends Model
             return asset('storage/' . $this->album->cover_image);
         }
         return asset('images/default-cover.png');
+    }
+
+    public function getDownloadUrl(): ?string
+    {
+        if ($this->file_url) {
+            return $this->file_url;
+        }
+        if ($this->file_path_320 && file_exists(storage_path('app/public/' . $this->file_path_320))) {
+            return asset('storage/' . $this->file_path_320);
+        }
+        if ($this->file_path && file_exists(storage_path('app/public/' . $this->file_path))) {
+            return asset('storage/' . $this->file_path);
+        }
+        return null;
     }
 }

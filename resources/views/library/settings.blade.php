@@ -12,16 +12,27 @@
                     <span class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform" :class="$store.theme.dark ? 'translate-x-0.5' : 'translate-x-6'"></span>
                 </button>
             </div>
-            <div class="p-5 flex items-center justify-between">
+            <div class="p-5 flex items-center justify-between" x-data="{ 
+                quality: localStorage.getItem('playback_quality') || 'auto',
+                setQuality(val) {
+                    this.quality = val;
+                    localStorage.setItem('playback_quality', val);
+                    // Dispatch event for player if needed
+                    window.dispatchEvent(new CustomEvent('quality-changed', { detail: val }));
+                }
+            }">
                 <div>
                     <p class="font-medium text-surface-900 dark:text-white">کیفیت پخش</p>
                     <p class="text-sm text-surface-500">تنظیم کیفیت استریم</p>
                 </div>
-                <select class="input-field w-36 text-sm">
-                    <option>خودکار</option>
-                    <option>بالا (320kbps)</option>
-                    <option>متوسط (128kbps)</option>
-                    <option>کم (64kbps)</option>
+                <select 
+                    class="input-field w-40 text-sm" 
+                    x-model="quality" 
+                    @change="setQuality($event.target.value)"
+                >
+                    <option value="auto">خودکار</option>
+                    <option value="high">بالا (320kbps)</option>
+                    <option value="medium">متوسط (128kbps)</option>
                 </select>
             </div>
             <div class="p-5 flex items-center justify-between">

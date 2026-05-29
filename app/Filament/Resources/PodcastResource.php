@@ -36,9 +36,16 @@ class PodcastResource extends Resource
         return $form->schema([
             \Filament\Schemas\Components\Section::make('اطلاعات پادکست')->schema([
                 Forms\Components\Select::make('artist_id')->label('هنرمند/دی‌جی')
-                    ->relationship('artist', 'display_name')->searchable()->preload(),
-                Forms\Components\Select::make('user_id')->label('کاربر')
-                    ->relationship('user', 'name')->searchable()->preload(),
+                    ->relationship('artist', 'display_name')
+                    ->searchable()
+                    ->preload()
+                    ->helperText('اگر پادکست متعلق به یک هنرمند ثبت شده است، او را انتخاب کنید.'),
+                Forms\Components\Select::make('user_id')->label('کاربر صاحب پادکست')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->helperText('کاربری که مدیریت این پادکست را بر عهده دارد.'),
                 Forms\Components\TextInput::make('title')->label('عنوان پادکست')->required()->maxLength(255),
                 Forms\Components\Textarea::make('description')->label('توضیحات')->rows(3),
                 Forms\Components\Select::make('category')->label('دسته‌بندی')

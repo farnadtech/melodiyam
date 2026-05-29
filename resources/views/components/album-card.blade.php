@@ -14,7 +14,7 @@
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 leading-none">ویژه</span>
                 @endif
                 @if($album->is_explicit)
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-200 dark:bg-surface-700 text-surface-500 leading-none">E</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 leading-none">18+</span>
                 @endif
             </div>
             <p class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate hover:text-primary-500 transition-colors">

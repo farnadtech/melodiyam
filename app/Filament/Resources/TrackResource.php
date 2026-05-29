@@ -49,9 +49,11 @@ class TrackResource extends Resource
                 Forms\Components\FileUpload::make('cover_image')->label('تصویر کاور')
                     ->image()->directory('tracks/covers')->disk('public')->visibility('public')->maxSize(5120),
                 Forms\Components\FileUpload::make('file_path')->label('فایل اصلی (320kbps)')
-                    ->directory('tracks/audio')->disk('public')->visibility('public')->acceptedFileTypes(['audio/mpeg', 'audio/mp3', 'audio/wav']),
+                    ->directory('tracks/audio')->disk('public')->visibility('public')->acceptedFileTypes(['audio/mpeg', 'audio/mp3', 'audio/wav'])
+                    ->maxSize(102400),
                 Forms\Components\FileUpload::make('file_path_128')->label('فایل 128kbps')
-                    ->directory('tracks/audio/128')->disk('public')->visibility('public')->acceptedFileTypes(['audio/mpeg', 'audio/mp3']),
+                    ->directory('tracks/audio/128')->disk('public')->visibility('public')->acceptedFileTypes(['audio/mpeg', 'audio/mp3'])
+                    ->maxSize(51200),
                 Forms\Components\TextInput::make('file_url')->label('آدرس خارجی فایل')->url(),
             ])->columns(2),
 
@@ -61,7 +63,6 @@ class TrackResource extends Resource
                     ->options([
                         'draft' => 'پیش‌نویس',
                         'pending' => 'در انتظار تایید',
-                        'scheduled' => 'زمان‌بندی',
                         'published' => 'منتشر',
                         'archived' => 'بایگانی'
                     ])
@@ -125,7 +126,6 @@ class TrackResource extends Resource
                     ->formatStateUsing(fn ($state) => match($state) {
                         'draft' => 'پیش‌نویس',
                         'pending' => 'در انتظار تایید',
-                        'scheduled' => 'زمان‌بندی',
                         'published' => 'منتشر',
                         'archived' => 'بایگانی',
                         default => $state,
@@ -133,7 +133,6 @@ class TrackResource extends Resource
                     ->colors([
                         'gray' => 'draft',
                         'warning' => 'pending',
-                        'info' => 'scheduled',
                         'success' => 'published',
                         'danger' => 'archived'
                     ]),

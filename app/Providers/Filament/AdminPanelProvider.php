@@ -21,14 +21,18 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $settings = \App\Models\Setting::getAll();
+        $logo = !empty($settings['site_logo']) ? asset('storage/' . $settings['site_logo']) : null;
+        $favicon = !empty($settings['site_favicon']) ? asset('storage/' . $settings['site_favicon']) : asset('images/favicon.ico');
+        
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('ملودیام')
-            ->brandLogo(asset('images/default-cover.png'))
-            ->favicon(asset('images/favicon.ico'))
+            ->brandName($settings['site_name'] ?? 'ملودیام')
+            ->brandLogo($logo)
+            ->favicon($favicon)
             ->colors([
                 'primary' => Color::Amber,
                 'danger' => Color::Rose,

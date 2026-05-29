@@ -17,6 +17,7 @@ class TrackController extends Controller
         $user = auth()->user();
         $hasPlanAccess = $user?->activeSubscription?->plan?->includes_paid_content ?? false;
         $isPremiumUser = $user?->isPremium() ?? false;
+        $canDownload = $user?->canDownload() && $track->is_downloadable;
 
         // Premium-only check: block non-premium users from playing
         $isPremiumOnly = (bool) $track->is_premium_only;
@@ -117,7 +118,42 @@ class TrackController extends Controller
         return view('track.show', compact(
             'track', 'relatedTracks', 'comments', 'userLikedTrack', 'canPlay',
             'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount',
-            'isPremiumOnly', 'premiumPreviewSec'
+            'isPremiumOnly', 'premiumPreviewSec', 'canDownload'
         ));
+    }
+
+    public function download(Track $track)
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->canDownload() || !$track->is_downloadable) {
+            abort(403, 'شما اجازه دانلود این آهنگ را ندارید.');
+        }
+
+        // Record download
+        \App\Models\Download::firstOrCreate([
+            'user_id' => $user->id,
+            'downloadable_type' => \App\Models\Track::class,
+            'downloadable_id' => $track->id,
+        ]);
+
+        // Increment track download count
+        $track->increment('download_count');
+
+        // Get file path
+        $path = null;
+        if ($track->file_path_320 && file_exists(storage_path('app/public/' . $track->file_path_320))) {
+            $path = storage_path('app/public/' . $track->file_path_320);
+        } elseif ($track->file_path && file_exists(storage_path('app/public/' . $track->file_path))) {
+            $path = storage_path('app/public/' . $track->file_path);
+        } elseif ($track->file_path_128 && file_exists(storage_path('app/public/' . $track->file_path_128))) {
+            $path = storage_path('app/public/' . $track->file_path_128);
+        }
+
+        if (!$path) {
+            abort(404, 'فایل آهنگ یافت نشد.');
+        }
+
+        return response()->download($path, $track->title . '.' . pathinfo($path, PATHINFO_EXTENSION));
     }
 }
