@@ -213,8 +213,8 @@ class PaymentResource extends Resource
                     ]),
 
                 Action::make('refund')
-                    ->label('استرداد')
-                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->label('مسترد کردن')
+                    ->icon('heroicon-o-arrow-left')
                     ->color('warning')
                     ->visible(fn($record) => $record->status === 'paid')
                     ->requiresConfirmation()

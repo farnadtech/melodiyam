@@ -3,7 +3,8 @@
     "from_version":  "v1.0.0",
     "released_at":  "2026-06-03",
     "files":  [
-
+                  "build-update.ps1",
+                  "version.json"
               ],
     "migrations":  [
 

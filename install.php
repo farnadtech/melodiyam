@@ -10,6 +10,159 @@ define('INSTALLER_VERSION', '1.0.0');
 define('MIN_PHP', '8.2.0');
 define('REQUIRED_EXTENSIONS', ['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'xml', 'ctype', 'json', 'bcmath', 'fileinfo', 'zip', 'curl', 'gd']);
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AJAX ACTIONS — باید اول از همه چک بشن
+// ═══════════════════════════════════════════════════════════════════════════
+if (isset($_GET['action'])) {
+    session_start(); // already started but safe
+    header('Content-Type: application/json');
+    $action = $_GET['action'];
+
+    try {
+        if ($action === 'write_env') {
+            if (!isset($_SESSION['db'], $_SESSION['admin'])) throw new Exception("اطلاعات session منقضی شده. لطفاً مراحل را از ابتدا طی کنید.");
+            $db    = $_SESSION['db'];
+            $admin = $_SESSION['admin'];
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
+            // خواندن .env.example به عنوان template
+            $envTemplate = file_exists(__DIR__ . '/.env.example') ? file_get_contents(__DIR__ . '/.env.example') : '';
+
+            $appKey = 'base64:' . base64_encode(random_bytes(32));
+            $appUrl = ($isHttps ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+
+            if ($envTemplate) {
+                // جایگزینی مقادیر در template
+                $replacements = [
+                    '/^APP_NAME=.*/m'     => 'APP_NAME="' . addslashes($admin['site_name']) . '"',
+                    '/^APP_ENV=.*/m'      => 'APP_ENV=production',
+                    '/^APP_KEY=.*/m'      => 'APP_KEY=' . $appKey,
+                    '/^APP_DEBUG=.*/m'    => 'APP_DEBUG=false',
+                    '/^APP_URL=.*/m'      => 'APP_URL=' . $appUrl,
+                    '/^DB_HOST=.*/m'      => 'DB_HOST=' . $db['host'],
+                    '/^DB_PORT=.*/m'      => 'DB_PORT=' . $db['port'],
+                    '/^DB_DATABASE=.*/m'  => 'DB_DATABASE=' . $db['name'],
+                    '/^DB_USERNAME=.*/m'  => 'DB_USERNAME=' . $db['user'],
+                    '/^DB_PASSWORD=.*/m'  => 'DB_PASSWORD=' . $db['pass'],
+                ];
+                $env = $envTemplate;
+                foreach ($replacements as $pattern => $replacement) {
+                    $env = preg_replace($pattern, $replacement, $env);
+                }
+            } else {
+                // ساخت .env از صفر
+                $env  = "APP_NAME=\"" . addslashes($admin['site_name']) . "\"\n";
+                $env .= "APP_ENV=production\nAPP_KEY={$appKey}\nAPP_DEBUG=false\n";
+                $env .= "APP_URL={$appUrl}\n\n";
+                $env .= "LOG_CHANNEL=stack\nLOG_LEVEL=error\n\n";
+                $env .= "DB_CONNECTION=mysql\nDB_HOST={$db['host']}\nDB_PORT={$db['port']}\n";
+                $env .= "DB_DATABASE={$db['name']}\nDB_USERNAME={$db['user']}\nDB_PASSWORD={$db['pass']}\n\n";
+                $env .= "FILESYSTEM_DISK=public\nQUEUE_CONNECTION=database\n";
+                $env .= "SESSION_DRIVER=file\nSESSION_LIFETIME=120\n\n";
+                $env .= "CACHE_STORE=file\n";
+            }
+
+            if (file_put_contents(__DIR__ . '/.env', $env) === false) {
+                throw new Exception("خطا در نوشتن فایل .env — دسترسی‌های پوشه را بررسی کنید.");
+            }
+            echo json_encode(['ok' => true]);
+        }
+
+        elseif ($action === 'import_sql') {
+            if (!isset($_SESSION['db'])) throw new Exception("اطلاعات session منقضی شده.");
+            $db = $_SESSION['db'];
+            $pdo = new PDO(
+                "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset=utf8mb4",
+                $db['user'], $db['pass'],
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 30]
+            );
+
+            $sqlFile = __DIR__ . '/database/schema.sql';
+            if (!file_exists($sqlFile)) throw new Exception("فایل database/schema.sql یافت نشد.");
+
+            $sql = file_get_contents($sqlFile);
+            // اجرای SQL به صورت statement به statement
+            $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
+            $statements = array_filter(
+                array_map('trim', preg_split('/;\s*\n/', $sql)),
+                fn($s) => strlen($s) > 5
+            );
+            foreach ($statements as $stmt) {
+                if (stripos(trim($stmt), '--') === 0) continue;
+                try { $pdo->exec($stmt); } catch (PDOException $ignored) {}
+            }
+            $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
+
+            // بروزرسانی نام سایت در settings
+            if (isset($_SESSION['admin']['site_name'])) {
+                try {
+                    $pdo->prepare("UPDATE settings SET value=? WHERE `key`='site_name'")->execute([$_SESSION['admin']['site_name']]);
+                } catch (PDOException $ignored) {}
+            }
+
+            echo json_encode(['ok' => true]);
+        }
+
+        elseif ($action === 'create_admin') {
+            if (!isset($_SESSION['db'], $_SESSION['admin'])) throw new Exception("اطلاعات session منقضی شده.");
+            $db    = $_SESSION['db'];
+            $admin = $_SESSION['admin'];
+            $pdo = new PDO(
+                "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset=utf8mb4",
+                $db['user'], $db['pass'],
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+            );
+
+            // حذف admin قبلی با همین ایمیل (در صورت وجود)
+            $pdo->prepare("DELETE FROM users WHERE email=?")->execute([$admin['email']]);
+
+            $hash = password_hash($admin['pass'], PASSWORD_BCRYPT, ['cost' => 12]);
+            $now  = date('Y-m-d H:i:s');
+            $stmt = $pdo->prepare(
+                "INSERT INTO users (name, email, password, type, email_verified_at, created_at, updated_at)
+                 VALUES (?, ?, ?, 'admin', ?, ?, ?)"
+            );
+            $stmt->execute([$admin['name'], $admin['email'], $hash, $now, $now, $now]);
+
+            echo json_encode(['ok' => true]);
+        }
+
+        elseif ($action === 'finalize') {
+            // پاکسازی کش bootstrap
+            foreach (['config.php', 'routes-v7.php', 'packages.php', 'services.php', 'events.php'] as $f) {
+                @unlink(__DIR__ . '/bootstrap/cache/' . $f);
+            }
+
+            // ایجاد storage symlink
+            $storageTarget = __DIR__ . '/storage/app/public';
+            $storageLink   = __DIR__ . '/public/storage';
+            if (!is_dir($storageTarget)) { @mkdir($storageTarget, 0775, true); }
+            if (!file_exists($storageLink) && !is_link($storageLink)) {
+                if (function_exists('symlink')) {
+                    @symlink($storageTarget, $storageLink);
+                } else {
+                    @exec('mklink /D "' . addslashes($storageLink) . '" "' . addslashes($storageTarget) . '"');
+                }
+            }
+
+            // بروزرسانی version.json
+            @file_put_contents(__DIR__ . '/version.json', json_encode([
+                'version'    => '1.0.0',
+                'installed_at' => date('Y-m-d H:i:s'),
+            ], JSON_PRETTY_PRINT));
+
+            echo json_encode(['ok' => true]);
+        }
+
+        else {
+            throw new Exception("اکشن نامعتبر.");
+        }
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // ─── RTL Theme License Check ──────────────────────────────────────────────
 function _lv(string $u, string $o, string $d): string {
     $a = base64_decode('cnRsZDJjMjkxZjVhMmJlNDZmYjllNWVhMzhiMmMzM2FlZTg=');
@@ -57,7 +210,17 @@ function checkRequirements(): array {
     if (!is_writable(__DIR__)) {
         $errors[] = "پوشه روت پروژه (root) قابل نوشتن نیست. دسترسی را روی 755 تنظیم کنید.";
     }
-    $dirs = ['storage', 'bootstrap/cache', 'public/storage'];
+    $dirs = [
+        'storage',
+        'storage/app',
+        'storage/app/public',
+        'storage/framework',
+        'storage/framework/cache',
+        'storage/framework/sessions',
+        'storage/framework/views',
+        'storage/logs',
+        'bootstrap/cache',
+    ];
     foreach ($dirs as $dir) {
         $path = __DIR__ . '/' . $dir;
         if (!is_dir($path)) { @mkdir($path, 0775, true); }
@@ -419,79 +582,4 @@ elseif ($step === 6) {
     </div>
 <?php
     renderFooter();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AJAX ACTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    $action = $_GET['action'];
-
-    try {
-        if ($action === 'write_env') {
-            $db = $_SESSION['db'];
-            $admin = $_SESSION['admin'];
-            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
-            
-            $env = "APP_NAME=\"" . addslashes($admin['site_name']) . "\"\n";
-            $env .= "APP_ENV=production\n";
-            $env .= "APP_KEY=base64:" . base64_encode(random_bytes(32)) . "\n";
-            $env .= "APP_DEBUG=false\n";
-            $env .= "APP_URL=" . ($isHttps ? "https://" : "http://") . $_SERVER['HTTP_HOST'] . "\n\n";
-            $env .= "DB_CONNECTION=mysql\n";
-            $env .= "DB_HOST=" . $db['host'] . "\n";
-            $env .= "DB_PORT=" . $db['port'] . "\n";
-            $env .= "DB_DATABASE=" . $db['name'] . "\n";
-            $env .= "DB_USERNAME=" . $db['user'] . "\n";
-            $env .= "DB_PASSWORD=" . $db['pass'] . "\n\n";
-            $env .= "FILESYSTEM_DISK=public\n";
-            
-            file_put_contents(__DIR__ . '/.env', $env);
-            echo json_encode(['ok' => true]);
-        }
-        
-        elseif ($action === 'import_sql') {
-            $db = $_SESSION['db'];
-            $pdo = new PDO("mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset=utf8mb4", $db['user'], $db['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-            
-            $sqlFile = __DIR__ . '/database/schema.sql';
-            if (!file_exists($sqlFile)) throw new Exception("فایل دیتابیس یافت نشد.");
-            
-            $sql = file_get_contents($sqlFile);
-            $pdo->exec($sql);
-            
-            // Update site name in settings table
-            $siteName = $_SESSION['admin']['site_name'];
-            $pdo->prepare("UPDATE settings SET value = ? WHERE `key` = 'site_name'")->execute([$siteName]);
-            
-            echo json_encode(['ok' => true]);
-        }
-
-        elseif ($action === 'create_admin') {
-            $db = $_SESSION['db'];
-            $admin = $_SESSION['admin'];
-            $pdo = new PDO("mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset=utf8mb4", $db['user'], $db['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-            
-            $hash = password_hash($admin['pass'], PASSWORD_BCRYPT);
-            $now = date('Y-m-d H:i:s');
-            
-            $stmt = $pdo->prepare("INSERT INTO users (name, email, password, type, email_verified_at, created_at, updated_at) VALUES (?, ?, ?, 'admin', ?, ?, ?)");
-            $stmt->execute([$admin['name'], $admin['email'], $hash, $now, $now, $now]);
-            
-            echo json_encode(['ok' => true]);
-        }
-
-        elseif ($action === 'finalize') {
-            // Clean caches if possible
-            @unlink(__DIR__ . '/bootstrap/cache/config.php');
-            @unlink(__DIR__ . '/bootstrap/cache/routes-v7.php');
-            echo json_encode(['ok' => true]);
-        }
-
-    } catch (Exception $e) {
-        echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
-    }
-    exit;
 }

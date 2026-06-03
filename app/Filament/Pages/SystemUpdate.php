@@ -9,10 +9,20 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
-class SystemUpdate extends Page
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Form;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Livewire\WithFileUploads;
+
+class SystemUpdate extends Page implements HasForms
 {
+    use InteractsWithForms;
+    use WithFileUploads;
+
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-path';
     protected static string | \UnitEnum | null $navigationGroup = 'تنظیمات سیستم';
     protected static ?string $title = 'آپدیت سیستم';
@@ -21,275 +31,329 @@ class SystemUpdate extends Page
 
     protected string $view = 'filament.pages.system-update';
 
-    const UPDATE_SERVER = 'https://iranbooklet.ir/melodiyam'; // آدرس سرور آپدیت
+    const UPDATE_SERVER = 'https://iranbooklet.ir/melodiyam';
 
-    public $currentVersion;
-    public $serverVersion;
-    public $hasUpdate = false;
-    public $changelog = '';
-    public $isDownloading = false;
-    public $backups = [];
+    public ?string $currentVersion = '1.0.0';
+    public ?string $serverVersion = '---';
+    public bool $hasUpdate = false;
+    public ?string $changelog = '';
+    public ?string $errorDebug = null;
+    
+    // UI States
+    public bool $isProcessing = false;
+    public ?string $processMessage = '';
+    public int $currentStep = 0; 
+    
+    // Manual Update
+    public ?array $data = [];
 
     public function mount()
     {
         $this->currentVersion = $this->getCurrentVersion();
         $this->checkUpdate();
-        $this->loadBackups();
+        $this->form->fill();
+    }
+
+    public function form($form)
+    {
+        return $form
+            ->schema([
+                FileUpload::make('manual_file')
+                    ->label('فایل ZIP آپدیت را انتخاب کنید')
+                    ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'application/x-compressed', 'application/octet-stream'])
+                    ->disk('local')
+                    ->directory('temp-updates')
+                    ->visibility('private')
+                    ->maxSize(51200) // 50MB max
+                    ->required()
+                    ->helperText('فقط فایل‌های ZIP با حداکثر حجم 50 مگابایت')
+            ])
+            ->statePath('data');
     }
 
     public function getCurrentVersion()
     {
-        $path = base_path('version.json');
-        if (!File::exists($path)) {
-            return '1.0.0';
+        // پاکسازی کش فایل برای اطمینان از خواندن مقدار واقعی از دیسک
+        clearstatcache(true, base_path('version.json'));
+        
+        try {
+            $path = base_path('version.json');
+            if (File::exists($path)) {
+                $content = File::get($path);
+                // حذف کاراکترهای مخفی احتمالی و BOM
+                $content = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $content);
+                $data = json_decode(trim($content), true);
+                if (is_array($data) && isset($data['version'])) {
+                    return trim((string)$data['version']);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Error reading version.json: " . $e->getMessage());
         }
-        $data = json_decode(File::get($path), true);
-        return $data['version'] ?? '1.0.0';
+        return '1.0.0';
     }
 
     public function checkUpdate()
     {
+        $this->errorDebug = null;
         try {
-            $response = Http::timeout(10)->get(self::UPDATE_SERVER . '/version.json');
-            if ($response->successful()) {
-                $data = $response->json();
-                $this->serverVersion = $data['version'];
-                $this->changelog = $data['changelog'] ?? '';
-                $this->hasUpdate = version_compare($this->serverVersion, $this->currentVersion, '>');
+            $url = self::UPDATE_SERVER . '/version.json?t=' . time();
+            
+            $response = Http::withoutVerifying()
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept' => 'application/json'
+                ])
+                ->timeout(10)
+                ->get($url);
+
+            $content = $response->body();
+            $content = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $content);
+            $content = trim($content);
+            $data = json_decode($content, true);
+
+            if (is_array($data) && isset($data['version'])) {
+                $this->serverVersion = (string)$data['version'];
+                $this->changelog = (string)($data['changelog'] ?? '');
+                
+                $current = trim((string)$this->currentVersion, 'v');
+                $server = trim((string)$this->serverVersion, 'v');
+                
+                $this->hasUpdate = version_compare($server, $current, '>');
+            } else {
+                $this->serverVersion = 'نامعتبر';
+                $this->errorDebug = "پاسخ سرور JSON معتبر نیست.";
             }
         } catch (\Exception $e) {
-            Log::error("Failed to check update: " . $e->getMessage());
+            $this->serverVersion = 'خطا';
+            $this->errorDebug = $e->getMessage();
         }
-    }
-
-    public function loadBackups()
-    {
-        $path = storage_path('backups');
-        if (File::exists($path)) {
-            $this->backups = collect(File::directories($path))
-                ->map(fn($dir) => [
-                    'name' => basename($dir),
-                    'path' => $dir,
-                    'date' => date('Y-m-d H:i:s', File::lastModified($dir))
-                ])
-                ->sortByDesc('date')
-                ->values()
-                ->toArray();
-        }
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('check_now')
-                ->label('بررسی مجدد')
-                ->color('gray')
-                ->action('checkUpdate'),
-        ];
     }
 
     public function runUpdate()
     {
-        try {
-            $response = Http::timeout(10)->get(self::UPDATE_SERVER . '/version.json');
-            if (!$response->successful()) {
-                throw new \Exception("خطا در ارتباط با سرور آپدیت");
-            }
+        $this->isProcessing = true;
+        $this->currentStep = 1;
+        $this->processMessage = 'در حال دریافت اطلاعات از سرور...';
+        $this->dispatch('update-step', step: 1);
 
-            $meta = $response->json();
+        try {
+            $url = self::UPDATE_SERVER . '/version.json?t=' . time();
+            $response = Http::withoutVerifying()->timeout(15)->get($url);
+            if (!$response->successful()) throw new \Exception("خطا در ارتباط با سرور آپدیت");
+
+            $content = $response->body();
+            $content = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $content);
+            $meta = json_decode(trim($content), true);
+
+            if (!is_array($meta) || !isset($meta['download_url'])) throw new \Exception("اطلاعات آپدیت ناقص است.");
+
             $downloadUrl = $meta['download_url'];
             $newVersion = $meta['version'];
 
-            // 1. Download ZIP
-            $zipContent = Http::timeout(120)->get($downloadUrl)->body();
+            $this->currentStep = 2;
+            $this->processMessage = 'در حال دانلود فایل آپدیت...';
+            $this->dispatch('update-step', step: 2);
+
+            $zipResponse = Http::withoutVerifying()->timeout(120)->get($downloadUrl);
+            if (!$zipResponse->successful()) throw new \Exception("خطا در دانلود فایل آپدیت");
+
             $zipPath = storage_path('app/update.zip');
-            File::put($zipPath, $zipContent);
+            File::put($zipPath, $zipResponse->body());
 
-            // 2. Read Manifest from ZIP
-            $zip = new ZipArchive();
-            if ($zip->open($zipPath) !== TRUE) {
-                throw new \Exception("فایل آپدیت معتبر نیست");
-            }
-            $manifestContent = $zip->getFromName('manifest.json');
-            $manifest = json_decode($manifestContent, true);
-            $zip->close();
+            $this->processUpdate($zipPath, $newVersion);
 
-            // 3. Apply Update
-            $this->applyUpdate($zipPath, $newVersion, $manifest);
+            $this->currentStep = 4;
+            $this->dispatch('update-step', step: 5);
 
             Notification::make()
-                ->title('آپدیت با موفقیت انجام شد')
+                ->title('آپدیت با موفقیت انجام شد ✅')
+                ->body('سیستم به نسخه ' . $newVersion . ' بروزرسانی شد.')
                 ->success()
                 ->send();
 
-            return redirect()->to(request()->header('Referer'));
+            return redirect()->to(request()->header('Referer') ?? '/admin');
 
         } catch (\Exception $e) {
-            Log::error("Update failed: " . $e->getMessage());
+            $this->isProcessing = false;
+            $this->currentStep = 0;
+            $this->dispatch('update-step', step: 0);
             Notification::make()
-                ->title('خطا در آپدیت')
+                ->title('خطا در بروزرسانی')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
     }
 
-    private function applyUpdate($zipPath, $newVersion, $manifest)
+    public function uploadManualUpdate()
     {
-        // 1. Create Backup
-        $backupName = "backup-v{$this->currentVersion}-" . date('Ymd-His');
-        $this->createBackup($backupName, $manifest['files'] ?? []);
+        $data = $this->form->getState();
+        $this->isProcessing = true;
+        $this->currentStep = 1;
+        $this->processMessage = 'در حال پردازش فایل آپلودی...';
+        $this->dispatch('update-step', step: 1);
 
-        // 2. Extract ZIP
+        try {
+            $relativePath = $data['manual_file'];
+
+            if (!Storage::disk('local')->exists($relativePath)) {
+                throw new \Exception("فایل آپلود شده در دیسک محلی یافت نشد.");
+            }
+
+            $zipPath = Storage::disk('local')->path($relativePath);
+
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath) === TRUE) {
+                $manifestContent = $zip->getFromName('manifest.json');
+                if ($manifestContent) {
+                    $manifestContent = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $manifestContent);
+                    $manifest = json_decode(trim($manifestContent), true);
+                    $newVersion = $manifest['version'] ?? $this->serverVersion;
+                } else {
+                    $newVersion = $this->serverVersion;
+                }
+                $zip->close();
+
+                $this->currentStep = 2;
+                $this->dispatch('update-step', step: 2);
+
+                $this->processUpdate($zipPath, $newVersion);
+
+                // پاکسازی فایل آپلود شده
+                Storage::disk('local')->delete($relativePath);
+
+                $this->currentStep = 4;
+                $this->dispatch('update-step', step: 5);
+
+                Notification::make()
+                    ->title('آپدیت دستی با موفقیت انجام شد ✅')
+                    ->body('سیستم به نسخه ' . $newVersion . ' بروزرسانی شد.')
+                    ->success()
+                    ->send();
+
+                return redirect()->to(request()->header('Referer') ?? '/admin');
+
+            } else {
+                throw new \Exception("فایل ZIP معتبر نیست یا قابل باز شدن نیست.");
+            }
+        } catch (\Exception $e) {
+            $this->isProcessing = false;
+            $this->currentStep = 0;
+            $this->dispatch('update-step', step: 0);
+            Notification::make()
+                ->title('خطا در آپدیت دستی')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    private function processUpdate($zipPath, $newVersion)
+    {
+        $this->currentStep = 3;
+        $this->processMessage = 'در حال ایجاد نسخه پشتیبان و جایگزینی فایل‌ها...';
+        $this->dispatch('update-step', step: 3);
+
         $zip = new ZipArchive();
         if ($zip->open($zipPath) === TRUE) {
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = $zip->getNameIndex($i);
-                if (str_contains($name, '..') || str_starts_with($name, '/')) continue;
-                
-                $target = base_path($name);
-                if ($zip->getNameIndex($i) === 'manifest.json') continue;
+            $manifestContent = $zip->getFromName('manifest.json');
+            $manifest = json_decode($manifestContent, true);
 
-                if (!File::isDirectory(dirname($target))) {
-                    File::makeDirectory(dirname($target), 0755, true);
-                }
-                
-                if (!$zip->extractTo(base_path(), $name)) {
-                    Log::warning("Failed to extract: $name");
-                }
+            if (!$newVersion && isset($manifest['version'])) {
+                $newVersion = $manifest['version'];
             }
+
+            $backupName = "backup-v{$this->currentVersion}-" . date('Ymd-His');
+            $filesToBackup = is_array($manifest) ? ($manifest['files'] ?? []) : [];
+            $this->createBackup($backupName, $filesToBackup);
+
+            // استخراج و جایگزینی فایل‌ها
+            $zip->extractTo(base_path());
             $zip->close();
+        } else {
+            throw new \Exception("خطا در باز کردن فایل ZIP آپدیت");
         }
 
-        // 3. Clean BOM and Fixes
-        $this->removeBomFromPhpFiles();
+        $this->currentStep = 4;
+        $this->processMessage = 'در حال اجرای migrations و پاکسازی کش...';
+        $this->dispatch('update-step', step: 4);
 
-        // 4. Database Migrations
-        $this->runMigrations();
+        $this->finalizeUpdate($newVersion);
+    }
 
-        // 5. Clear Cache
-        \Illuminate\Support\Facades\Artisan::call('cache:clear');
-        \Illuminate\Support\Facades\Artisan::call('view:clear');
-        \Illuminate\Support\Facades\Artisan::call('config:clear');
+    private function finalizeUpdate($newVersion)
+    {
+        try {
+            // اجرای میگریشن‌ها
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            
+            // پاکسازی تمام کش‌ها
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+            \Illuminate\Support\Facades\Artisan::call('view:clear');
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+            
+            // بروزرسانی فایل ورژن
+            File::put(base_path('version.json'), json_encode([
+                'version' => $newVersion ?: '1.0.0',
+                'updated_at' => now()->toDateTimeString(),
+            ], JSON_PRETTY_PRINT));
 
-        // 6. Update version.json
-        File::put(base_path('version.json'), json_encode([
-            'version' => $newVersion,
-            'released_at' => now()->toDateString(),
-        ], JSON_PRETTY_PRINT));
-
-        @unlink($zipPath);
+            if (File::exists(storage_path('app/update.zip'))) {
+                @unlink(storage_path('app/update.zip'));
+            }
+            
+            clearstatcache();
+        } catch (\Exception $e) {
+            Log::error("Finalize update failed: " . $e->getMessage());
+            // ادامه می‌دهیم چون فایل‌ها جایگزین شده‌اند
+        }
     }
 
     private function createBackup($name, $files)
     {
         $backupDir = storage_path("backups/$name");
-        File::makeDirectory($backupDir, 0755, true);
+        if (!File::exists($backupDir)) File::makeDirectory($backupDir, 0755, true);
 
-        // Backup files
+        // Backup version.json
+        if (File::exists(base_path('version.json'))) {
+            File::copy(base_path('version.json'), $backupDir . '/version.json');
+        }
+
         foreach ($files as $file) {
             $source = base_path($file);
-            $dest = $backupDir . '/' . $file;
-            if (File::exists($source)) {
-                if (!File::isDirectory(dirname($dest))) {
-                    File::makeDirectory(dirname($dest), 0755, true);
-                }
+            if (File::exists($source) && !File::isDirectory($source)) {
+                $dest = $backupDir . '/' . $file;
+                if (!File::exists(dirname($dest))) File::makeDirectory(dirname($dest), 0755, true);
                 File::copy($source, $dest);
             }
         }
 
-        // Backup database
         $this->backupDatabase($backupDir . '/database.sql');
-        
-        // Keep last 5 backups
-        $this->pruneBackups(5);
     }
 
     private function backupDatabase($path)
     {
-        $tables = DB::select('SHOW TABLES');
-        $sql = "";
-        $dbName = config('database.connections.mysql.database');
-        $key = "Tables_in_" . $dbName;
-
-        foreach ($tables as $tableObj) {
-            $table = $tableObj->$key;
-            $createTable = DB::select("SHOW CREATE TABLE `{$table}`")[0]->{'Create Table'};
-            $sql .= "\n\n" . $createTable . ";\n\n";
-            
-            $rows = DB::table($table)->get();
-            foreach ($rows as $row) {
-                $rowArray = (array)$row;
-                $keys = array_keys($rowArray);
-                $values = array_values($rowArray);
-                $sql .= "INSERT INTO `{$table}` (`" . implode("`, `", $keys) . "`) VALUES (" . implode(", ", array_map(fn($v) => is_null($v) ? 'NULL' : "'" . addslashes($v) . "'", $values)) . ");\n";
-            }
-        }
-        File::put($path, $sql);
-    }
-
-    private function pruneBackups($keep)
-    {
-        $path = storage_path('backups');
-        $dirs = collect(File::directories($path))
-            ->sortByDesc(fn($dir) => File::lastModified($dir));
-        
-        if ($dirs->count() > $keep) {
-            $dirs->slice($keep)->each(fn($dir) => File::deleteDirectory($dir));
-        }
-    }
-
-    private function runMigrations()
-    {
         try {
-            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        } catch (\Exception $e) {
-            Log::error("Migration failed: " . $e->getMessage());
-        }
-    }
-
-    private function removeBomFromPhpFiles()
-    {
-        // Placeholder for BOM removal logic if needed
-    }
-
-    public function rollback($name)
-    {
-        try {
-            $backupDir = storage_path("backups/$name");
-            if (!File::exists($backupDir)) throw new \Exception("بکاپ یافت نشد");
-
-            // Restore files
-            $files = File::allFiles($backupDir);
-            foreach ($files as $file) {
-                if ($file->getFilename() === 'database.sql') continue;
-                $relativePath = str_replace($backupDir . DIRECTORY_SEPARATOR, '', $file->getRealPath());
-                $target = base_path($relativePath);
-                if (!File::isDirectory(dirname($target))) {
-                    File::makeDirectory(dirname($target), 0755, true);
+            $tables = DB::select('SHOW TABLES');
+            $dbName = config('database.connections.mysql.database');
+            $key = "Tables_in_" . $dbName;
+            $sql = "SET FOREIGN_KEY_CHECKS=0;\n\n";
+            foreach ($tables as $tableObj) {
+                $table = $tableObj->$key;
+                $create = DB::select("SHOW CREATE TABLE `{$table}`")[0]->{'Create Table'};
+                $sql .= "DROP TABLE IF EXISTS `{$table}`;\n" . $create . ";\n\n";
+                $rows = DB::table($table)->get();
+                foreach ($rows as $row) {
+                    $rowArray = (array)$row;
+                    $sql .= "INSERT INTO `{$table}` (`" . implode("`, `", array_keys($rowArray)) . "`) VALUES (" . implode(", ", array_map(fn($v) => is_null($v) ? 'NULL' : "'" . addslashes($v) . "'", array_values($rowArray))) . ");\n";
                 }
-                File::copy($file->getRealPath(), $target);
             }
-
-            // Restore DB
-            if (File::exists($backupDir . '/database.sql')) {
-                DB::unprepared(File::get($backupDir . '/database.sql'));
-            }
-
-            Notification::make()
-                ->title('بازگردانی با موفقیت انجام شد')
-                ->success()
-                ->send();
-
-            return redirect()->to(request()->header('Referer'));
-
+            $sql .= "\nSET FOREIGN_KEY_CHECKS=1;";
+            File::put($path, $sql);
         } catch (\Exception $e) {
-            Log::error("Rollback failed: " . $e->getMessage());
-            Notification::make()
-                ->title('خطا در بازگردانی')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            Log::error("DB Backup failed: " . $e->getMessage());
         }
     }
 }
+

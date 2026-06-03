@@ -1,9 +1,27 @@
--- Melodiyam Database Schema
-SET FOREIGN_KEY_CHECKS=0;
+﻿-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+--
+-- Host: 127.0.0.1    Database: melodiyam
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB
 
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Table structure for `activities`
+--
+-- Table structure for table `activities`
+--
+
 DROP TABLE IF EXISTS `activities`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `activities` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -19,10 +37,15 @@ CREATE TABLE `activities` (
   KEY `activities_type_index` (`type`),
   CONSTRAINT `activities_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `activity_logs`
+--
 
--- Table structure for `activity_logs`
 DROP TABLE IF EXISTS `activity_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `activity_logs` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned DEFAULT NULL,
@@ -38,10 +61,15 @@ CREATE TABLE `activity_logs` (
   KEY `activity_logs_user_id_action_index` (`user_id`,`action`),
   CONSTRAINT `activity_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `ad_impressions`
+--
 
--- Table structure for `ad_impressions`
 DROP TABLE IF EXISTS `ad_impressions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ad_impressions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `advertisement_id` bigint(20) unsigned NOT NULL,
@@ -55,11 +83,16 @@ CREATE TABLE `ad_impressions` (
   KEY `ad_impressions_advertisement_id_event_index` (`advertisement_id`,`event`),
   CONSTRAINT `ad_impressions_advertisement_id_foreign` FOREIGN KEY (`advertisement_id`) REFERENCES `advertisements` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ad_impressions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1750 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1817 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `advertisements`
+--
 
--- Table structure for `advertisements`
 DROP TABLE IF EXISTS `advertisements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `advertisements` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
@@ -72,8 +105,8 @@ CREATE TABLE `advertisements` (
   `button_url` varchar(255) DEFAULT NULL,
   `position` varchar(255) DEFAULT NULL,
   `duration` int(10) unsigned DEFAULT NULL,
-  `interval_seconds` int(10) unsigned NOT NULL DEFAULT 300 COMMENT 'هر چند ثانیه یک تبلیغ پخش شود',
-  `tracks_between` int(10) unsigned NOT NULL DEFAULT 3 COMMENT 'هر چند آهنگ یک تبلیغ پخش شود',
+  `interval_seconds` int(10) unsigned NOT NULL DEFAULT 300 COMMENT '┘ç╪▒ ┌å┘å╪» ╪½╪º┘å█î┘ç █î┌⌐ ╪¬╪¿┘ä█î╪║ ┘╛╪«╪┤ ╪┤┘ê╪»',
+  `tracks_between` int(10) unsigned NOT NULL DEFAULT 3 COMMENT '┘ç╪▒ ┌å┘å╪» ╪ó┘ç┘å┌» █î┌⌐ ╪¬╪¿┘ä█î╪║ ┘╛╪«╪┤ ╪┤┘ê╪»',
   `starts_at` timestamp NULL DEFAULT NULL,
   `ends_at` timestamp NULL DEFAULT NULL,
   `status` enum('draft','active','paused','expired') NOT NULL DEFAULT 'draft',
@@ -83,7 +116,7 @@ CREATE TABLE `advertisements` (
   `budget` decimal(12,0) DEFAULT NULL,
   `spent` decimal(12,0) NOT NULL DEFAULT 0,
   `targeting` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`targeting`)),
-  `target_plans` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'پلن‌هایی که این آگهی نمایش داده می‌شود' CHECK (json_valid(`target_plans`)),
+  `target_plans` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT '┘╛┘ä┘åΓÇî┘ç╪º█î█î ┌⌐┘ç ╪º█î┘å ╪ó┌»┘ç█î ┘å┘à╪º█î╪┤ ╪»╪º╪»┘ç ┘à█îΓÇî╪┤┘ê╪»' CHECK (json_valid(`target_plans`)),
   `priority` int(10) unsigned NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -92,10 +125,15 @@ CREATE TABLE `advertisements` (
   KEY `advertisements_status_starts_at_ends_at_index` (`status`,`starts_at`,`ends_at`),
   KEY `advertisements_type_index` (`type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `albums`
+--
 
--- Table structure for `albums`
 DROP TABLE IF EXISTS `albums`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `albums` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `artist_id` bigint(20) unsigned NOT NULL,
@@ -123,8 +161,8 @@ CREATE TABLE `albums` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `price` decimal(12,0) DEFAULT NULL COMMENT 'قیمت (null = رایگان)',
-  `discount_price` decimal(12,0) DEFAULT NULL COMMENT 'قیمت با تخفیف (null = بدون تخفیف)',
+  `price` decimal(12,0) DEFAULT NULL COMMENT '┘é█î┘à╪¬ (null = ╪▒╪º█î┌»╪º┘å)',
+  `discount_price` decimal(12,0) DEFAULT NULL COMMENT '┘é█î┘à╪¬ ╪¿╪º ╪¬╪«┘ü█î┘ü (null = ╪¿╪»┘ê┘å ╪¬╪«┘ü█î┘ü)',
   `preview_seconds` smallint(5) unsigned NOT NULL DEFAULT 0,
   `is_for_sale` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
@@ -138,10 +176,15 @@ CREATE TABLE `albums` (
   CONSTRAINT `albums_artist_id_foreign` FOREIGN KEY (`artist_id`) REFERENCES `artists` (`id`) ON DELETE CASCADE,
   CONSTRAINT `albums_genre_id_foreign` FOREIGN KEY (`genre_id`) REFERENCES `genres` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `artist_application_fields`
+--
 
--- Table structure for `artist_application_fields`
 DROP TABLE IF EXISTS `artist_application_fields`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_application_fields` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `key` varchar(255) NOT NULL,
@@ -158,14 +201,15 @@ CREATE TABLE `artist_application_fields` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `artist_application_fields_key_unique` (`key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `artist_application_fields`
-INSERT INTO `artist_application_fields` (`id`, `key`, `label`, `type`, `options`, `required`, `is_active`, `sort_order`, `placeholder`, `help_text`, `created_at`, `updated_at`) VALUES ('1', 'name', 'نام هنری', 'text', NULL, '1', '1', '0', 'نام خود را وارد کنید', 'لطفا نام کامل را وارد کنید', '2026-05-29 19:15:37', '2026-05-29 19:15:37');
-INSERT INTO `artist_application_fields` (`id`, `key`, `label`, `type`, `options`, `required`, `is_active`, `sort_order`, `placeholder`, `help_text`, `created_at`, `updated_at`) VALUES ('2', 'idcart', 'کارت ملی', 'file', NULL, '1', '1', '0', 'لطفا تصویر کارت ملی را وارد کنید', 'تصویر باید واضح باشد', '2026-05-29 19:15:37', '2026-05-29 19:15:37');
+--
+-- Table structure for table `artist_applications`
+--
 
-
--- Table structure for `artist_applications`
 DROP TABLE IF EXISTS `artist_applications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_applications` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -182,10 +226,15 @@ CREATE TABLE `artist_applications` (
   CONSTRAINT `artist_applications_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `artist_applications_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `artist_earnings`
+--
 
--- Table structure for `artist_earnings`
 DROP TABLE IF EXISTS `artist_earnings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_earnings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `artist_id` bigint(20) unsigned NOT NULL,
@@ -203,10 +252,15 @@ CREATE TABLE `artist_earnings` (
   KEY `artist_earnings_playable_type_playable_id_index` (`playable_type`,`playable_id`),
   CONSTRAINT `artist_earnings_artist_id_foreign` FOREIGN KEY (`artist_id`) REFERENCES `artists` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `artist_plans`
+--
 
--- Table structure for `artist_plans`
 DROP TABLE IF EXISTS `artist_plans`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_plans` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -225,14 +279,15 @@ CREATE TABLE `artist_plans` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `artist_plans_slug_unique` (`slug`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `artist_plans`
-INSERT INTO `artist_plans` (`id`, `name`, `slug`, `description`, `price`, `duration_days`, `max_tracks`, `max_albums`, `max_storage_mb`, `includes_downloads`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES ('1', 'هنرمند تازه کار', 'hnrmnd-tazh-kar', 'این پلن مخصوص هنرمندان تازه کار هست', '100000', '30', '5', '2', '1000', '0', '1', '0', '2026-05-29 19:18:11', '2026-05-29 19:18:11');
-INSERT INTO `artist_plans` (`id`, `name`, `slug`, `description`, `price`, `duration_days`, `max_tracks`, `max_albums`, `max_storage_mb`, `includes_downloads`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES ('2', 'هنرمند حرفه ای', 'hnrmnd-hrfh-ay', 'این پلن مناسب هنرمندن حرفه ای می باشد.', '400000', '30', '50', '20', '20000', '0', '1', '0', '2026-06-02 14:17:59', '2026-06-02 14:17:59');
+--
+-- Table structure for table `artist_subscriptions`
+--
 
-
--- Table structure for `artist_subscriptions`
 DROP TABLE IF EXISTS `artist_subscriptions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_subscriptions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `artist_id` bigint(20) unsigned NOT NULL,
@@ -255,10 +310,15 @@ CREATE TABLE `artist_subscriptions` (
   CONSTRAINT `artist_subscriptions_granted_by_foreign` FOREIGN KEY (`granted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `artist_subscriptions_plan_id_foreign` FOREIGN KEY (`plan_id`) REFERENCES `artist_plans` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `artist_track`
+--
 
--- Table structure for `artist_track`
 DROP TABLE IF EXISTS `artist_track`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artist_track` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `artist_id` bigint(20) unsigned NOT NULL,
@@ -272,10 +332,15 @@ CREATE TABLE `artist_track` (
   CONSTRAINT `artist_track_artist_id_foreign` FOREIGN KEY (`artist_id`) REFERENCES `artists` (`id`) ON DELETE CASCADE,
   CONSTRAINT `artist_track_track_id_foreign` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `artists`
+--
 
--- Table structure for `artists`
 DROP TABLE IF EXISTS `artists`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `artists` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -305,10 +370,15 @@ CREATE TABLE `artists` (
   KEY `artists_monthly_listeners_index` (`monthly_listeners`),
   CONSTRAINT `artists_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `cache`
+--
 
--- Table structure for `cache`
 DROP TABLE IF EXISTS `cache`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `cache` (
   `key` varchar(255) NOT NULL,
   `value` mediumtext NOT NULL,
@@ -316,10 +386,15 @@ CREATE TABLE `cache` (
   PRIMARY KEY (`key`),
   KEY `cache_expiration_index` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `cache_locks`
+--
 
--- Table structure for `cache_locks`
 DROP TABLE IF EXISTS `cache_locks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `cache_locks` (
   `key` varchar(255) NOT NULL,
   `owner` varchar(255) NOT NULL,
@@ -327,10 +402,15 @@ CREATE TABLE `cache_locks` (
   PRIMARY KEY (`key`),
   KEY `cache_locks_expiration_index` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `comments`
+--
 
--- Table structure for `comments`
 DROP TABLE IF EXISTS `comments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `comments` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -351,17 +431,22 @@ CREATE TABLE `comments` (
   CONSTRAINT `comments_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `comments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `commission_rules`
+--
 
--- Table structure for `commission_rules`
 DROP TABLE IF EXISTS `commission_rules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `commission_rules` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL COMMENT 'نام قانون',
+  `name` varchar(255) NOT NULL COMMENT '┘å╪º┘à ┘é╪º┘å┘ê┘å',
   `type` enum('global','genre','artist') NOT NULL DEFAULT 'global',
-  `reference_id` bigint(20) unsigned DEFAULT NULL COMMENT 'genre_id یا artist_id',
+  `reference_id` bigint(20) unsigned DEFAULT NULL COMMENT 'genre_id █î╪º artist_id',
   `commission_type` enum('percent','fixed') NOT NULL DEFAULT 'percent',
-  `commission_value` decimal(8,2) NOT NULL DEFAULT 20.00 COMMENT 'درصد یا مبلغ ثابت',
+  `commission_value` decimal(8,2) NOT NULL DEFAULT 20.00 COMMENT '╪»╪▒╪╡╪» █î╪º ┘à╪¿┘ä╪║ ╪½╪º╪¿╪¬',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `description` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -369,10 +454,15 @@ CREATE TABLE `commission_rules` (
   PRIMARY KEY (`id`),
   KEY `commission_rules_type_reference_id_index` (`type`,`reference_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `coupon_user`
+--
 
--- Table structure for `coupon_user`
 DROP TABLE IF EXISTS `coupon_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `coupon_user` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `coupon_id` bigint(20) unsigned NOT NULL,
@@ -384,10 +474,15 @@ CREATE TABLE `coupon_user` (
   CONSTRAINT `coupon_user_coupon_id_foreign` FOREIGN KEY (`coupon_id`) REFERENCES `coupons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `coupon_user_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `coupons`
+--
 
--- Table structure for `coupons`
 DROP TABLE IF EXISTS `coupons`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `coupons` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(255) NOT NULL,
@@ -407,10 +502,15 @@ CREATE TABLE `coupons` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `coupons_code_unique` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `downloads`
+--
 
--- Table structure for `downloads`
 DROP TABLE IF EXISTS `downloads`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `downloads` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -422,10 +522,15 @@ CREATE TABLE `downloads` (
   KEY `downloads_downloadable_type_downloadable_id_index` (`downloadable_type`,`downloadable_id`),
   CONSTRAINT `downloads_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `earnings_settings`
+--
 
--- Table structure for `earnings_settings`
 DROP TABLE IF EXISTS `earnings_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `earnings_settings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `is_enabled` tinyint(1) NOT NULL DEFAULT 0,
@@ -437,10 +542,15 @@ CREATE TABLE `earnings_settings` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `failed_jobs`
+--
 
--- Table structure for `failed_jobs`
 DROP TABLE IF EXISTS `failed_jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `failed_jobs` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varchar(255) NOT NULL,
@@ -452,10 +562,15 @@ CREATE TABLE `failed_jobs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `follows`
+--
 
--- Table structure for `follows`
 DROP TABLE IF EXISTS `follows`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `follows` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -467,10 +582,15 @@ CREATE TABLE `follows` (
   KEY `follows_followable_type_followable_id_index` (`followable_type`,`followable_id`),
   CONSTRAINT `follows_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `genre_track`
+--
 
--- Table structure for `genre_track`
 DROP TABLE IF EXISTS `genre_track`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `genre_track` (
   `genre_id` bigint(20) unsigned NOT NULL,
   `track_id` bigint(20) unsigned NOT NULL,
@@ -479,10 +599,15 @@ CREATE TABLE `genre_track` (
   CONSTRAINT `genre_track_genre_id_foreign` FOREIGN KEY (`genre_id`) REFERENCES `genres` (`id`) ON DELETE CASCADE,
   CONSTRAINT `genre_track_track_id_foreign` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `genres`
+--
 
--- Table structure for `genres`
 DROP TABLE IF EXISTS `genres`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `genres` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -498,24 +623,15 @@ CREATE TABLE `genres` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `genres_slug_unique` (`slug`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `genres`
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('1', 'Pop', 'پاپ', 'pop', 'music', '#ec4899', 'genres/01KSTNW5MDS5GKH4QR89D3777A.png', '1', '1', '2026-05-29 14:06:34', '2026-05-29 20:12:40');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('2', 'Traditional', 'سنتی', 'traditional', 'guitar', '#f59e0b', NULL, '2', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('3', 'Rock', 'راک', 'rock', 'bolt', '#ef4444', NULL, '3', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('4', 'Rap', 'رپ', 'rap', 'microphone', '#8b5cf6', NULL, '4', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('5', 'Electronic', 'الکترونیک', 'electronic', 'cpu', '#06b6d4', NULL, '5', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('6', 'Classical', 'کلاسیک', 'classical', 'music-note', '#14b8a6', NULL, '6', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('7', 'Jazz', 'جاز', 'jazz', 'sparkles', '#6366f1', NULL, '7', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('8', 'Folk', 'محلی', 'folk', 'globe', '#84cc16', NULL, '8', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('9', 'R&B', 'آر اند بی', 'rb', 'heart', '#d946ef', NULL, '9', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('10', 'Chill', 'آرام', 'chill', 'cloud', '#22d3ee', NULL, '10', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('11', 'Workout', 'ورزشی', 'workout', 'fire', '#f97316', NULL, '11', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `genres` (`id`, `name`, `name_fa`, `slug`, `icon`, `color`, `cover_image`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('12', 'Romantic', 'عاشقانه', 'romantic', 'heart', '#f43f5e', NULL, '12', '1', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
+--
+-- Table structure for table `homepage_sections`
+--
 
-
--- Table structure for `homepage_sections`
 DROP TABLE IF EXISTS `homepage_sections`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `homepage_sections` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
@@ -531,23 +647,15 @@ CREATE TABLE `homepage_sections` (
   UNIQUE KEY `homepage_sections_slug_unique` (`slug`),
   KEY `homepage_sections_sort_order_index` (`sort_order`)
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `homepage_sections`
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('6', 'بنر-اصلی', 'بنر اصلی', 'bnr-asly', 'hero', '{\"hero_title\":\"\\u0645\\u0648\\u0633\\u06cc\\u0642\\u06cc \\u0628\\u06cc\\u200c\\u067e\\u0627\\u06cc\\u0627\\u0646 \\u0628\\u0627 \\u0645\\u0644\\u0648\\u062f\\u06cc\\u0627\\u0645\",\"hero_subtitle\":\"\\u0645\\u06cc\\u0644\\u06cc\\u0648\\u0646\\u200c\\u0647\\u0627 \\u0622\\u0647\\u0646\\u06af\\u060c \\u067e\\u0627\\u062f\\u06a9\\u0633\\u062a \\u0648 \\u067e\\u0644\\u06cc\\u200c\\u0644\\u06cc\\u0633\\u062a. \\u0647\\u0631 \\u0644\\u062d\\u0638\\u0647\\u060c \\u0647\\u0631 \\u062c\\u0627\\u060c \\u0647\\u0631 \\u062f\\u0633\\u062a\\u06af\\u0627\\u0647.\",\"hero_btn1_label\":\"\\u0634\\u0631\\u0648\\u0639 \\u0631\\u0627\\u06cc\\u06af\\u0627\\u0646\",\"hero_btn1_url\":\"\\/premium\",\"hero_btn2_label\":\"\\u0628\\u06cc\\u0630\\u0628\\u06cc\\u0630\\u0628\\u06cc\",\"hero_btn2_url\":\"\\u0630\\u0628\\u06cc\\u0630\\u0628\\u06cc\\u0630\",\"hero_color_from\":\"#c20c0c\",\"hero_color_to\":\"#260000\",\"hero_image\":null}', '6', '1', '2026-05-29 15:53:41', '2026-05-29 15:53:41');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('7', '2', '2', '2', 'track_shelf', '{\"limit\":8,\"layout\":\"grid\",\"columns\":6,\"sort_by\":\"like_count\",\"genre_filter\":[\"traditional\",\"rock\",\"pop\"],\"show_see_all\":true,\"see_all_url\":null,\"see_all_label\":\"\\u0645\\u0634\\u0627\\u0647\\u062f\\u0647 \\u0647\\u0645\\u0647\"}', '7', '1', '2026-05-29 15:55:15', '2026-05-29 17:31:49');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('9', '3', '3', '3', 'featured_artists', '{\"limit\":6,\"columns\":6,\"featured_only\":true}', '8', '1', '2026-05-29 17:32:26', '2026-05-29 17:32:26');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('10', '4', '4', '4', 'featured_artists', '{\"limit\":6,\"columns\":6,\"featured_only\":false}', '9', '1', '2026-05-29 17:32:49', '2026-05-29 17:32:49');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('11', '5', '5', '5', 'featured_playlists', '{\"limit\":6,\"columns\":6,\"featured_only\":false}', '10', '1', '2026-05-29 17:35:08', '2026-05-29 17:35:08');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('12', '6', '6', '6', 'latest_albums', '{\"limit\":4,\"layout\":\"grid\",\"columns\":6,\"sort_by\":\"play_count\",\"genre_filter\":[\"traditional\",\"electronic\",\"classical\",\"rap\",\"rock\",\"folk\",\"jazz\",\"rb\",\"chill\",\"pop\",\"workout\",\"romantic\"],\"show_see_all\":true,\"see_all_url\":null,\"see_all_label\":\"\\u0645\\u0634\\u0627\\u0647\\u062f\\u0647 \\u0647\\u0645\\u0647\"}', '11', '1', '2026-05-29 17:35:38', '2026-05-29 17:57:44');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('13', '7', '7', '7', 'top_charts', '{\"limit\":12,\"columns\":6,\"period\":365,\"show_see_all\":true,\"see_all_url\":null}', '12', '1', '2026-05-29 17:37:44', '2026-05-29 17:52:57');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('14', '8', '8', '8', 'artist_spotlight', '{\"artist_id\":6,\"spotlight_text\":\"\\u0644\\u062b\\u0635\\u0644\\u062b\\u0635\\u0644\\u062b\\u0635\\u0644\\u062b\\u0635\\u0644\\u062b\\u0635\\u0644\\u062b\\u0635\\u0644\"}', '13', '1', '2026-05-29 18:15:45', '2026-05-29 18:15:45');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('15', '9', '9', '9', 'banner', '{\"banner_title\":\"\\u06cc\\u0633\\u0631\\u06cc\\u0633\\u0631\",\"banner_url\":\"\\u06cc\\u0633\\u0631\\u0631\\u06cc\\u0633\\u0631\",\"banner_image\":\"homepage\\/01KSTF8A41P985J9GRFADENWN4.jpeg\",\"banner_bg\":\"#d10808\",\"banner_btn_label\":\"\\u06cc\\u0633\\u0631\\u06cc\\u0633\\u0631\\u06cc\\u0631\\u06cc\\u0633\\u0631\"}', '14', '1', '2026-05-29 18:16:58', '2026-05-29 18:16:58');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('16', '9', '9', '9-1', 'custom_tracks', '{\"layout\":\"grid\",\"columns\":6,\"show_see_all\":true,\"track_ids\":[{\"id\":2},{\"id\":3}],\"album_ids\":[{\"id\":2}],\"playlist_ids\":[{\"id\":2}]}', '15', '1', '2026-05-29 18:18:03', '2026-05-29 18:18:03');
-INSERT INTO `homepage_sections` (`id`, `title`, `title_fa`, `slug`, `type`, `config`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES ('17', '11', '11', '11', 'featured_track', '{\"sort_by\":\"play_count\",\"limit\":6,\"genre_filter\":[],\"autoplay\":true,\"autoplay_interval\":7,\"show_play_btn\":true}', '16', '1', '2026-05-29 18:18:42', '2026-05-29 18:18:42');
+--
+-- Table structure for table `job_batches`
+--
 
-
--- Table structure for `job_batches`
 DROP TABLE IF EXISTS `job_batches`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `job_batches` (
   `id` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -561,10 +669,15 @@ CREATE TABLE `job_batches` (
   `finished_at` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `jobs`
+--
 
--- Table structure for `jobs`
 DROP TABLE IF EXISTS `jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `jobs` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `queue` varchar(255) NOT NULL,
@@ -576,10 +689,15 @@ CREATE TABLE `jobs` (
   PRIMARY KEY (`id`),
   KEY `jobs_queue_index` (`queue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `likes`
+--
 
--- Table structure for `likes`
 DROP TABLE IF EXISTS `likes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `likes` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -591,20 +709,30 @@ CREATE TABLE `likes` (
   KEY `likes_likeable_type_likeable_id_index` (`likeable_type`,`likeable_id`),
   CONSTRAINT `likes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `migrations`
+--
 
--- Table structure for `migrations`
 DROP TABLE IF EXISTS `migrations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `migrations` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `migration` varchar(255) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `model_has_permissions`
+--
 
--- Table structure for `model_has_permissions`
 DROP TABLE IF EXISTS `model_has_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `model_has_permissions` (
   `permission_id` bigint(20) unsigned NOT NULL,
   `model_type` varchar(255) NOT NULL,
@@ -613,10 +741,15 @@ CREATE TABLE `model_has_permissions` (
   KEY `model_has_permissions_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `model_has_roles`
+--
 
--- Table structure for `model_has_roles`
 DROP TABLE IF EXISTS `model_has_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `model_has_roles` (
   `role_id` bigint(20) unsigned NOT NULL,
   `model_type` varchar(255) NOT NULL,
@@ -625,10 +758,15 @@ CREATE TABLE `model_has_roles` (
   KEY `model_has_roles_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_roles_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `notification_logs`
+--
 
--- Table structure for `notification_logs`
 DROP TABLE IF EXISTS `notification_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notification_logs` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -641,10 +779,15 @@ CREATE TABLE `notification_logs` (
   KEY `notification_logs_user_id_foreign` (`user_id`),
   CONSTRAINT `notification_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `notification_settings`
+--
 
--- Table structure for `notification_settings`
 DROP TABLE IF EXISTS `notification_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notification_settings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `event_key` varchar(255) NOT NULL,
@@ -664,21 +807,15 @@ CREATE TABLE `notification_settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `notification_settings_event_key_unique` (`event_key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `notification_settings`
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('1', 'track_liked', 'لایک شدن آهنگ (صاحب اثر)', 'artist', 'هنرمند گرامی، آهنگ {track_title} توسط {user_name} لایک شد.', '1', '1', '0', '387751', NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 20:12:54');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('2', 'track_reposted', 'بازنشر آهنگ (صاحب اثر)', 'artist', 'هنرمند گرامی، آهنگ {track_title} توسط {user_name} بازنشر شد.', '1', '0', '0', NULL, NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('3', 'user_followed', 'دنبال شدن (کاربر)', 'user', 'کاربر گرامی، {follower_name} شما را دنبال کرد.', '1', '0', '0', NULL, NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('4', 'new_content_follower', 'محتوای جدید از دنبال‌شوندگان (دنبال‌کننده)', 'user', 'محتوای جدید: {artist_name} آهنگ جدید \"{content_title}\" را منتشر کرد.', '1', '0', '0', NULL, NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('5', 'track_purchased_artist', 'فروش آهنگ (هنرمند)', 'artist', 'هنرمند گرامی، آهنگ {track_title} به مبلغ {amount} فروخته شد.', '1', '0', '0', NULL, NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('6', 'new_artist_application', 'درخواست هنرمند جدید (ادمین)', 'admin', 'ادمین گرامی، درخواست جدید هنرمندی از طرف {user_name} ثبت شد.', '1', '0', '0', NULL, NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('7', 'new_report', 'گزارش جدید (ادمین)', 'admin', 'گزارش جدیدی با موضوع {type} ثبت شد.', '1', '1', '0', '387751', NULL, NULL, NULL, NULL, '2026-05-30 11:29:53', '2026-05-30 20:12:54');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('8', 'otp_code', 'ارسال کد تایید (OTP)', 'user', 'کد تایید شما: {code}', '0', '1', '0', '387751', NULL, NULL, NULL, NULL, '2026-05-30 21:10:23', '2026-05-30 21:20:02');
-INSERT INTO `notification_settings` (`id`, `event_key`, `event_label`, `recipient_type`, `database_template`, `via_database`, `via_sms`, `via_email`, `sms_pattern_id`, `sms_var_names`, `sms_template`, `email_subject`, `email_body`, `created_at`, `updated_at`) VALUES ('9', 'password_recovery', 'بازیابی رمز عبور', 'user', 'کد بازیابی رمز عبور شما: {code}', '0', '1', '1', '387751', NULL, NULL, 'بازیابی رمز عبور', NULL, '2026-05-30 21:10:23', '2026-05-30 21:20:02');
+--
+-- Table structure for table `notifications`
+--
 
-
--- Table structure for `notifications`
 DROP TABLE IF EXISTS `notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notifications` (
   `id` char(36) NOT NULL,
   `type` varchar(255) NOT NULL,
@@ -691,10 +828,15 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`),
   KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`,`notifiable_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `notifications_log`
+--
 
--- Table structure for `notifications_log`
 DROP TABLE IF EXISTS `notifications_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notifications_log` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned DEFAULT NULL,
@@ -711,10 +853,15 @@ CREATE TABLE `notifications_log` (
   KEY `notifications_log_user_id_is_read_index` (`user_id`,`is_read`),
   CONSTRAINT `notifications_log_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `otp_codes`
+--
 
--- Table structure for `otp_codes`
 DROP TABLE IF EXISTS `otp_codes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `otp_codes` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `phone` varchar(15) NOT NULL,
@@ -726,10 +873,15 @@ CREATE TABLE `otp_codes` (
   PRIMARY KEY (`id`),
   KEY `otp_codes_phone_code_index` (`phone`,`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `pages`
+--
 
--- Table structure for `pages`
 DROP TABLE IF EXISTS `pages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pages` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
@@ -743,20 +895,30 @@ CREATE TABLE `pages` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `pages_slug_unique` (`slug`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `password_reset_tokens`
+--
 
--- Table structure for `password_reset_tokens`
 DROP TABLE IF EXISTS `password_reset_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `password_reset_tokens` (
   `email` varchar(255) NOT NULL,
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `payments`
+--
 
--- Table structure for `payments`
 DROP TABLE IF EXISTS `payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payments` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -785,10 +947,15 @@ CREATE TABLE `payments` (
   CONSTRAINT `payments_subscription_id_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `permissions`
+--
 
--- Table structure for `permissions`
 DROP TABLE IF EXISTS `permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `permissions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -798,10 +965,15 @@ CREATE TABLE `permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `permissions_name_guard_name_unique` (`name`,`guard_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `plans`
+--
 
--- Table structure for `plans`
 DROP TABLE IF EXISTS `plans`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `plans` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -822,7 +994,7 @@ CREATE TABLE `plans` (
   `ad_free` tinyint(1) NOT NULL DEFAULT 1,
   `offline_mode` tinyint(1) NOT NULL DEFAULT 1,
   `unlimited_skips` tinyint(1) NOT NULL DEFAULT 1,
-  `includes_paid_content` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'دسترسی به تمام محتوای پولی',
+  `includes_paid_content` tinyint(1) NOT NULL DEFAULT 0 COMMENT '╪»╪│╪¬╪▒╪│█î ╪¿┘ç ╪¬┘à╪º┘à ┘à╪¡╪¬┘ê╪º█î ┘╛┘ê┘ä█î',
   `includes_downloads` tinyint(1) NOT NULL DEFAULT 0,
   `can_upload_music` tinyint(1) NOT NULL DEFAULT 0,
   `max_music_uploads` int(11) NOT NULL DEFAULT 0,
@@ -831,15 +1003,15 @@ CREATE TABLE `plans` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `plans_slug_unique` (`slug`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `plans`
-INSERT INTO `plans` (`id`, `name`, `name_fa`, `slug`, `description`, `description_fa`, `type`, `price`, `duration_days`, `trial_days`, `features`, `is_active`, `is_popular`, `sort_order`, `max_devices`, `audio_quality`, `ad_free`, `offline_mode`, `unlimited_skips`, `includes_paid_content`, `includes_downloads`, `can_upload_music`, `max_music_uploads`, `created_at`, `updated_at`) VALUES ('1', 'Free', 'رایگان', 'free', 'Basic access', 'دسترسی پایه', 'free', '0', '0', '0', '[\"\\u06af\\u0648\\u0634 \\u062f\\u0627\\u062f\\u0646 \\u0628\\u0627 \\u062a\\u0628\\u0644\\u06cc\\u063a\\u0627\\u062a\",\"\\u06a9\\u06cc\\u0641\\u06cc\\u062a \\u0645\\u0639\\u0645\\u0648\\u0644\\u06cc\"]', '1', '0', '1', '1', 'normal', '0', '0', '0', '0', '0', '0', '0', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
-INSERT INTO `plans` (`id`, `name`, `name_fa`, `slug`, `description`, `description_fa`, `type`, `price`, `duration_days`, `trial_days`, `features`, `is_active`, `is_popular`, `sort_order`, `max_devices`, `audio_quality`, `ad_free`, `offline_mode`, `unlimited_skips`, `includes_paid_content`, `includes_downloads`, `can_upload_music`, `max_music_uploads`, `created_at`, `updated_at`) VALUES ('2', 'Premium Monthly', 'پریمیوم ماهانه', 'premium-monthly', 'Full access monthly', 'دسترسی کامل ماهانه', 'premium', '79000', '30', '1', '[\"\\u0628\\u062f\\u0648\\u0646 \\u062a\\u0628\\u0644\\u06cc\\u063a\\u0627\\u062a\",\"\\u06a9\\u06cc\\u0641\\u06cc\\u062a \\u06f3\\u06f2\\u06f0kbps\",\"\\u062f\\u0627\\u0646\\u0644\\u0648\\u062f \\u0622\\u0641\\u0644\\u0627\\u06cc\\u0646\",\"\\u0631\\u062f \\u0646\\u0627\\u0645\\u062d\\u062f\\u0648\\u062f\"]', '1', '1', '2', '3', 'high', '1', '1', '1', '1', '1', '1', '20', '2026-05-29 14:06:34', '2026-05-30 05:55:25');
-INSERT INTO `plans` (`id`, `name`, `name_fa`, `slug`, `description`, `description_fa`, `type`, `price`, `duration_days`, `trial_days`, `features`, `is_active`, `is_popular`, `sort_order`, `max_devices`, `audio_quality`, `ad_free`, `offline_mode`, `unlimited_skips`, `includes_paid_content`, `includes_downloads`, `can_upload_music`, `max_music_uploads`, `created_at`, `updated_at`) VALUES ('3', 'Premium Yearly', 'پریمیوم سالانه', 'premium-yearly', 'Full access yearly', 'دسترسی کامل سالانه', 'premium', '699000', '365', '0', '[\"\\u0628\\u062f\\u0648\\u0646 \\u062a\\u0628\\u0644\\u06cc\\u063a\\u0627\\u062a\",\"\\u06a9\\u06cc\\u0641\\u06cc\\u062a \\u06f3\\u06f2\\u06f0kbps\",\"\\u062f\\u0627\\u0646\\u0644\\u0648\\u062f \\u0622\\u0641\\u0644\\u0627\\u06cc\\u0646\",\"\\u0631\\u062f \\u0646\\u0627\\u0645\\u062d\\u062f\\u0648\\u062f\",\"\\u06f2\\u06f6\\u066a \\u062a\\u062e\\u0641\\u06cc\\u0641\"]', '1', '0', '3', '5', 'lossless', '1', '1', '1', '0', '0', '0', '0', '2026-05-29 14:06:34', '2026-05-29 14:06:34');
+--
+-- Table structure for table `playlist_followers`
+--
 
-
--- Table structure for `playlist_followers`
 DROP TABLE IF EXISTS `playlist_followers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `playlist_followers` (
   `user_id` bigint(20) unsigned NOT NULL,
   `playlist_id` bigint(20) unsigned NOT NULL,
@@ -849,10 +1021,15 @@ CREATE TABLE `playlist_followers` (
   CONSTRAINT `playlist_followers_playlist_id_foreign` FOREIGN KEY (`playlist_id`) REFERENCES `playlists` (`id`) ON DELETE CASCADE,
   CONSTRAINT `playlist_followers_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `playlist_track`
+--
 
--- Table structure for `playlist_track`
 DROP TABLE IF EXISTS `playlist_track`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `playlist_track` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `playlist_id` bigint(20) unsigned NOT NULL,
@@ -870,10 +1047,15 @@ CREATE TABLE `playlist_track` (
   CONSTRAINT `playlist_track_playlist_id_foreign` FOREIGN KEY (`playlist_id`) REFERENCES `playlists` (`id`) ON DELETE CASCADE,
   CONSTRAINT `playlist_track_track_id_foreign` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `playlists`
+--
 
--- Table structure for `playlists`
 DROP TABLE IF EXISTS `playlists`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `playlists` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -898,10 +1080,15 @@ CREATE TABLE `playlists` (
   KEY `playlists_is_featured_index` (`is_featured`),
   CONSTRAINT `playlists_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `podcast_episodes`
+--
 
--- Table structure for `podcast_episodes`
 DROP TABLE IF EXISTS `podcast_episodes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `podcast_episodes` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `podcast_id` bigint(20) unsigned NOT NULL,
@@ -931,10 +1118,15 @@ CREATE TABLE `podcast_episodes` (
   KEY `podcast_episodes_status_index` (`status`),
   CONSTRAINT `podcast_episodes_podcast_id_foreign` FOREIGN KEY (`podcast_id`) REFERENCES `podcasts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `podcast_subscriptions`
+--
 
--- Table structure for `podcast_subscriptions`
 DROP TABLE IF EXISTS `podcast_subscriptions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `podcast_subscriptions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -947,10 +1139,15 @@ CREATE TABLE `podcast_subscriptions` (
   CONSTRAINT `podcast_subscriptions_podcast_id_foreign` FOREIGN KEY (`podcast_id`) REFERENCES `podcasts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `podcast_subscriptions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `podcasts`
+--
 
--- Table structure for `podcasts`
 DROP TABLE IF EXISTS `podcasts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `podcasts` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -982,10 +1179,15 @@ CREATE TABLE `podcasts` (
   CONSTRAINT `podcasts_artist_id_foreign` FOREIGN KEY (`artist_id`) REFERENCES `artists` (`id`) ON DELETE SET NULL,
   CONSTRAINT `podcasts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `recently_played`
+--
 
--- Table structure for `recently_played`
 DROP TABLE IF EXISTS `recently_played`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `recently_played` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -998,10 +1200,15 @@ CREATE TABLE `recently_played` (
   KEY `recently_played_user_id_played_at_index` (`user_id`,`played_at`),
   CONSTRAINT `recently_played_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `reports`
+--
 
--- Table structure for `reports`
 DROP TABLE IF EXISTS `reports`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `reports` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -1022,10 +1229,15 @@ CREATE TABLE `reports` (
   CONSTRAINT `reports_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `reports_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `reposts`
+--
 
--- Table structure for `reposts`
 DROP TABLE IF EXISTS `reposts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `reposts` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -1039,10 +1251,15 @@ CREATE TABLE `reposts` (
   KEY `reposts_repostable_type_repostable_id_index` (`repostable_type`,`repostable_id`),
   CONSTRAINT `reposts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `role_has_permissions`
+--
 
--- Table structure for `role_has_permissions`
 DROP TABLE IF EXISTS `role_has_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `role_has_permissions` (
   `permission_id` bigint(20) unsigned NOT NULL,
   `role_id` bigint(20) unsigned NOT NULL,
@@ -1051,10 +1268,15 @@ CREATE TABLE `role_has_permissions` (
   CONSTRAINT `role_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `role_has_permissions_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `roles`
+--
 
--- Table structure for `roles`
 DROP TABLE IF EXISTS `roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `roles` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -1064,19 +1286,24 @@ CREATE TABLE `roles` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `roles_name_guard_name_unique` (`name`,`guard_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `sales`
+--
 
--- Table structure for `sales`
 DROP TABLE IF EXISTS `sales`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sales` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `buyer_id` bigint(20) unsigned NOT NULL,
   `seller_id` bigint(20) unsigned NOT NULL,
   `saleable_type` varchar(255) NOT NULL,
   `saleable_id` bigint(20) unsigned NOT NULL,
-  `gross_amount` decimal(12,0) NOT NULL COMMENT 'مبلغ کل پرداختی خریدار',
-  `commission_amount` decimal(12,0) NOT NULL DEFAULT 0 COMMENT 'کمیسیون پلتفرم',
-  `net_amount` decimal(12,0) NOT NULL COMMENT 'درآمد خالص هنرمند',
+  `gross_amount` decimal(12,0) NOT NULL COMMENT '┘à╪¿┘ä╪║ ┌⌐┘ä ┘╛╪▒╪»╪º╪«╪¬█î ╪«╪▒█î╪»╪º╪▒',
+  `commission_amount` decimal(12,0) NOT NULL DEFAULT 0 COMMENT '┌⌐┘à█î╪│█î┘ê┘å ┘╛┘ä╪¬┘ü╪▒┘à',
+  `net_amount` decimal(12,0) NOT NULL COMMENT '╪»╪▒╪ó┘à╪» ╪«╪º┘ä╪╡ ┘ç┘å╪▒┘à┘å╪»',
   `commission_rule_id` bigint(20) unsigned DEFAULT NULL,
   `status` enum('pending','completed','refunded') NOT NULL DEFAULT 'completed',
   `payment_method` varchar(255) DEFAULT NULL,
@@ -1092,10 +1319,15 @@ CREATE TABLE `sales` (
   CONSTRAINT `sales_commission_rule_id_foreign` FOREIGN KEY (`commission_rule_id`) REFERENCES `commission_rules` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_seller_id_foreign` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `sessions`
+--
 
--- Table structure for `sessions`
 DROP TABLE IF EXISTS `sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sessions` (
   `id` varchar(255) NOT NULL,
   `user_id` bigint(20) unsigned DEFAULT NULL,
@@ -1107,10 +1339,15 @@ CREATE TABLE `sessions` (
   KEY `sessions_user_id_index` (`user_id`),
   KEY `sessions_last_activity_index` (`last_activity`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `settings`
+--
 
--- Table structure for `settings`
 DROP TABLE IF EXISTS `settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `settings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `key` varchar(255) NOT NULL,
@@ -1122,140 +1359,15 @@ CREATE TABLE `settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `settings_key_unique` (`key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Dumping data for `settings`
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('1', 'site_name', 'ملودیاما', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 20:31:36');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('2', 'site_name_en', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('3', 'site_description', 'توضیحات کامل سایت', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('4', 'site_email', 'farnad25@gmail.com', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('5', 'site_phone', '09356963201', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('6', 'site_address', 'ادرس', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('7', 'site_logo', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('8', 'site_favicon', 'settings/01KST2NC6BNFA0X95W573NQE32.png', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('9', 'show_site_name_in_sidebar', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('10', 'logo_height_px', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('11', 'premium_faqs', '[{\"question\":\"پرمیوم میشه؟\",\"answer\":\"اره\"}]', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('12', 'maintenance_mode', '0', 'general', 'text', '2026-05-29 14:36:55', '2026-05-30 08:08:27');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('13', 'maintenance_message', 'درحال تعمیر هستیم', 'general', 'text', '2026-05-29 14:36:55', '2026-05-30 08:07:58');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('14', 'auth_type', 'both', 'general', 'text', '2026-05-29 14:36:55', '2026-05-30 21:01:26');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('15', 'allow_registration', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:37:26');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('16', 'email_verification', '0', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('17', 'phone_verification', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-30 20:29:41');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('18', 'allow_artist_register', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:37:26');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('19', 'auto_approve_artist', '0', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('20', 'artist_subscription_required', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:37:26');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('21', 'free_stream_limit', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('22', 'allow_download_free', '0', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('23', 'allow_download_premium', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('24', 'premium_preview_seconds', '30', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('25', 'auto_approve_content', '0', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('26', 'max_upload_size_mb', '50', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 18:46:29');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('27', 'featured_tracks_count', '5', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('28', 'home_new_releases', '10', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('29', 'premium_enabled', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('30', 'currency', 'تومان', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('31', 'payment_gateway', 'zibal', 'general', 'text', '2026-05-29 14:36:55', '2026-06-02 10:56:38');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('32', 'deposit_min_amount', '5000', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('33', 'deposit_max_amount', '50000000', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('34', 'withdraw_min_amount', '100000', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('35', 'withdraw_max_amount', '5000000', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('36', 'transaction_tax_percent', '10', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('37', 'withdraw_fee_amount', '1000', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('38', 'wallet_enabled', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('39', 'card2card_enabled', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('40', 'bank_card_number', '2727228872872', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('41', 'bank_card_owner', 'bfbfb', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('42', 'bank_name', 'fdbfdbfdb', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('43', 'social_instagram', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('44', 'social_telegram', 'regreg', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('45', 'social_twitter', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('46', 'social_youtube', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('47', 'social_aparat', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('48', 'meta_title', 'ملودیام سایت اهنگ', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('49', 'meta_description', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('50', 'meta_keywords', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('51', 'google_analytics', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('52', 'notify_new_track', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('53', 'notify_new_user', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('54', 'admin_email_notify', '1', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:39:48');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('55', 'smtp_host', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('56', 'smtp_port', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('57', 'smtp_username', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('58', 'smtp_password', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('59', 'mail_from_name', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('60', 'mail_from_address', NULL, 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:36:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('61', 'theme_primary', '#0e6ae8', 'general', 'text', '2026-05-29 14:36:55', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('62', 'theme_secondary', '#8b5cf6', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('63', 'theme_accent', '#d946ef', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('64', 'theme_danger', '#ef4444', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('65', 'theme_success', '#7e9905', 'general', 'text', '2026-05-29 14:36:55', '2026-06-02 14:59:24');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('66', 'theme_bg_light', '#f8fafc', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('67', 'theme_bg_dark', '#020617', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('68', 'theme_surface_light', '#ffffff', 'general', 'text', '2026-05-29 14:36:55', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('69', 'theme_surface_dark', '#0f172a', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('70', 'theme_gradient_from', '#0ea5e9', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('71', 'theme_gradient_to', '#d946ef', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('72', 'theme_player_bg', '#1a1a2e', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('73', 'theme_font_fa', 'Vazirmatn', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('74', 'theme_font_en', 'Inter', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('75', 'theme_radius', 'md', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:46:51');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('76', 'premium_banner_enabled', '1', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('77', 'premium_banner_title', 'ملودیام پرمیوم', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('78', 'premium_banner_subtitle', 'بدون تبلیغات / کیفیت بالا', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('79', 'premium_banner_btn_text', 'ارتقا حساب', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('80', 'premium_banner_btn_url', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('81', 'premium_banner_bg_from', '#7408a6', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('82', 'premium_banner_bg_to', '#022a57', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('83', 'premium_banner_text_color', '#f5eaea', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('84', 'premium_banner_image', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('85', 'artist_banner_enabled', '1', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('86', 'artist_banner_title', 'هنرمند شوید!', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:32');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('87', 'artist_banner_subtitle', 'اهنگ های خود را بفروشید.', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:33');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('88', 'artist_banner_btn_text', 'شروع کنید', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:33');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('89', 'artist_banner_btn_url', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('90', 'artist_banner_bg_from', '#174024', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:33');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('91', 'artist_banner_bg_to', '#6ca10d', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:33');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('92', 'artist_banner_text_color', '#ffffff', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:33');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('93', 'artist_banner_image', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('94', 'storage_driver', 'local', 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:41:55');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('95', 's3_key', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('96', 's3_secret', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('97', 's3_region', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('98', 's3_bucket', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('99', 'earnings_payout_description', NULL, 'general', 'text', '2026-05-29 14:36:56', '2026-05-29 14:36:56');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('100', 'zarinpal_merchant', '4b833a56-79a4-11ea-a189-000c295eb8fc', 'general', 'text', '2026-05-29 14:39:47', '2026-06-02 11:31:37');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('101', 'zarinpal_sandbox', '1', 'general', 'text', '2026-05-29 14:39:47', '2026-05-29 14:39:47');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('102', 'sidebar_footer_enabled', '1', 'general', 'text', '2026-05-29 15:02:40', '2026-05-29 15:02:40');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('103', 'sidebar_footer_description', 'تمام حقوق محفوط هست', 'general', 'text', '2026-05-29 15:02:40', '2026-05-29 15:02:40');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('104', 'sidebar_footer_links', '[{\"label\":\"تماس باما\",\"url\":\"http:\\/\\/localhost:8000\\/admin\\/pages\\/create\"}]', 'general', 'text', '2026-05-29 15:02:40', '2026-05-29 15:02:40');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('105', 'smtp_encryption', 'tls', 'general', 'text', '2026-05-29 20:31:36', '2026-05-29 20:31:36');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('106', 'user_upload_enabled', '1', 'general', 'text', '2026-05-30 06:12:50', '2026-05-30 06:12:50');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('107', 'auto_approve_user_content', '0', 'general', 'text', '2026-05-30 08:07:46', '2026-05-30 08:07:46');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('108', 'auth_otp_enabled', '1', 'general', 'text', '2026-05-30 10:58:56', '2026-05-30 20:13:49');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('109', 'auth_password_recovery_otp', '1', 'general', 'text', '2026-05-30 10:58:56', '2026-05-30 20:13:49');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('110', 'admin_notification_mobile', '09356963201', 'general', 'text', '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('111', 'admin_notification_email', 'farnad24@gmail.com', 'general', 'text', '2026-05-30 11:29:53', '2026-05-30 11:29:53');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('112', 'zibal_merchant', 'zibal', 'general', 'text', '2026-06-02 10:56:38', '2026-06-02 10:56:38');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('113', 'email_header_color', '#6366f1', 'general', 'text', '2026-06-02 10:56:38', '2026-06-02 10:56:38');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('114', 'email_footer_text', 'تمام حقوق برای ملودیام محفوط است', 'general', 'text', '2026-06-02 10:56:38', '2026-06-02 14:23:24');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('115', 'payping_token', '', 'general', 'text', '2026-06-02 11:31:37', '2026-06-02 11:31:37');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('116', 'active_gateways', '[\"zarinpal\",\"zibal\"]', 'general', 'text', '2026-06-02 11:31:37', '2026-06-02 11:31:37');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('117', 'theme_warning', '#f59e0b', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('118', 'theme_sidebar_bg_light', '#ffffff', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('119', 'theme_sidebar_bg_dark', '#0f172a', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('120', 'theme_sidebar_text', '#64748b', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('121', 'theme_sidebar_active_bg', '#0ea5e9', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('122', 'theme_sidebar_active_text', '#ffffff', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('123', 'theme_sidebar_border', '#e2e8f0', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('124', 'theme_header_bg_light', '#ffffff', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('125', 'theme_header_bg_dark', '#0f172a', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('126', 'theme_header_border', '#e2e8f0', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('127', 'theme_player_text', '#ffffff', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
-INSERT INTO `settings` (`id`, `key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('128', 'theme_player_control', '#0ea5e9', 'general', 'text', '2026-06-02 14:39:01', '2026-06-02 14:39:01');
+--
+-- Table structure for table `shares`
+--
 
-
--- Table structure for `shares`
 DROP TABLE IF EXISTS `shares`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `shares` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -1269,10 +1381,15 @@ CREATE TABLE `shares` (
   KEY `shares_shareable_type_shareable_id_index` (`shareable_type`,`shareable_id`),
   CONSTRAINT `shares_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `sms_providers`
+--
 
--- Table structure for `sms_providers`
 DROP TABLE IF EXISTS `sms_providers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sms_providers` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -1283,10 +1400,15 @@ CREATE TABLE `sms_providers` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `streams`
+--
 
--- Table structure for `streams`
 DROP TABLE IF EXISTS `streams`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `streams` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned DEFAULT NULL,
@@ -1305,10 +1427,15 @@ CREATE TABLE `streams` (
   CONSTRAINT `streams_track_id_foreign` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE CASCADE,
   CONSTRAINT `streams_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `subscriptions`
+--
 
--- Table structure for `subscriptions`
 DROP TABLE IF EXISTS `subscriptions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `subscriptions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -1328,10 +1455,15 @@ CREATE TABLE `subscriptions` (
   CONSTRAINT `subscriptions_plan_id_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE,
   CONSTRAINT `subscriptions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `theme_settings`
+--
 
--- Table structure for `theme_settings`
 DROP TABLE IF EXISTS `theme_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `theme_settings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `key` varchar(255) NOT NULL,
@@ -1346,10 +1478,15 @@ CREATE TABLE `theme_settings` (
   UNIQUE KEY `theme_settings_key_unique` (`key`),
   KEY `theme_settings_group_index` (`group`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `tracks`
+--
 
--- Table structure for `tracks`
 DROP TABLE IF EXISTS `tracks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tracks` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `artist_id` bigint(20) unsigned DEFAULT NULL,
@@ -1394,8 +1531,8 @@ CREATE TABLE `tracks` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `price` decimal(12,0) DEFAULT NULL COMMENT 'قیمت (null = رایگان)',
-  `discount_price` decimal(12,0) DEFAULT NULL COMMENT 'قیمت با تخفیف (null = بدون تخفیف)',
+  `price` decimal(12,0) DEFAULT NULL COMMENT '┘é█î┘à╪¬ (null = ╪▒╪º█î┌»╪º┘å)',
+  `discount_price` decimal(12,0) DEFAULT NULL COMMENT '┘é█î┘à╪¬ ╪¿╪º ╪¬╪«┘ü█î┘ü (null = ╪¿╪»┘ê┘å ╪¬╪«┘ü█î┘ü)',
   `preview_seconds` smallint(5) unsigned NOT NULL DEFAULT 0,
   `is_for_sale` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
@@ -1416,10 +1553,15 @@ CREATE TABLE `tracks` (
   CONSTRAINT `tracks_genre_id_foreign` FOREIGN KEY (`genre_id`) REFERENCES `genres` (`id`) ON DELETE SET NULL,
   CONSTRAINT `tracks_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `users`
+--
 
--- Table structure for `users`
 DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `users` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -1451,10 +1593,15 @@ CREATE TABLE `users` (
   KEY `users_type_is_active_index` (`type`,`is_active`),
   KEY `users_is_premium_index` (`is_premium`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `wallet_transactions`
+--
 
--- Table structure for `wallet_transactions`
 DROP TABLE IF EXISTS `wallet_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `wallet_transactions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `wallet_id` bigint(20) unsigned NOT NULL,
@@ -1478,10 +1625,15 @@ CREATE TABLE `wallet_transactions` (
   KEY `wt_transactionable_index` (`transactionable_type`,`transactionable_id`),
   CONSTRAINT `wallet_transactions_wallet_id_foreign` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `wallets`
+--
 
--- Table structure for `wallets`
 DROP TABLE IF EXISTS `wallets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `wallets` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
@@ -1492,5 +1644,19 @@ CREATE TABLE `wallets` (
   UNIQUE KEY `wallets_user_id_unique` (`user_id`),
   CONSTRAINT `wallets_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-SET FOREIGN_KEY_CHECKS=1;
+--
+-- Dumping routines for database 'melodiyam'
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-06-03 12:17:54
