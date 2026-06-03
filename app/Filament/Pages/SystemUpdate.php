@@ -268,9 +268,13 @@ class SystemUpdate extends Page implements HasForms
             $filesToBackup = is_array($manifest) ? ($manifest['files'] ?? []) : [];
             $this->createBackup($backupName, $filesToBackup);
 
-            // استخراج و جایگزینی فایل‌ها
-            $zip->extractTo(base_path());
+            // استخراج و جایگزینی فایل‌ها با بررسی خطا
+            $extracted = $zip->extractTo(base_path());
             $zip->close();
+
+            if (!$extracted) {
+                throw new \Exception("خطا در استخراج فایل‌های آپدیت. ممکن است مجوز نوشتن فایل‌ها کافی نباشد.");
+            }
         } else {
             throw new \Exception("خطا در باز کردن فایل ZIP آپدیت");
         }
@@ -292,6 +296,17 @@ class SystemUpdate extends Page implements HasForms
             \Illuminate\Support\Facades\Artisan::call('cache:clear');
             \Illuminate\Support\Facades\Artisan::call('view:clear');
             \Illuminate\Support\Facades\Artisan::call('config:clear');
+            \Illuminate\Support\Facades\Artisan::call('route:clear');
+            \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+
+            // ریست OPcache — حیاتی‌ترین بخش برای اعمال تغییرات فایل‌ها
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+            }
+            // ریست کش APCu در صورت وجود
+            if (function_exists('apcu_clear_cache')) {
+                apcu_clear_cache();
+            }
             
             // بروزرسانی فایل ورژن
             File::put(base_path('version.json'), json_encode([
