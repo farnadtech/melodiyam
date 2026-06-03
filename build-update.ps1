@@ -12,6 +12,13 @@ $VersionFilePath = Join-Path $OutputDir "version.json"
 
 Write-Host "Building update package for version $Version from tag $FromTag..." -ForegroundColor Cyan
 
+# Check if tag exists
+$TagCheck = git tag -l "$FromTag"
+if (!$TagCheck) {
+    Write-Host "Error: Git tag '$FromTag' not found. Please create it first (git tag $FromTag) or use an existing tag." -ForegroundColor Red
+    exit
+}
+
 # 1. Get changed files
 $ChangedFiles = git diff --name-only "$FromTag" HEAD
 $DeletedFiles = git diff --name-only --diff-filter=D "$FromTag" HEAD
@@ -43,16 +50,23 @@ $manifest | ConvertTo-Json -Depth 10 | Out-File -FilePath $ManifestPath -Encodin
 
 # 3. Create ZIP
 if (Test-Path $ZipPath) { Remove-Item $ZipPath }
-Add-Type -AssemblyName System.IO.Compression
-$zip = [System.IO.Compression.ZipFile]::Open($ZipPath, 'Create')
+
+# Using standard Compress-Archive for better compatibility
+$TempDir = Join-Path $env:TEMP "melodiyam_update_$Version"
+if (Test-Path $TempDir) { Remove-Item -Recurse -Force $TempDir }
+New-Item -ItemType Directory -Path $TempDir
 
 foreach ($file in $FilesToInclude) {
-    $entryName = $file.Replace("\", "/")
-    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $PSScriptRoot $file), $entryName)
+    $dest = Join-Path $TempDir $file
+    $destDir = Split-Path $dest
+    if (!(Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir }
+    Copy-Item -Path $file -Destination $dest
 }
-# Add manifest to zip as well
-[System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $ManifestPath, "manifest.json")
-$zip.Dispose()
+# Add manifest
+Copy-Item -Path $ManifestPath -Destination (Join-Path $TempDir "manifest.json")
+
+Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force
+Remove-Item -Recurse -Force $TempDir
 
 # 4. Create version.json for server
 $serverVersion = [ordered]@{
