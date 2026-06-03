@@ -27,10 +27,10 @@ class CommissionRuleResource extends Resource
 {
     protected static ?string $model = CommissionRule::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
-    protected static string|\UnitEnum|null $navigationGroup = 'مالی';
+    protected static string|\UnitEnum|null $navigationGroup = 'مالی و اشتراک‌ها';
+    protected static ?int $navigationSort = 7;
     protected static ?string $modelLabel = 'قانون کمیسیون';
     protected static ?string $pluralModelLabel = 'قوانین کمیسیون';
-    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {

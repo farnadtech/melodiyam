@@ -41,11 +41,17 @@ class AlbumController extends Controller
         $purchasedAlbumIds = [];
         $albumAlreadyBought = false;
         $userLikedAlbum = false;
+        $userRepostedAlbum = false;
 
         if ($user) {
             $userLikedAlbum = $user->likes()
                 ->where('likeable_type', Album::class)
                 ->where('likeable_id', $album->id)
+                ->exists();
+
+            $userRepostedAlbum = \App\Models\Repost::where('user_id', $user->id)
+                ->where('repostable_type', Album::class)
+                ->where('repostable_id', $album->id)
                 ->exists();
 
             $purchasedTrackIds = Sale::where('buyer_id', $user->id)
@@ -62,7 +68,7 @@ class AlbumController extends Controller
 
         return view('album.show', compact(
             'album', 'tracks', 'sort', 'hasPlanAccess',
-            'purchasedTrackIds', 'albumAlreadyBought', 'userLikedAlbum'
+            'purchasedTrackIds', 'albumAlreadyBought', 'userLikedAlbum', 'userRepostedAlbum'
         ));
     }
 }

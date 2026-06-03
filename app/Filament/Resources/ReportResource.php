@@ -17,10 +17,10 @@ class ReportResource extends Resource
 {
     protected static ?string $model = Report::class;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-flag';
-    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت';
+    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت کاربران';
     protected static ?string $modelLabel = 'شکایت';
     protected static ?string $pluralModelLabel = 'شکایات';
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationBadge(): ?string
     {

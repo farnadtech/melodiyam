@@ -25,18 +25,21 @@
     {{-- Admin theme overrides — must come AFTER Vite CSS --}}
     <style>
         :root {
-            /* Primary & Accent → used by @theme inline color-mix() in app.css */
-            --admin-primary: {{ $ts['theme_primary'] ?? '#0ea5e9' }};
-            --admin-accent:  {{ $ts['theme_accent']  ?? '#d946ef' }};
-
-            /* Gradient & Player */
+            --admin-primary:       {{ $ts['theme_primary']       ?? '#0ea5e9' }};
+            --admin-accent:        {{ $ts['theme_accent']        ?? '#d946ef' }};
             --admin-gradient-from: {{ $ts['theme_gradient_from'] ?? '#0ea5e9' }};
             --admin-gradient-to:   {{ $ts['theme_gradient_to']   ?? '#d946ef' }};
             --admin-player-bg:     {{ $ts['theme_player_bg']     ?? '#1a1a2e' }};
-
-            /* Tailwind color token overrides */
-            --color-red-500:     {{ $ts['theme_danger']  ?? '#ef4444' }};
-            --color-emerald-500: {{ $ts['theme_success'] ?? '#10b981' }};
+            --admin-player-text:   {{ $ts['theme_player_text']   ?? '#ffffff' }};
+            --admin-player-ctrl:   {{ $ts['theme_player_control']?? '#0ea5e9' }};
+            --color-red-500:       {{ $ts['theme_danger']        ?? '#ef4444' }};
+            --color-emerald-500:   {{ $ts['theme_success']       ?? '#10b981' }};
+            --color-amber-500:     {{ $ts['theme_warning']       ?? '#f59e0b' }};
+            /* Sidebar */
+            --sidebar-text:        {{ $ts['theme_sidebar_text']        ?? '#64748b' }};
+            --sidebar-active-bg:   {{ $ts['theme_sidebar_active_bg']   ?? '#0ea5e9' }};
+            --sidebar-active-text: {{ $ts['theme_sidebar_active_text'] ?? '#ffffff' }};
+            --sidebar-border:      {{ $ts['theme_sidebar_border']      ?? '#e2e8f0' }};
         }
 
         /* Light mode */
@@ -46,6 +49,9 @@
             --color-surface-200: color-mix(in srgb, {{ $ts['theme_bg_light'] ?? '#f8fafc' }} 50%, white);
             --color-surface-900: {{ $ts['theme_surface_light'] ?? '#0f172a' }};
             --color-surface-950: color-mix(in srgb, {{ $ts['theme_surface_light'] ?? '#0f172a' }} 80%, black);
+            --sidebar-bg:        {{ $ts['theme_sidebar_bg_light']  ?? '#ffffff' }};
+            --header-bg:         {{ $ts['theme_header_bg_light']   ?? '#ffffff' }};
+            --header-border:     {{ $ts['theme_header_border']     ?? '#e2e8f0' }};
         }
 
         /* Dark mode */
@@ -54,26 +60,34 @@
             --color-surface-900: {{ $ts['theme_surface_dark'] ?? '#0f172a' }};
             --color-surface-800: color-mix(in srgb, {{ $ts['theme_surface_dark'] ?? '#0f172a' }} 70%, white);
             --color-surface-50:  color-mix(in srgb, {{ $ts['theme_bg_dark'] ?? '#020617' }} 15%, white);
+            --sidebar-bg:        {{ $ts['theme_sidebar_bg_dark']   ?? '#0f172a' }};
+            --header-bg:         {{ $ts['theme_header_bg_dark']    ?? '#0f172a' }};
+            --header-border:     color-mix(in srgb, {{ $ts['theme_header_border'] ?? '#e2e8f0' }} 20%, transparent);
         }
 
         .gradient-primary {
             background: linear-gradient(135deg, var(--admin-gradient-from), var(--admin-gradient-to)) !important;
         }
-
-        /* Player background */
         #global-player-bar {
-            background-color: {{ $ts['theme_player_bg'] ?? '#1a1a2e' }} !important;
+            background-color: var(--admin-player-bg) !important;
+            color: var(--admin-player-text) !important;
         }
+        #global-player-bar .player-control-btn {
+            color: var(--admin-player-ctrl) !important;
+        }
+        html.dark body  { background-color: {{ $ts['theme_bg_dark']   ?? '#020617' }} !important; }
+        html:not(.dark) body { background-color: {{ $ts['theme_bg_light'] ?? '#f8fafc' }} !important; }
 
-        /* Dark mode body background — overrides bg-surface-950 */
-        html.dark body {
-            background-color: {{ $ts['theme_bg_dark'] ?? '#020617' }} !important;
+        /* Sidebar */
+        #app-sidebar { background-color: var(--sidebar-bg) !important; border-color: var(--sidebar-border) !important; }
+        #app-sidebar .sidebar-item { color: var(--sidebar-text) !important; }
+        #app-sidebar .sidebar-item.active,
+        #app-sidebar .sidebar-item[aria-current="page"] {
+            background-color: var(--sidebar-active-bg) !important;
+            color: var(--sidebar-active-text) !important;
         }
-
-        /* Light mode body background */
-        html:not(.dark) body {
-            background-color: {{ $ts['theme_bg_light'] ?? '#f8fafc' }} !important;
-        }
+        /* Header */
+        #app-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
     </style>
     <link rel="icon" href="{{ $siteFavicon ?? asset('images/favicon.ico') }}">
     @livewireStyles
@@ -91,7 +105,11 @@
     </div>
 </body>
 @else
-<body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden">
+<body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden" x-data="{ toast: '{{ session('success') }}', toastType: 'success' }" x-init="if(toast) setTimeout(() => toast = '', 5000)">
+    {{-- Global Toast --}}
+    <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
+        <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
+    </div>
 
     <div class="flex h-screen" x-data="{ sidebarOpen: true, mobileSidebar: false }">
 

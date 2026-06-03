@@ -106,17 +106,23 @@ class TrackController extends Controller
             $comments->each(fn($c) => $c->user_liked = false);
         }
 
-        // Check if user liked this track
+        // Check if user liked/reposted this track
         $userLikedTrack = false;
+        $userRepostedTrack = false;
         if (auth()->check()) {
             $userLikedTrack = \App\Models\Like::where('user_id', auth()->id())
                 ->where('likeable_type', Track::class)
                 ->where('likeable_id', $track->id)
                 ->exists();
+            
+            $userRepostedTrack = \App\Models\Repost::where('user_id', auth()->id())
+                ->where('repostable_type', Track::class)
+                ->where('repostable_id', $track->id)
+                ->exists();
         }
 
         return view('track.show', compact(
-            'track', 'relatedTracks', 'comments', 'userLikedTrack', 'canPlay',
+            'track', 'relatedTracks', 'comments', 'userLikedTrack', 'userRepostedTrack', 'canPlay',
             'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount',
             'isPremiumOnly', 'premiumPreviewSec', 'canDownload'
         ));

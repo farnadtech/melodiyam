@@ -179,13 +179,37 @@ class LibraryController extends Controller
     public function profile(): View
     {
         $user = auth()->user();
+        return $this->getUserProfile($user);
+    }
+
+    public function publicProfile(\App\Models\User $user): View
+    {
+        return $this->getUserProfile($user);
+    }
+
+    protected function getUserProfile($user): View
+    {
         $likeCount     = \App\Models\Like::where('user_id', $user->id)->count();
         $playlistCount = \App\Models\Playlist::where('user_id', $user->id)->count();
-        $followCount   = \App\Models\Follow::where('user_id', $user->id)->count();
+        $followingCount = \App\Models\Follow::where('user_id', $user->id)->count();
+        $followerCount  = $user->followers()->count();
+        
+        $isFollowing = false;
+        if (auth()->check() && auth()->id() !== $user->id) {
+            $isFollowing = \App\Models\Follow::where([
+                'user_id' => auth()->id(),
+                'followable_type' => \App\Models\User::class,
+                'followable_id' => $user->id,
+            ])->exists();
+        }
+
         $application   = \App\Models\ArtistApplication::where('user_id', $user->id)->first();
         $activeSubscription = $user->activeSubscription()->with('plan')->first();
         
-        return view('library.profile', compact('likeCount', 'playlistCount', 'followCount', 'application', 'activeSubscription'));
+        return view('library.profile', compact(
+            'user', 'likeCount', 'playlistCount', 'followingCount', 'followerCount', 
+            'application', 'activeSubscription', 'isFollowing'
+        ));
     }
 
     public function settings(): View

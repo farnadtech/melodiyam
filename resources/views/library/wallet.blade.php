@@ -1,5 +1,5 @@
 <x-layouts.app title="کیف پول">
-<div class="p-4 lg:p-8 space-y-6" x-data="{ tab: '{{ $card2cardEnabled ? 'deposit' : 'withdraw' }}' }">
+<div class="p-4 lg:p-8 space-y-6" x-data="{ tab: '{{ $card2cardEnabled ? 'deposit' : 'withdraw' }}', selectedGateway: '{{ array_key_first($activeGateways) ?? '' }}' }">
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
@@ -192,24 +192,50 @@
                 <div class="rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 text-sm text-blue-700 dark:text-blue-300">
                     پس از انتخاب مبلغ به درگاه پرداخت منتقل می‌شوید و موجودی بلافاصله شارژ می‌شود.
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">مبلغ شارژ (تومان)</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                        @foreach([50000, 100000, 200000, 500000] as $preset)
-                        <button type="button"
-                                onclick="document.getElementById('gateway_amount').value='{{ $preset }}'"
-                                class="py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-primary-400 hover:text-primary-600 transition">
-                            {{ number_format($preset) }}
-                        </button>
-                        @endforeach
+                <form action="{{ route('wallet.deposit.online') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">مبلغ شارژ (تومان)</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                            @foreach([50000, 100000, 200000, 500000] as $preset)
+                            <button type="button"
+                                    onclick="document.getElementById('gateway_amount').value='{{ $preset }}'"
+                                    class="py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 text-sm font-medium text-surface-700 dark:text-surface-300 hover:border-primary-400 hover:text-primary-600 transition">
+                                {{ number_format($preset) }}
+                            </button>
+                            @endforeach
+                        </div>
+                        <input type="number" id="gateway_amount" name="amount" placeholder="مبلغ دلخواه (حداقل {{ number_format($depositMin) }})"
+                               min="{{ $depositMin }}" max="{{ $depositMax }}"
+                               class="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 outline-none transition">
                     </div>
-                    <input type="number" id="gateway_amount" placeholder="مبلغ دلخواه" min="10000"
-                           class="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 outline-none transition">
-                </div>
-                <button type="button" class="w-full py-3.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm transition shadow-lg shadow-primary-500/30">
-                    پرداخت آنلاین
-                </button>
-                <p class="text-xs text-surface-400 text-center">درگاه پرداخت آنلاین در حال آماده‌سازی است</p>
+                    {{-- Gateway selection --}}
+                    @if(count($activeGateways) > 1)
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-surface-700 dark:text-surface-300">درگاه پرداخت</label>
+                        <div class="grid grid-cols-{{ count($activeGateways) }} gap-2">
+                            @foreach($activeGateways as $gkey => $glabel)
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition text-sm"
+                                   :class="selectedGateway === '{{ $gkey }}' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-surface-200 dark:border-surface-700 text-surface-500'"
+                                   x-data="{}">
+                                <input type="radio" name="gateway" value="{{ $gkey }}"
+                                       x-on:change="selectedGateway = '{{ $gkey }}'"
+                                       {{ $loop->first ? 'checked' : '' }}
+                                       class="text-primary-500">
+                                {{ $glabel }}
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @else
+                        @foreach($activeGateways as $gkey => $glabel)
+                        <input type="hidden" name="gateway" value="{{ $gkey }}">
+                        @endforeach
+                    @endif
+                    <button type="submit" class="w-full py-3.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm transition shadow-lg shadow-primary-500/30">
+                        پرداخت آنلاین
+                    </button>
+                </form>
             </div>
             @endif
 

@@ -15,11 +15,11 @@ use Livewire\Component;
 #[Title('ورود - ملودیام')]
 class Login extends Component
 {
-    public string $loginMethod = 'email'; // 'email' or 'phone'
-    public string $authType = 'password'; // 'password' or 'otp' - from settings
+    public string $loginMethod = 'password'; // 'password' or 'otp'
+    public string $authType = 'password'; // 'password', 'otp', 'both'
 
-    // Email login
-    public string $email = '';
+    // Password login
+    public string $identifier = ''; // Email or Phone
     public string $password = '';
 
     // Phone OTP login
@@ -33,8 +33,7 @@ class Login extends Component
         'phone.regex' => 'فرمت شماره موبایل صحیح نیست',
         'code.required' => 'کد تأیید الزامی است',
         'code.digits' => 'کد تأیید باید ۶ رقم باشد',
-        'email.required' => 'ایمیل الزامی است',
-        'email.email' => 'فرمت ایمیل صحیح نیست',
+        'identifier.required' => 'ایمیل یا شماره موبایل الزامی است',
         'password.required' => 'رمز عبور الزامی است',
     ];
 
@@ -44,19 +43,16 @@ class Login extends Component
         
         // Set login method based on auth type
         if ($this->authType === 'otp') {
-            $this->loginMethod = 'phone';
+            $this->loginMethod = 'otp';
         } else {
-            $this->loginMethod = 'email';
+            $this->loginMethod = 'password';
         }
     }
 
     public function switchMethod(string $method)
     {
-        // Only allow switching if auth_type is not set to a specific method
-        if ($this->authType === 'otp' && $method === 'email') {
-            return;
-        }
-        if ($this->authType === 'password' && $method === 'phone') {
+        // Only allow switching if auth_type is 'both'
+        if ($this->authType !== 'both') {
             return;
         }
         
@@ -64,20 +60,22 @@ class Login extends Component
         $this->resetErrorBag();
     }
 
-    // ── Email Login ──
+    // ── Password Login (Email or Phone) ──
 
-    public function loginWithEmail()
+    public function loginWithPassword()
     {
         $this->validate([
-            'email' => 'required|email',
+            'identifier' => 'required',
             'password' => 'required|min:6',
         ]);
 
-        if (Auth::attempt(['email' => $this->email, 'password' => $this->password], true)) {
+        $fieldType = filter_var($this->identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password], true)) {
             return redirect()->intended('/');
         }
 
-        $this->addError('email', 'ایمیل یا رمز عبور اشتباه است');
+        $this->addError('identifier', 'اطلاعات ورود (ایمیل/شماره یا رمز عبور) اشتباه است');
     }
 
     // ── Phone OTP Login ──
@@ -86,10 +84,19 @@ class Login extends Component
     {
         $this->validate(['phone' => 'required|regex:/^09[0-9]{9}$/']);
 
+        // Check if OTP is enabled in Notification Settings
+        $otpSetting = \App\Models\NotificationSetting::where('event_key', 'otp_code')->first();
+        if (!$otpSetting || !$otpSetting->via_sms) {
+            $this->addError('phone', 'ارسال کد تایید در حال حاضر غیرفعال است.');
+            return;
+        }
+
         $otp = OtpCode::generate($this->phone);
 
-        // TODO: Send SMS via MelliPayamak
-        // SmsService::send($this->phone, "کد تأیید ملودیام: {$otp->code}");
+        // Send SMS via NotificationDispatcher (to handle patterns and drivers automatically)
+        \App\Services\NotificationDispatcher::dispatch('otp_code', [
+            'code' => $otp->code,
+        ], (object)['phone' => $this->phone]);
 
         $this->codeSent = true;
         $this->countdown = 120;

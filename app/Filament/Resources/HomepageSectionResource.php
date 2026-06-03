@@ -29,10 +29,10 @@ class HomepageSectionResource extends Resource
 {
     protected static ?string $model = HomepageSection::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-home';
-    protected static ?string $navigationLabel = 'صفحه اصلی';
+    protected static ?string $navigationLabel = 'مدیریت صفحه اصلی';
     protected static ?string $modelLabel = 'بخش';
     protected static ?string $pluralModelLabel = 'بخش‌های صفحه اصلی';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'محتوا و ظاهر';
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema

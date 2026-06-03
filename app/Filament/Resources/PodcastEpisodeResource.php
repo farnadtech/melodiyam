@@ -16,10 +16,10 @@ class PodcastEpisodeResource extends Resource
 {
     protected static ?string $model = PodcastEpisode::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-play-circle';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'پادکست‌ها';
     protected static ?string $modelLabel = 'قسمت پادکست';
     protected static ?string $pluralModelLabel = 'قسمت‌های پادکست';
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
     {

@@ -18,7 +18,13 @@ class SearchController extends Controller
         $q = $request->get('q', '');
 
         if (strlen($q) < 2) {
-            return response()->json(['results' => []]);
+            return response()->json([
+                'tracks' => [],
+                'artists' => [],
+                'albums' => [],
+                'playlists' => [],
+                'podcasts' => [],
+            ]);
         }
 
         return response()->json([
@@ -27,7 +33,7 @@ class SearchController extends Controller
                 ->with(['artist:id,display_name,slug'])
                 ->take(10)->get(),
             'artists' => Artist::where('display_name', 'like', "%{$q}%")
-                ->take(5)->get(['id', 'display_name', 'slug']),
+                ->take(5)->get(['id', 'display_name', 'slug', 'cover_image as avatar']),
             'albums' => Album::published()
                 ->where('title', 'like', "%{$q}%")
                 ->with('artist:id,display_name')

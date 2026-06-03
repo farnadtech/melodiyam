@@ -22,11 +22,11 @@ class ArtistApplicationSettings extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت';
+    protected static string|\UnitEnum|null $navigationGroup = 'تنظیمات سیستم';
     protected static ?string $title = 'فیلدهای فرم هنرمند';
     protected static ?string $navigationLabel = 'فرم درخواست هنرمند';
     protected static ?string $slug = 'artist-application-settings';
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 3;
 
     public array $data = [];
 

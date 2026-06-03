@@ -62,4 +62,17 @@ class Genre extends Model
     {
         return $query->orderBy('sort_order');
     }
+
+    public function getTitleAttribute()
+    {
+        return $this->name_fa ?: $this->name;
+    }
+
+    public function getCoverUrl()
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        return null;
+    }
 }

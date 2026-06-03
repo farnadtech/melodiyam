@@ -28,7 +28,7 @@
                 
                 <x-sort-filters :currentSort="$sort" />
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
                     @foreach($results['tracks'] as $track)
                         @include('components.track-card', ['track' => $track])
                     @endforeach

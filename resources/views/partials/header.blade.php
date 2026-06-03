@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-800/50">
+<header id="app-header" class="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 backdrop-blur-xl border-b" style="background-color: var(--header-bg, rgba(255,255,255,0.8)); border-color: var(--header-border, #e2e8f0)50;">
 
     {{-- Right Side: Mobile menu + Search --}}
     <div class="flex items-center gap-3">
@@ -24,7 +24,7 @@
         </div>
 
         {{-- Search Bar --}}
-        <div x-data="{ open: false, query: '', results: [], loading: false, debounceTimer: null }" class="hidden md:block relative">
+        <div x-data="{ open: false, query: '', results: {}, loading: false, debounceTimer: null }" class="hidden md:block relative">
             <div class="relative">
                 <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -40,11 +40,19 @@
                                 loading = true;
                                 fetch('/api/v1/search?q=' + encodeURIComponent(query))
                                     .then(r => r.json())
-                                    .then(d => { results = d; loading = false; })
-                                    .catch(() => { results = []; loading = false; });
+                                    .then(d => { 
+                                        if (query.length >= 2) {
+                                            results = d; 
+                                        } else {
+                                            results = {};
+                                        }
+                                        loading = false; 
+                                    })
+                                    .catch(() => { results = {}; loading = false; });
                             }, 300);
                         } else {
-                            results = [];
+                            results = {};
+                            loading = false;
                         }
                     "
                     @keydown.escape="open = false"
@@ -81,7 +89,7 @@
                     </div>
                 </template>
 
-                <template x-if="!loading && (!results.tracks?.length && !results.artists?.length && !results.albums?.length && !results.playlists?.length && !results.podcasts?.length)">
+                <template x-if="!loading && query.length >= 2 && (!results.tracks?.length && !results.artists?.length && !results.albums?.length && !results.playlists?.length && !results.podcasts?.length)">
                     <div class="px-4 py-8 text-center text-sm text-surface-400">
                         نتیجه‌ای یافت نشد
                     </div>
@@ -95,10 +103,10 @@
                                 <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">آهنگ‌ها</div>
                                 <template x-for="track in results.tracks" :key="track.id">
                                     <a :href="'/track/' + track.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
-                                        <img :src="track.cover ? '/storage/' + track.cover : '/images/default-cover.png'" :alt="track.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <img :src="track.cover_url" :alt="track.title" class="w-10 h-10 rounded-lg object-cover">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="track.title"></p>
-                                            <p class="text-xs text-surface-500 truncate" x-text="track.artist?.display_name"></p>
+                                            <p class="text-xs text-surface-500 truncate" x-text="track.artist?.display_name || track.artist_name"></p>
                                         </div>
                                     </a>
                                 </template>
@@ -111,7 +119,7 @@
                                 <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">هنرمندان</div>
                                 <template x-for="artist in results.artists" :key="artist.id">
                                     <a :href="'/artist/' + artist.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
-                                        <img :src="artist.avatar ? '/storage/' + artist.avatar : '/images/default-avatar.png'" :alt="artist.display_name" class="w-10 h-10 rounded-full object-cover">
+                                        <img :src="artist.avatar ? '{{ asset('storage') }}/' + artist.avatar : '{{ asset('images/default-avatar.png') }}'" :alt="artist.display_name" class="w-10 h-10 rounded-full object-cover">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="artist.display_name"></p>
                                         </div>
@@ -126,7 +134,7 @@
                                 <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">آلبوم‌ها</div>
                                 <template x-for="album in results.albums" :key="album.id">
                                     <a :href="'/album/' + album.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
-                                        <img :src="album.cover ? '/storage/' + album.cover : '/images/default-cover.png'" :alt="album.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <img :src="album.cover_url" :alt="album.title" class="w-10 h-10 rounded-lg object-cover">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="album.title"></p>
                                             <p class="text-xs text-surface-500 truncate" x-text="album.artist?.display_name"></p>
@@ -142,7 +150,7 @@
                                 <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">پلی‌لیست‌ها</div>
                                 <template x-for="playlist in results.playlists" :key="playlist.id">
                                     <a :href="'/playlist/' + playlist.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
-                                        <img :src="playlist.cover_image ? '/storage/' + playlist.cover_image : '/images/default-cover.png'" :alt="playlist.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <img :src="playlist.cover_url" :alt="playlist.title" class="w-10 h-10 rounded-lg object-cover">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="playlist.title"></p>
                                             <p class="text-xs text-surface-500 truncate" x-text="playlist.user?.name"></p>
@@ -158,7 +166,7 @@
                                 <div class="px-4 py-2 text-xs font-bold text-surface-500 uppercase tracking-wider border-b border-surface-100 dark:border-surface-700">پادکست‌ها</div>
                                 <template x-for="podcast in results.podcasts" :key="podcast.id">
                                     <a :href="'/podcast/' + podcast.slug" @click="open = false" class="flex items-center gap-3 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors border-b border-surface-100 dark:border-surface-700/50 last:border-0">
-                                        <img :src="podcast.cover_image ? '/storage/' + podcast.cover_image : '/images/default-cover.png'" :alt="podcast.title" class="w-10 h-10 rounded-lg object-cover">
+                                        <img :src="podcast.cover_url" :alt="podcast.title" class="w-10 h-10 rounded-lg object-cover">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-surface-900 dark:text-white truncate" x-text="podcast.title"></p>
                                             <p class="text-xs text-surface-500 truncate" x-text="podcast.artist?.display_name"></p>
@@ -198,8 +206,15 @@
             </svg>
         </button>
 
-        {{-- Notifications --}}
         @auth
+            @if(\App\Models\Setting::get('user_upload_enabled'))
+            <a href="{{ route('track.create') }}" wire:navigate class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-bold transition shadow-lg group" style="background-color: var(--color-emerald-500, #10b981);">
+                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>آپلود آهنگ</span>
+            </a>
+            @endif
+
+        {{-- Notifications --}}
         <div x-data="{ open: false, notifications: [], unreadCount: 0, loading: false }" x-init="
             fetch('{{ route('notifications.index') }}', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(r => r.ok ? r.json() : null)

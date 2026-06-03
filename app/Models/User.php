@@ -87,6 +87,36 @@ class User extends Authenticatable
         return $this->hasMany(Follow::class);
     }
 
+    public function followingUsers(): HasMany
+    {
+        return $this->hasMany(Follow::class)->where('followable_type', User::class);
+    }
+
+    public function followingArtists(): HasMany
+    {
+        return $this->hasMany(Follow::class)->where('followable_type', Artist::class);
+    }
+
+    public function followers(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Follow::class, 'followable');
+    }
+
+    public function tracks(): HasMany
+    {
+        return $this->hasMany(Track::class);
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    public function reposts(): HasMany
+    {
+        return $this->hasMany(Repost::class);
+    }
+
     public function downloads(): HasMany
     {
         return $this->hasMany(Download::class);
@@ -119,7 +149,32 @@ class User extends Authenticatable
 
     public function subscribedPodcasts()
     {
-        return $this->belongsToMany(Podcast::class, 'podcast_subscriptions');
+        return $this->belongsToMany(Podcast::class, 'podcast_subscriptions')
+            ->withTimestamps();
+    }
+
+    public function canUploadMusic(): bool
+    {
+        $plan = $this->activeSubscription?->plan;
+
+        if (!$plan) {
+            // Check if user is an artist, maybe they have different rules?
+            // But the user specifically asked for Plan based permissions.
+            return false;
+        }
+
+        if (!$plan->can_upload_music) {
+            return false;
+        }
+
+        if ($plan->max_music_uploads > 0) {
+            $uploadedCount = $this->tracks()->count();
+            if ($uploadedCount >= $plan->max_music_uploads) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function notifications(): HasMany
@@ -156,7 +211,12 @@ class User extends Authenticatable
 
     public function isPremium(): bool
     {
-        return $this->is_premium && $this->premium_expires_at?->isFuture();
+        if ($this->is_premium && $this->premium_expires_at?->isFuture()) {
+            return true;
+        }
+
+        // Fallback check to active subscription relationship
+        return $this->activeSubscription()->exists();
     }
 
     public function canDownload(): bool
@@ -187,6 +247,10 @@ class User extends Authenticatable
 
     public function getAvatarUrl(): string
     {
+        if ($this->artist && $this->artist->cover_image) {
+            return asset('storage/' . $this->artist->cover_image);
+        }
+        
         if ($this->avatar) {
             return asset('storage/' . $this->avatar);
         }

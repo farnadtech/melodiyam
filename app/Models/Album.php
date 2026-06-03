@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,15 +13,17 @@ use Spatie\Sluggable\SlugOptions;
 
 class Album extends Model
 {
-    use HasFactory, SoftDeletes, HasSlug;
+    use HasFactory, SoftDeletes, HasSlug, RecordsActivity;
 
     protected $fillable = [
         'artist_id', 'title', 'title_en', 'slug', 'description', 'cover_image',
         'type', 'genre_id', 'release_date', 'status', 'published_at',
-        'is_explicit', 'is_featured', 'play_count', 'like_count',
+        'is_explicit', 'is_featured', 'play_count', 'like_count', 'repost_count', 'comment_count', 'share_count',
         'upc', 'copyright', 'seo_title', 'seo_description',
         'price', 'discount_price', 'is_for_sale', 'preview_seconds',
     ];
+
+    protected $appends = ['cover_url'];
 
     protected function casts(): array
     {
@@ -31,6 +34,9 @@ class Album extends Model
             'is_featured' => 'boolean',
             'play_count' => 'integer',
             'like_count' => 'integer',
+            'repost_count' => 'integer',
+            'comment_count' => 'integer',
+            'share_count' => 'integer',
             'price' => 'integer',
             'discount_price' => 'integer',
             'is_for_sale' => 'boolean',
@@ -48,6 +54,14 @@ class Album extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function getCoverUrlAttribute(): string
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        return asset('images/default-cover.png');
     }
 
     // ── Relationships ──
@@ -80,6 +94,11 @@ class Album extends Model
     public function reports(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(Report::class, 'reportable');
+    }
+
+    public function reposts(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Repost::class, 'repostable');
     }
 
     // ── Scopes ──

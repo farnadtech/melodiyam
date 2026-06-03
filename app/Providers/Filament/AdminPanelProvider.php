@@ -43,12 +43,22 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('280px')
             ->maxContentWidth('full')
+            ->navigationGroups([
+                'تنظیمات سیستم',
+                'مدیریت موسیقی',
+                'پادکست‌ها',
+                'مدیریت کاربران',
+                'مالی و اشتراک‌ها',
+                'محتوا و ظاهر',
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->pages([
                 Dashboard::class,
                 \App\Filament\Pages\Settings::class,
+                \App\Filament\Pages\SystemUpdate::class,
                 \App\Filament\Pages\Reports::class,
                 \App\Filament\Pages\ArtistApplicationSettings::class,
+                \App\Filament\Pages\NotificationSettings::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

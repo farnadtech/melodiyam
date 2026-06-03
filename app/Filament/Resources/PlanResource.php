@@ -14,9 +14,10 @@ class PlanResource extends Resource
 {
     protected static ?string $model = Plan::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-credit-card';
-    protected static string | \UnitEnum | null $navigationGroup = 'اشتراک';
+    protected static string | \UnitEnum | null $navigationGroup = 'مالی و اشتراک‌ها';
     protected static ?string $modelLabel = 'طرح اشتراک';
     protected static ?string $pluralModelLabel = 'طرح‌های اشتراک';
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $form): Schema
     {
@@ -42,6 +43,17 @@ class PlanResource extends Resource
             Forms\Components\Toggle::make('includes_downloads')
                 ->label('قابلیت دانلود')
                 ->helperText('کاربران این پلن می‌توانند آهنگ‌ها و قسمت‌های پادکست قابل دانلود را دانلود کنند'),
+            \Filament\Schemas\Components\Section::make('دسترسی‌های آپلود')
+                ->schema([
+                    Forms\Components\Toggle::make('can_upload_music')
+                        ->label('قابلیت آپلود آهنگ')
+                        ->helperText('آیا کاربران این پلن اجازه آپلود آهنگ دارند؟'),
+                    Forms\Components\TextInput::make('max_music_uploads')
+                        ->label('حداکثر تعداد آهنگ')
+                        ->numeric()
+                        ->default(0)
+                        ->helperText('۰ برای نامحدود'),
+                ])->columns(2),
             Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
             Forms\Components\Toggle::make('is_popular')->label('محبوب'),
             Forms\Components\TextInput::make('sort_order')->label('ترتیب')->numeric(),
@@ -53,7 +65,14 @@ class PlanResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name_fa')->label('نام')->sortable(),
-                Tables\Columns\BadgeColumn::make('type')->label('نوع'),
+                Tables\Columns\TextColumn::make('type')->label('نوع')
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'free' => 'رایگان',
+                        'premium' => 'پریمیوم',
+                        'family' => 'خانوادگی',
+                        'student' => 'دانشجو',
+                        default => $state,
+                    })->badge(),
                 Tables\Columns\TextColumn::make('price')->label('قیمت')->numeric()->suffix(' تومان'),
                 Tables\Columns\TextColumn::make('duration_days')->label('مدت')->suffix(' روز'),
                 Tables\Columns\TextColumn::make('trial_days')->label('آزمایشی')->suffix(' روز')->default(0),

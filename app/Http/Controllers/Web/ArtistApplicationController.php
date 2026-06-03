@@ -80,6 +80,11 @@ class ArtistApplicationController extends Controller
             ]);
         }
 
+        // اطلاع به ادمین
+        \App\Services\NotificationDispatcher::dispatch('new_artist_application', [
+            'user_name' => $user->name,
+        ]);
+
         return back()->with('success', 'درخواست شما با موفقیت ثبت شد. پس از بررسی نتیجه به شما اعلام می‌شود.');
     }
 }

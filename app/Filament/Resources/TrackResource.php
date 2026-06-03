@@ -16,7 +16,7 @@ class TrackResource extends Resource
 {
     protected static ?string $model = Track::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-musical-note';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'مدیریت موسیقی';
     protected static ?string $modelLabel = 'آهنگ';
     protected static ?string $pluralModelLabel = 'آهنگ‌ها';
     protected static ?int $navigationSort = 1;
@@ -36,7 +36,11 @@ class TrackResource extends Resource
         return $form->schema([
             \Filament\Schemas\Components\Section::make('اطلاعات آهنگ')->schema([
                 Forms\Components\Select::make('artist_id')->label('هنرمند')
-                    ->relationship('artist', 'display_name')->required()->searchable()->preload(),
+                    ->relationship('artist', 'display_name')->nullable()->searchable()->preload()
+                    ->helperText('اگر این آهنگ متعلق به یک هنرمند رسمی است، اینجا انتخاب کنید.'),
+                Forms\Components\Select::make('user_id')->label('کاربر (آپلود کننده)')
+                    ->relationship('user', 'name')->nullable()->searchable()->preload()
+                    ->helperText('اگر آهنگ توسط یک کاربر عادی آپلود شده است.'),
                 Forms\Components\Select::make('album_id')->label('آلبوم')
                     ->relationship('album', 'title')->searchable()->preload(),
                 Forms\Components\Select::make('genre_id')->label('ژانر')
@@ -120,7 +124,9 @@ class TrackResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('cover_image')->label('کاور')->circular()->disk('public'),
                 Tables\Columns\TextColumn::make('title')->label('عنوان')->searchable()->sortable()->limit(30),
-                Tables\Columns\TextColumn::make('artist.display_name')->label('هنرمند')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('owner')->label('صاحب اثر')
+                    ->getStateUsing(fn ($record) => $record->artist ? "هنرمند: {$record->artist->display_name}" : ($record->user ? "کاربر: {$record->user->name}" : '-'))
+                    ->searchable(['title']), // search in title as fallback for owner
                 Tables\Columns\TextColumn::make('album.title')->label('آلبوم')->limit(20),
                 Tables\Columns\BadgeColumn::make('status')->label('وضعیت')
                     ->formatStateUsing(fn ($state) => match($state) {

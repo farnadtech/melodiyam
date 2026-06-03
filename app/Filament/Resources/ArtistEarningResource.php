@@ -16,10 +16,10 @@ class ArtistEarningResource extends Resource
 {
     protected static ?string $model = ArtistEarning::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
-    protected static string | \UnitEnum | null $navigationGroup = 'مالی';
+    protected static string | \UnitEnum | null $navigationGroup = 'مالی و اشتراک‌ها';
     protected static ?string $modelLabel = 'درآمد هنرمند';
     protected static ?string $pluralModelLabel = 'درآمد هنرمندان';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 6;
 
     public static function form(Schema $form): Schema
     {

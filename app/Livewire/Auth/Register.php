@@ -109,10 +109,28 @@ class Register extends Component
 
     public function sendCode()
     {
-        $this->validateOnly('phone');
-        $this->validateOnly('name');
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
+            'password' => 'required|min:8|confirmed',
+        ], [
+            'phone.unique' => 'این شماره موبایل قبلاً ثبت شده است',
+        ]);
+
+        // Check if OTP is enabled in Notification Settings
+        $otpSetting = \App\Models\NotificationSetting::where('event_key', 'otp_code')->first();
+        if (!$otpSetting || !$otpSetting->via_sms) {
+            $this->addError('phone', 'ارسال کد تایید در حال حاضر غیرفعال است.');
+            return;
+        }
 
         $otp = OtpCode::generate($this->phone);
+
+        // Send SMS via NotificationDispatcher
+        \App\Services\NotificationDispatcher::dispatch('otp_code', [
+            'code' => $otp->code,
+        ], (object)['phone' => $this->phone]);
+
         $this->codeSent = true;
         $this->dispatch('start-countdown');
     }
@@ -129,6 +147,7 @@ class Register extends Component
         $user = User::create([
             'name' => $this->name,
             'phone' => $this->phone,
+            'password' => Hash::make($this->password),
             'phone_verified_at' => now(),
             'type' => 'listener',
         ]);

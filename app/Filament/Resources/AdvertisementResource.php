@@ -24,10 +24,10 @@ class AdvertisementResource extends Resource
 {
     protected static ?string $model = Advertisement::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
-    protected static string|\UnitEnum|null $navigationGroup = 'سیستم';
+    protected static string|\UnitEnum|null $navigationGroup = 'محتوا و ظاهر';
     protected static ?string $modelLabel = 'تبلیغ';
     protected static ?string $pluralModelLabel = 'تبلیغات';
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
     {

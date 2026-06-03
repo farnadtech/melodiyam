@@ -1,12 +1,18 @@
 {{-- Report button + modal --}}
-{{-- Usage: <x-report-button type="track" :id="$track->id" /> --}}
-@props(['type', 'id'])
+{{-- Usage: <x-report-button type="track" :id="$track->id" label="شکایت" /> --}}
+@props(['type', 'id', 'label' => null])
 
 @php
     $uid = 'rep_' . $type . '_' . $id;
     $hasExisting = false;
     if (auth()->check()) {
-        $modelClass = $type === 'track' ? \App\Models\Track::class : \App\Models\Album::class;
+        $modelClass = match($type) {
+            'track' => \App\Models\Track::class,
+            'album' => \App\Models\Album::class,
+            'podcast' => \App\Models\Podcast::class,
+            'episode' => \App\Models\PodcastEpisode::class,
+            default => \App\Models\Track::class
+        };
         $hasExisting = \App\Models\Report::where('user_id', auth()->id())
             ->where('reportable_type', $modelClass)
             ->where('reportable_id', $id)
@@ -18,18 +24,18 @@
 <div x-data="{ open: false, sending: false, done: {{ $hasExisting ? 'true' : 'false' }}, reason: '', description: '' }" class="relative">
     {{-- Trigger button --}}
     <button @click="open = true"
-            class="p-3 rounded-full border transition-colors flex items-center gap-1.5 text-xs"
+            class="px-4 py-2 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium"
             :class="done
                 ? 'border-rose-400 text-rose-400 bg-rose-50 dark:bg-rose-500/10 cursor-default'
-                : 'border-surface-300 dark:border-surface-600 hover:border-rose-400 hover:text-rose-400'"
+                : 'border-surface-300 dark:border-surface-600 hover:border-rose-400 hover:text-rose-400 text-surface-700 dark:text-surface-200'"
             :disabled="done"
             :title="done ? 'شکایت ثبت شده' : 'گزارش تخلف'"
     >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
         </svg>
-        <span x-show="done" class="text-[11px]">گزارش شده</span>
+        <span x-text="done ? 'گزارش شده' : '{{ $label ?? 'گزارش تخلف' }}'"></span>
     </button>
 
     {{-- Modal backdrop --}}

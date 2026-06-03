@@ -18,10 +18,10 @@ class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'محتوا و ظاهر';
     protected static ?string $modelLabel = 'صفحه';
     protected static ?string $pluralModelLabel = 'صفحات';
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $form): Schema
     {

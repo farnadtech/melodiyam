@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,18 +14,20 @@ use Spatie\Sluggable\SlugOptions;
 
 class Track extends Model
 {
-    use HasFactory, SoftDeletes, HasSlug;
+    use HasFactory, SoftDeletes, HasSlug, RecordsActivity;
 
     protected $fillable = [
-        'artist_id', 'album_id', 'genre_id', 'title', 'title_en', 'slug',
+        'artist_id', 'artist_name', 'user_id', 'album_id', 'genre_id', 'title', 'title_en', 'slug',
         'description', 'cover_image', 'duration', 'track_number', 'disc_number',
         'file_path', 'file_path_128', 'file_path_320', 'file_url',
         'lyrics', 'synced_lyrics', 'language', 'is_explicit', 'is_downloadable',
         'is_premium_only', 'status', 'published_at', 'release_date',
-        'is_featured', 'play_count', 'like_count', 'download_count', 'share_count',
+        'is_featured', 'play_count', 'like_count', 'repost_count', 'comment_count', 'download_count', 'share_count',
         'mood', 'bpm', 'key_signature', 'isrc', 'seo_title', 'seo_description',
         'price', 'discount_price', 'is_for_sale', 'preview_seconds',
     ];
+
+    protected $appends = ['formatted_duration', 'cover_url', 'stream_url'];
 
     protected function casts(): array
     {
@@ -39,6 +42,8 @@ class Track extends Model
             'duration' => 'integer',
             'play_count' => 'integer',
             'like_count' => 'integer',
+            'repost_count' => 'integer',
+            'comment_count' => 'integer',
             'download_count' => 'integer',
             'share_count' => 'integer',
             'price' => 'integer',
@@ -65,6 +70,11 @@ class Track extends Model
     public function artist(): BelongsTo
     {
         return $this->belongsTo(Artist::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function album(): BelongsTo
@@ -109,6 +119,11 @@ class Track extends Model
     public function reports(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(Report::class, 'reportable');
+    }
+
+    public function reposts(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Repost::class, 'repostable');
     }
 
     public function streams(): HasMany

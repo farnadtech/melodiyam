@@ -29,6 +29,7 @@ class Setting extends Model
             'artist_subscription_required' => '0',
             
             // Content
+            'user_upload_enabled' => '0',
             'free_stream_limit' => '0',
             'allow_download_free' => '0',
             'allow_download_premium' => '1',
@@ -56,6 +57,7 @@ class Setting extends Model
             'theme_accent' => '#d946ef',
             'theme_danger' => '#ef4444',
             'theme_success' => '#10b981',
+            'theme_warning' => '#f59e0b',
             'theme_bg_light' => '#f8fafc',
             'theme_bg_dark' => '#020617',
             'theme_surface_light' => '#ffffff',
@@ -63,6 +65,17 @@ class Setting extends Model
             'theme_gradient_from' => '#0ea5e9',
             'theme_gradient_to' => '#d946ef',
             'theme_player_bg' => '#1a1a2e',
+            'theme_player_text' => '#ffffff',
+            'theme_player_control' => '#0ea5e9',
+            'theme_sidebar_bg_light' => '#ffffff',
+            'theme_sidebar_bg_dark' => '#0f172a',
+            'theme_sidebar_text' => '#64748b',
+            'theme_sidebar_active_bg' => '#0ea5e9',
+            'theme_sidebar_active_text' => '#ffffff',
+            'theme_sidebar_border' => '#e2e8f0',
+            'theme_header_bg_light' => '#ffffff',
+            'theme_header_bg_dark' => '#0f172a',
+            'theme_header_border' => '#e2e8f0',
             'theme_font_fa' => 'Vazirmatn',
             'theme_font_en' => 'Inter',
             'theme_radius' => 'md',
@@ -87,6 +100,11 @@ class Setting extends Model
             'smtp_password' => '',
             'mail_from_name' => 'Melodiyam',
             'mail_from_address' => 'noreply@melodiyam.ir',
+            'email_header_color' => '#6366f1',
+            'email_footer_text' => '',
+            // Payment gateways
+            'zibal_merchant'   => '',
+            'payping_token'    => '',
         ];
     }
 

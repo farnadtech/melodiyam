@@ -31,6 +31,11 @@
                     <a href="{{ route('artist.show', $album->artist ?? '') }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">
                         {{ $album->artist->display_name ?? '' }}
                     </a>
+                    @if($album->genre)
+                    <span>·</span>
+                    <span class="text-xs text-surface-500">ژانر:</span>
+                    <a href="{{ route('genre.show', $album->genre) }}" wire:navigate class="hover:text-primary-500 font-medium">{{ $album->genre->title }}</a>
+                    @endif
                     @if($album->release_date)
                     <span>·</span>
                     <span>{{ \App\Helpers\Jalali::format($album->release_date, 'Y') }}</span>
@@ -55,7 +60,7 @@
                     });
                     $coverUrl = $album->cover_image ? asset('storage/' . $album->cover_image) : asset('images/default-cover.png');
                 @endphp
-                <div class="mt-5 flex items-center gap-3 justify-center md:justify-start flex-wrap" x-data="{ liked: {{ $userLikedAlbum ? 'true' : 'false' }}, likeCount: {{ $album->like_count ?? 0 }}, toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
+                <div class="mt-5 flex items-center gap-3 justify-center md:justify-start flex-wrap" x-data="{ liked: {{ $userLikedAlbum ? 'true' : 'false' }}, likeCount: {{ $album->like_count ?? 0 }}, reposted: {{ $userRepostedAlbum ? 'true' : 'false' }}, repostCount: {{ $album->repost_count ?? 0 }}, toast: '', toastType: 'success', shareOpen: false }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
                     {{-- Toast notification --}}
                     <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
                         <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
@@ -104,6 +109,52 @@
                         <span x-show="likeCount > 0" class="text-xs opacity-60" x-text="likeCount"></span>
                     </a>
                     @endauth
+
+                    {{-- Repost button --}}
+                    @auth
+                    <button @click="
+                        fetch('{{ route('repost.toggle') }}', {
+                            method: 'POST',
+                            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'album', id: {{ $album->id }}})
+                        }).then(r => r.json()).then(d => { 
+                            reposted = d.reposted; 
+                            repostCount += d.reposted ? 1 : -1;
+                            toast = d.reposted ? 'در فید شما بازنشر شد' : 'از فید شما حذف شد';
+                            toastType = 'success';
+                        })
+                    " class="p-2.5 rounded-xl border transition-colors flex items-center gap-2" :class="reposted ? 'border-primary-500 text-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-surface-300 dark:border-surface-600 hover:border-primary-500 hover:text-primary-500 text-surface-700 dark:text-surface-200'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span class="text-sm font-medium" x-text="reposted ? 'بازنشر شده' : 'بازنشر'"></span>
+                        <span x-show="repostCount > 0" class="text-xs opacity-60" x-text="repostCount"></span>
+                    </button>
+                    @else
+                    <a href="{{ route('login') }}" wire:navigate class="p-2.5 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 hover:text-primary-500 text-surface-700 dark:text-surface-200 transition-colors flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span class="text-sm font-medium">بازنشر</span>
+                        <span x-show="repostCount > 0" class="text-xs opacity-60" x-text="repostCount"></span>
+                    </a>
+                    @endauth
+
+                    {{-- Share button --}}
+                    <div class="relative">
+                        <button @click="shareOpen = !shareOpen" class="p-2.5 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                            </svg>
+                            <span>اشتراک‌گذاری</span>
+                        </button>
+                        <div x-show="shareOpen" @click.outside="shareOpen = false" x-transition x-cloak class="absolute top-full mt-2 right-0 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 p-2 min-w-48 z-20">
+                            <button @click="navigator.clipboard.writeText(window.location.href); shareOpen = false; toast = 'لینک کپی شد'; toastType = 'success'" class="flex items-center gap-2 w-full px-3 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                کپی لینک
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Buy Album Button --}}
@@ -132,7 +183,7 @@
                 {{-- Report button --}}
                 @auth
                 <div class="mt-3 flex justify-center md:justify-start">
-                    <x-report-button type="album" :id="$album->id" />
+                    <x-report-button type="album" :id="$album->id" label="گزارش تخلف" />
                 </div>
                 @endauth
 

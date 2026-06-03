@@ -71,9 +71,12 @@
     </div>
     @else
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($plans as $plan)
+    @foreach($plans as $plan)
         @php
-            $isCurrent = $activeSub && $activeSub->plan_id === $plan->id;
+            $isCurrent  = $activeSub && $activeSub->plan_id === $plan->id;
+            // A plan is an upgrade if it costs more than current active plan
+            $isUpgrade  = $activeSub && !$isCurrent && $plan->price > $activeSub->plan->price;
+            $isDowngrade= $activeSub && !$isCurrent && $plan->price < $activeSub->plan->price && $plan->price > 0;
         @endphp
         <div class="glass-card rounded-2xl p-6 flex flex-col gap-4 {{ $isCurrent ? 'ring-2 ring-emerald-400 dark:ring-emerald-500' : '' }}">
             @if($isCurrent)
@@ -119,13 +122,25 @@
             </ul>
 
             @if($isCurrent)
-            <div class="w-full py-2.5 rounded-xl text-center text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 cursor-default">
+            <div class="w-full py-2.5 rounded-xl text-center text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 cursor-default flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                 اشتراک فعال
             </div>
+            @elseif($isUpgrade)
+            <a href="{{ route('artist.subscription.checkout', $plan) }}"
+               class="w-full py-2.5 rounded-xl text-center text-sm font-medium bg-primary-500 hover:bg-primary-600 text-white block transition-colors flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                ارتقا به این پلن
+            </a>
             @elseif($plan->price == 0)
             <a href="{{ route('artist.subscription.checkout', $plan) }}"
                class="w-full py-2.5 rounded-xl text-center text-sm font-medium btn-primary block transition-colors">
                 فعال‌سازی رایگان
+            </a>
+            @elseif($isDowngrade)
+            <a href="{{ route('artist.subscription.checkout', $plan) }}"
+               class="w-full py-2.5 rounded-xl text-center text-sm font-medium border-2 border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-400 hover:border-primary-400 hover:text-primary-500 block transition-colors text-center">
+                تغییر به این پلن
             </a>
             @else
             <a href="{{ route('artist.subscription.checkout', $plan) }}"

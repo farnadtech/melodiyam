@@ -112,5 +112,12 @@
             </div>
         </section>
         @endif
+
+        {{-- Artist Feed --}}
+        <section>
+            <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-4">فید فعالیت‌ها</h2>
+            @livewire('feed', ['userId' => $artist->user_id, 'title' => 'فعالیت‌های ' . $artist->display_name])
+        </section>
+
     </div>
 </x-layouts.app>

@@ -16,10 +16,10 @@ class ArtistSubscriptionResource extends Resource
 {
     protected static ?string $model = ArtistSubscription::class;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-credit-card';
-    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت';
+    protected static string|\UnitEnum|null $navigationGroup = 'مالی و اشتراک‌ها';
     protected static ?string $modelLabel = 'اشتراک هنرمند';
     protected static ?string $pluralModelLabel = 'اشتراک‌های هنرمند';
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationBadge(): ?string
     {

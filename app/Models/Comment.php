@@ -48,6 +48,11 @@ class Comment extends Model
         return $this->morphMany(Like::class, 'likeable');
     }
 
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('is_approved', true);

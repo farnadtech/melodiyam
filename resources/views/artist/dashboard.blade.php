@@ -67,6 +67,11 @@
                     </p>
                 </div>
             </div>
+            <a href="{{ route('artist.plans') }}"
+               class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                ارتقای پلن
+            </a>
         </div>
         @endif
     @endif

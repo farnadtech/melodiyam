@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\RecordsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class PodcastEpisode extends Model
 {
-    use HasFactory, SoftDeletes, HasSlug;
+    use HasFactory, SoftDeletes, HasSlug, RecordsActivity;
 
     protected $fillable = [
         'podcast_id', 'title', 'slug', 'description', 'show_notes',
@@ -58,6 +59,11 @@ class PodcastEpisode extends Model
     public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function reposts(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Repost::class, 'repostable');
     }
 
     public function earnings(): \Illuminate\Database\Eloquent\Relations\MorphMany

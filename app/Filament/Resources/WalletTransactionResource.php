@@ -22,10 +22,10 @@ class WalletTransactionResource extends Resource
 {
     protected static ?string $model = WalletTransaction::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
-    protected static string | \UnitEnum | null $navigationGroup = 'مالی';
+    protected static string | \UnitEnum | null $navigationGroup = 'مالی و اشتراک‌ها';
     protected static ?string $modelLabel = 'تراکنش کیف پول';
     protected static ?string $pluralModelLabel = 'تراکنش‌های کیف پول';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 5;
 
     public static function getNavigationBadge(): ?string
     {

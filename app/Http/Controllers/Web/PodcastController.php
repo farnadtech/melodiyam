@@ -12,11 +12,15 @@ use Illuminate\View\View;
 
 class PodcastController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $podcasts = Podcast::published()
-            ->with('artist')
-            ->orderByDesc('subscribers_count')
+        $query = Podcast::published()->with('artist');
+
+        if ($request->has('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $podcasts = $query->orderByDesc('subscribers_count')
             ->paginate(24);
 
         return view('podcast.index', compact('podcasts'));
@@ -36,8 +40,33 @@ class PodcastController extends Controller
         $premiumPreviewSec = (int) \App\Models\Setting::get('premium_preview_seconds', 30);
         $isSubscribed = auth()->check() ? $podcast->subscriptions()->where('user_id', auth()->id())->exists() : false;
         $canDownload = auth()->user()?->canDownload() ?? false;
+
+        $userRepostedPodcast = false;
+        $userLikedPodcast = false;
+        $userRepostedEpisodes = [];
+
+        if (auth()->check()) {
+            $userRepostedPodcast = \App\Models\Repost::where('user_id', auth()->id())
+                ->where('repostable_type', Podcast::class)
+                ->where('repostable_id', $podcast->id)
+                ->exists();
+
+            $userLikedPodcast = \App\Models\Like::where('user_id', auth()->id())
+                ->where('likeable_type', Podcast::class)
+                ->where('likeable_id', $podcast->id)
+                ->exists();
+
+            $userRepostedEpisodes = \App\Models\Repost::where('user_id', auth()->id())
+                ->where('repostable_type', PodcastEpisode::class)
+                ->whereIn('repostable_id', $episodes->pluck('id'))
+                ->pluck('repostable_id')
+                ->toArray();
+        }
         
-        return view('podcast.show', compact('podcast', 'episodes', 'sort', 'isPremiumUser', 'premiumPreviewSec', 'isSubscribed', 'canDownload'));
+        return view('podcast.show', compact(
+            'podcast', 'episodes', 'sort', 'isPremiumUser', 'premiumPreviewSec', 
+            'isSubscribed', 'canDownload', 'userRepostedPodcast', 'userLikedPodcast', 'userRepostedEpisodes'
+        ));
     }
 
     public function toggleSubscription(Request $request, Podcast $podcast): JsonResponse

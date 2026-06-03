@@ -16,7 +16,7 @@ class AlbumResource extends Resource
 {
     protected static ?string $model = Album::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'مدیریت موسیقی';
     protected static ?string $modelLabel = 'آلبوم';
     protected static ?string $pluralModelLabel = 'آلبوم‌ها';
     protected static ?int $navigationSort = 2;

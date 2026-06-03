@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\DB;
 class Reports extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
-    protected static string|\UnitEnum|null $navigationGroup = 'سیستم';
+    protected static string|\UnitEnum|null $navigationGroup = 'تنظیمات سیستم';
     protected static ?string $title = 'گزارش‌ها و آمار';
-    protected static ?string $navigationLabel = 'گزارش‌ها';
+    protected static ?string $navigationLabel = 'گزارش‌های آماری';
     protected static ?string $slug = 'analytics-reports';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     public string $period = '30';
 

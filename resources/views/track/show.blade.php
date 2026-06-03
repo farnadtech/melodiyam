@@ -27,9 +27,27 @@
                 </div>
                 @endif
                 <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start text-sm text-surface-500">
-                    <a href="{{ route('artist.show', $track->artist ?? '') }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">
-                        {{ $track->artist->display_name ?? '' }}
-                    </a>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        @if($track->artist)
+                            <span class="text-xs text-surface-500">خواننده:</span>
+                            <a href="{{ route('artist.show', $track->artist) }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">
+                                {{ $track->artist->display_name }}
+                            </a>
+                            <span title="هنرمند تایید شده" class="text-blue-500">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </span>
+                        @else
+                            <span class="font-medium text-surface-900 dark:text-white">خواننده: {{ $track->artist_name ?? 'نامشخص' }}</span>
+                            @if($track->user)
+                                <span class="text-xs text-surface-500">توسط <a href="{{ route('user.public_profile', $track->user->id) }}" wire:navigate class="font-medium text-surface-900 dark:text-white hover:text-primary-500">{{ $track->user->name }}</a> آپلود شده</span>
+                            @endif
+                        @endif
+                    </div>
+                    @if($track->genre)
+                    <span>·</span>
+                    <span class="text-xs text-surface-500">ژانر:</span>
+                    <a href="{{ route('genre.show', $track->genre) }}" wire:navigate class="hover:text-primary-500 font-medium">{{ $track->genre->title }}</a>
+                    @endif
                     @if($track->album)
                     <span>·</span>
                     <a href="{{ route('album.show', $track->album) }}" wire:navigate class="hover:text-primary-500">{{ $track->album->title }}</a>
@@ -39,7 +57,7 @@
                     <span>·</span>
                     <span>{{ number_format($track->play_count) }} پخش</span>
                 </div>
-                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start" x-data="{ liked: {{ $userLikedTrack ? 'true' : 'false' }}, likeCount: {{ $track->like_count ?? 0 }}, shareOpen: false, plOpen: false, toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
+                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start" x-data="{ liked: {{ $userLikedTrack ? 'true' : 'false' }}, likeCount: {{ $track->like_count ?? 0 }}, reposted: {{ $userRepostedTrack ? 'true' : 'false' }}, repostCount: {{ $track->repost_count ?? 0 }}, shareOpen: false, plOpen: false, toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
                     {{-- Toast notification --}}
                     <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
                         <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
@@ -126,26 +144,59 @@
                             headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'},
                             body: JSON.stringify({type: 'track', id: {{ $track->id }}})
                         }).then(r => r.json()).then(d => { liked = d.liked; likeCount += d.liked ? 1 : -1; })
-                    " class="p-3 rounded-full border transition-colors flex items-center gap-1.5" :class="liked ? 'border-rose-500 text-rose-500 bg-rose-50 dark:bg-rose-500/10' : 'border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500'">
+                    " class="px-4 py-2 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium" :class="liked ? 'border-rose-500 text-rose-500 bg-rose-50 dark:bg-rose-500/10' : 'border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500'">
                         <svg class="w-5 h-5" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                         </svg>
-                        <span x-show="likeCount > 0" class="text-xs font-medium" x-text="likeCount"></span>
+                        <span x-text="liked ? 'پسندیده شده' : 'پسندیدن'"></span>
+                        <span x-show="likeCount > 0" class="text-xs opacity-60" x-text="likeCount"></span>
                     </button>
                     @else
-                    <a href="{{ route('login') }}" wire:navigate class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500 transition-colors flex items-center gap-1.5">
+                    <a href="{{ route('login') }}" wire:navigate class="px-4 py-2 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-rose-500 hover:text-rose-500 transition-colors flex items-center gap-2 text-sm font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                         </svg>
-                        <span x-show="likeCount > 0" class="text-xs font-medium text-surface-500" x-text="likeCount"></span>
+                        <span>پسندیدن</span>
+                        <span x-show="likeCount > 0" class="text-xs opacity-60" x-text="likeCount"></span>
+                    </a>
+                    @endauth
+
+                    {{-- Repost button --}}
+                    @auth
+                    <button @click="
+                        fetch('{{ route('repost.toggle') }}', {
+                            method: 'POST',
+                            headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+                            body: JSON.stringify({type: 'track', id: {{ $track->id }}})
+                        }).then(r => r.json()).then(d => { 
+                            reposted = d.reposted; 
+                            repostCount += d.reposted ? 1 : -1;
+                            toast = d.reposted ? 'در فید شما بازنشر شد' : 'از فید شما حذف شد';
+                            toastType = 'success';
+                        })
+                    " class="px-4 py-2 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium" :class="reposted ? 'border-primary-500 text-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-surface-300 dark:border-surface-600 hover:border-primary-500 hover:text-primary-500'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span x-text="reposted ? 'بازنشر شده' : 'بازنشر'"></span>
+                        <span x-show="repostCount > 0" class="text-xs opacity-60" x-text="repostCount"></span>
+                    </button>
+                    @else
+                    <a href="{{ route('login') }}" wire:navigate class="px-4 py-2 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 hover:text-primary-500 transition-colors flex items-center gap-2 text-sm font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>بازنشر</span>
+                        <span x-show="repostCount > 0" class="text-xs opacity-60" x-text="repostCount"></span>
                     </a>
                     @endauth
 
                     {{-- Add to Playlist --}}
                     @auth
                     <div class="relative">
-                        <button @click="plOpen = !plOpen" class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors" title="افزودن به پلی‌لیست">
+                        <button @click="plOpen = !plOpen" class="px-4 py-2 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors flex items-center gap-2 text-sm font-medium">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                            <span>افزودن به پلی‌لیست</span>
                         </button>
                         <div x-show="plOpen" @click.outside="plOpen = false" x-transition x-cloak class="absolute top-full mt-2 right-0 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 py-1.5 min-w-52 z-20 max-h-64 overflow-y-auto">
                             <p class="text-xs font-medium text-surface-400 px-3 py-1.5 border-b border-surface-100 dark:border-surface-700 mb-1">افزودن به پلی‌لیست</p>
@@ -174,22 +225,24 @@
 
                     {{-- Report button --}}
                     @auth
-                    <x-report-button type="track" :id="$track->id" />
+                    <x-report-button type="track" :id="$track->id" label="شکایت" />
                     @endauth
 
                     {{-- Download button --}}
                     @if($canDownload)
-                    <a href="{{ route('track.download', $track) }}" class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors" title="دانلود">
+                    <a href="{{ route('track.download', $track) }}" class="px-4 py-2 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors flex items-center gap-2 text-sm font-medium">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>دانلود</span>
                     </a>
                     @endif
 
                     {{-- Share button --}}
                     <div class="relative">
-                        <button @click="shareOpen = !shareOpen" class="p-3 rounded-full border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors">
+                        <button @click="shareOpen = !shareOpen" class="px-4 py-2 rounded-xl border border-surface-300 dark:border-surface-600 hover:border-primary-500 transition-colors flex items-center gap-2 text-sm font-medium">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
                             </svg>
+                            <span>اشتراک‌گذاری</span>
                         </button>
                         <div x-show="shareOpen" @click.outside="shareOpen = false" x-transition x-cloak class="absolute top-full mt-2 right-0 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 p-2 min-w-48 z-20">
                             <button @click="navigator.clipboard.writeText(window.location.href); shareOpen = false; toast = 'لینک کپی شد'; toastType = 'success'" class="flex items-center gap-2 w-full px-3 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors">

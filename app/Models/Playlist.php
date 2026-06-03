@@ -20,6 +20,8 @@ class Playlist extends Model
         'followers_count', 'tracks_count', 'total_duration',
     ];
 
+    protected $appends = ['cover_url'];
+
     protected function casts(): array
     {
         return [
@@ -42,6 +44,14 @@ class Playlist extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function getCoverUrlAttribute(): string
+    {
+        if ($this->cover_image) {
+            return asset('storage/' . $this->cover_image);
+        }
+        return asset('images/default-cover.png');
     }
 
     public function user(): BelongsTo

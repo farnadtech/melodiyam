@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\WalletTransaction;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -19,7 +20,8 @@ class WalletController extends Controller
         $settings = Setting::getAll();
         $walletEnabled    = ($settings['wallet_enabled']    ?? '1') !== '0';
         $card2cardEnabled = ($settings['card2card_enabled'] ?? '1') !== '0';
-        $gatewayEnabled   = !empty($settings['payment_gateway']);
+        $activeGateways   = \App\Services\PaymentService::activeGateways();
+        $gatewayEnabled   = !empty($activeGateways);
         $bankCardNumber   = $settings['bank_card_number']  ?? '';
         $bankCardOwner    = $settings['bank_card_owner']   ?? '';
         $depositMin       = (int)($settings['deposit_min_amount']      ?? 10000);
@@ -31,7 +33,7 @@ class WalletController extends Controller
 
         return view('library.wallet', compact(
             'wallet', 'transactions',
-            'walletEnabled', 'card2cardEnabled', 'gatewayEnabled',
+            'walletEnabled', 'card2cardEnabled', 'gatewayEnabled', 'activeGateways',
             'bankCardNumber', 'bankCardOwner',
             'depositMin', 'depositMax', 'withdrawMin', 'withdrawMax',
             'taxPercent', 'withdrawFee'
@@ -80,6 +82,53 @@ class WalletController extends Controller
         return back()->with('success', 'درخواست شارژ ثبت شد. پس از تایید توسط ادمین، موجودی افزایش می‌یابد.');
     }
 
+    /**
+     * Online gateway deposit (ZarinPal / Zibal / PayPing)
+     */
+    public function gatewayDeposit(Request $request)
+    {
+        $settings = Setting::getAll();
+        if (($settings['wallet_enabled'] ?? '1') === '0') {
+            return back()->with('error', 'کیف پول غیرفعال است.');
+        }
+
+        $activeGateways = \App\Services\PaymentService::activeGateways();
+        if (empty($activeGateways)) {
+            return back()->with('error', 'درگاه پرداخت فعال نیست.');
+        }
+
+        $depositMin = (int)($settings['deposit_min_amount'] ?? 10000);
+        $depositMax = (int)($settings['deposit_max_amount'] ?? 50000000);
+
+        $validated = $request->validate([
+            'amount'  => "required|integer|min:{$depositMin}|max:{$depositMax}",
+            'gateway' => 'required|in:' . implode(',', array_keys($activeGateways)),
+        ], [
+            'amount.min' => 'حداقل مبلغ ' . number_format($depositMin) . ' تومان است.',
+            'amount.max' => 'حداکثر مبلغ ' . number_format($depositMax) . ' تومان است.',
+            'gateway.required' => 'لطفاً درگاه پرداخت را انتخاب کنید.',
+        ]);
+
+        $user    = auth()->user();
+        $service = new \App\Services\PaymentService($validated['gateway']);
+        $result  = $service->request([
+            'user_id'      => $user->id,
+            'amount'       => (int) $validated['amount'],
+            'tax_amount'   => 0,
+            'fee_amount'   => 0,
+            'description'  => 'شارژ کیف پول',
+            'payment_type' => 'wallet_deposit',
+            'mobile'       => $user->phone,
+            'callback_url' => route('payment.verify'),
+        ]);
+
+        if (!$result['success']) {
+            return back()->with('error', $result['message'] ?? 'خطا در اتصال به درگاه.');
+        }
+
+        return redirect($result['url']);
+    }
+
     public function withdrawRequest(Request $request)
     {
         $settings = Setting::getAll();
@@ -122,6 +171,12 @@ class WalletController extends Controller
             'status'        => 'pending',
             'card_number'   => $validated['card_number'],
             'admin_note'    => 'نام صاحب حساب: ' . $validated['card_owner'],
+        ]);
+
+        // Notify admin about withdrawal request
+        \App\Services\NotificationDispatcher::dispatch('withdrawal_requested', [
+            'user_name' => auth()->user()->name,
+            'amount'    => number_format($validated['amount']),
         ]);
 
         return back()->with('success', 'درخواست برداشت ثبت شد. ظرف ۲۴ ساعت کاری واریز می‌شود.');

@@ -73,9 +73,15 @@
             {{ $track->title }}
         </a>
         <div class="flex items-center justify-between mt-0.5">
-            <a href="{{ route('artist.show', $track->artist ?? '') }}" wire:navigate class="block text-xs text-surface-500 dark:text-surface-400 truncate hover:text-primary-500 transition-colors">
-                {{ $track->artist->display_name ?? 'نامشخص' }}
+            @if($track->artist)
+            <a href="{{ route('artist.show', $track->artist) }}" wire:navigate class="block text-xs text-surface-500 dark:text-surface-400 truncate hover:text-primary-500 transition-colors">
+                {{ $track->artist->display_name }}
             </a>
+            @else
+            <span class="block text-xs text-surface-500 dark:text-surface-400 truncate">
+                {{ $track->user->name ?? 'نامشخص' }}
+            </span>
+            @endif
             @if($track->is_for_sale && $track->price)
             <span class="whitespace-nowrap mr-1 flex items-center gap-1">
                 @if($track->discount_price)

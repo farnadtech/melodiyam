@@ -17,6 +17,7 @@ class Plan extends Model
         'type', 'price', 'duration_days', 'trial_days', 'features', 'is_active',
         'is_popular', 'sort_order', 'max_devices', 'audio_quality',
         'ad_free', 'offline_mode', 'unlimited_skips', 'includes_paid_content', 'includes_downloads',
+        'can_upload_music', 'max_music_uploads',
     ];
 
     protected function casts(): array
@@ -30,6 +31,8 @@ class Plan extends Model
             'unlimited_skips' => 'boolean',
             'includes_paid_content' => 'boolean',
             'includes_downloads' => 'boolean',
+            'can_upload_music' => 'boolean',
+            'max_music_uploads' => 'integer',
             'price' => 'decimal:0',
         ];
     }

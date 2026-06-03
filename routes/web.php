@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Controllers\Web\GenreController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\BrowseController;
 use App\Http\Controllers\Web\SearchController;
@@ -58,13 +59,28 @@ Route::get('/api/banner-ad', [\App\Http\Controllers\Web\AdController::class, 'ge
 Route::post('/api/ad-click', [\App\Http\Controllers\Web\AdController::class, 'trackClick'])->name('ad.click.public');
 
 Route::get('/', HomeController::class)->name('home');
+
+Route::get('/genres', [GenreController::class, 'index'])->name('genre.index');
+Route::get('/genre/{genre:slug}', [GenreController::class, 'show'])->name('genre.show');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/browse/tracks.json', [BrowseController::class, 'tracksJson'])->name('browse.tracks.json');
 Route::get('/browse/genre/{genre:slug}/tracks.json', [BrowseController::class, 'genreTracksJson'])->name('browse.genre.tracks.json');
 Route::get('/browse/genre/{genre:slug}', [BrowseController::class, 'genre'])->name('browse.genre');
 Route::get('/search', SearchController::class)->name('search');
+Route::get('/feed', \App\Livewire\Feed::class)->middleware(['auth'])->name('feed');
+
+// ── Interactions ──
+Route::middleware(['auth'])->group(function () {
+    Route::post('/interaction/like', [\App\Http\Controllers\Web\InteractionController::class, 'like'])->name('interaction.like');
+    Route::post('/interaction/repost', [\App\Http\Controllers\Web\InteractionController::class, 'repost'])->name('repost.toggle');
+    Route::post('/interaction/comment', [\App\Http\Controllers\Web\InteractionController::class, 'comment'])->name('interaction.comment');
+    Route::post('/interaction/report', [\App\Http\Controllers\Web\InteractionController::class, 'report'])->name('interaction.report');
+    Route::post('/interaction/follow', [\App\Http\Controllers\Web\InteractionController::class, 'follow'])->name('interaction.follow');
+});
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');
+Route::get('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'create'])->middleware(['auth'])->name('track.create');
+Route::post('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'store'])->middleware(['auth'])->name('track.store');
 Route::get('/track/{track}/download', [TrackController::class, 'download'])->name('track.download');
 
 // Audio stream with byte-range support for seeking
@@ -404,12 +420,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet');
     Route::post('/wallet/deposit', [WalletController::class, 'depositRequest'])->name('wallet.deposit');
+    Route::post('/wallet/deposit-online', [WalletController::class, 'gatewayDeposit'])->name('wallet.deposit.online');
     Route::post('/wallet/withdraw', [WalletController::class, 'withdrawRequest'])->name('wallet.withdraw');
     Route::get('/purchase', [PurchaseController::class, 'confirm'])->name('purchase');
     Route::post('/purchase', [PurchaseController::class, 'purchase'])->name('purchase.submit');
     Route::get('/my-purchases', [PurchaseController::class, 'userPurchases'])->name('purchases');
     Route::get('/discover', [LibraryController::class, 'discover'])->name('discover');
     Route::get('/profile', [LibraryController::class, 'profile'])->name('profile');
+    Route::get('/user/{user}', [LibraryController::class, 'publicProfile'])->name('user.public_profile');
     Route::get('/settings', [LibraryController::class, 'settings'])->name('settings');
     Route::get('/my-reports', [LibraryController::class, 'myReports'])->name('my.reports');
     Route::get('/become-artist', [\App\Http\Controllers\Web\ArtistApplicationController::class, 'show'])->name('artist-application.show');
@@ -579,96 +597,19 @@ Route::middleware('auth')->group(function () {
     })->name('like.check');
 
     // Like toggle
-    Route::post('/like/toggle', function () {
-        $validated = request()->validate([
-            'type' => 'required|in:track,album,playlist,podcast_episode',
-            'id' => 'required|integer',
-        ]);
-
-        $typeMap = [
-            'track' => \App\Models\Track::class,
-            'album' => \App\Models\Album::class,
-            'playlist' => \App\Models\Playlist::class,
-            'podcast_episode' => \App\Models\PodcastEpisode::class,
-        ];
-
-        $likeableType = $typeMap[$validated['type']];
-        $user = auth()->user();
-
-        $existing = $user->likes()
-            ->where('likeable_type', $likeableType)
-            ->where('likeable_id', $validated['id'])
-            ->first();
-
-        if ($existing) {
-            $existing->delete();
-            if ($validated['type'] === 'track') {
-                \App\Models\Track::where('id', $validated['id'])->decrement('like_count');
-            } elseif ($validated['type'] === 'album') {
-                \App\Models\Album::where('id', $validated['id'])->decrement('like_count');
-            }
-            return response()->json(['liked' => false]);
-        }
-
-        $user->likes()->create([
-            'likeable_type' => $likeableType,
-            'likeable_id' => $validated['id'],
-        ]);
-
-        if ($validated['type'] === 'track') {
-            \App\Models\Track::where('id', $validated['id'])->increment('like_count');
-        } elseif ($validated['type'] === 'album') {
-            \App\Models\Album::where('id', $validated['id'])->increment('like_count');
-        }
-
-        return response()->json(['liked' => true]);
-    })->name('like.toggle');
+    Route::post('/like/toggle', [\App\Http\Controllers\Web\InteractionController::class, 'like'])->name('like.toggle');
 
     // Report (شکایت)
     Route::post('/report', [\App\Http\Controllers\Web\ReportController::class, 'store'])->name('report.store');
 
     // Follow toggle
-    Route::post('/follow/toggle', function () {
-        $validated = request()->validate([
-            'type' => 'required|in:artist,user',
-            'id' => 'required|integer',
-        ]);
-
-        $user = auth()->user();
-
-        if ($validated['type'] === 'artist') {
-            $followable = \App\Models\Artist::findOrFail($validated['id']);
-        } else {
-            $followable = \App\Models\User::findOrFail($validated['id']);
-        }
-
-        $existing = $user->follows()
-            ->where('followable_type', get_class($followable))
-            ->where('followable_id', $followable->id)
-            ->first();
-
-        if ($existing) {
-            $existing->delete();
-            if ($validated['type'] === 'artist') {
-                $followable->decrement('followers_count');
-            }
-            return response()->json(['following' => false]);
-        } else {
-            $user->follows()->create([
-                'followable_type' => get_class($followable),
-                'followable_id' => $followable->id,
-            ]);
-            if ($validated['type'] === 'artist') {
-                $followable->increment('followers_count');
-            }
-            return response()->json(['following' => true]);
-        }
-    })->name('follow.toggle');
+    Route::post('/follow/toggle', [\App\Http\Controllers\Web\InteractionController::class, 'follow'])->name('follow.toggle');
 
     // Subscription
     Route::get('/subscription/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::post('/subscription/pay', [SubscriptionController::class, 'pay'])->name('subscription.pay');
-    Route::get('/subscription/verify', [SubscriptionController::class, 'verify'])->name('subscription.verify');
+    Route::get('/payment/verify', [\App\Http\Controllers\Web\PaymentController::class, 'verify'])->name('payment.verify');
+    Route::post('/payment/verify', [\App\Http\Controllers\Web\PaymentController::class, 'verify']);
 });
 
 

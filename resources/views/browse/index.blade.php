@@ -80,6 +80,7 @@
                     'id'             => $t->id,
                     'title'          => $t->title,
                     'artist'         => $t->artist?->display_name ?? $t->artist?->name,
+                    'artist_url'     => $t->artist ? route('artist.show', $t->artist->slug) : null,
                     'cover'          => $t->getCoverUrl(),
                     'url'            => $t->getStreamUrl(),
                     'cover_page'     => route('track.show', $t->slug),
@@ -173,7 +174,10 @@
                         <div class="mt-2 min-w-0">
                             <a :href="track.cover_page" @click.prevent="Livewire.navigate(track.cover_page)" class="block text-sm font-medium text-surface-900 dark:text-white truncate hover:text-primary-500 transition-colors" x-text="track.title"></a>
                             <div class="flex items-center justify-between mt-0.5">
-                                <p class="text-xs text-surface-500 truncate" x-text="track.artist"></p>
+                                <a :href="track.artist_url" 
+                                   @click.prevent="if(track.artist_url) Livewire.navigate(track.artist_url)"
+                                   class="text-xs text-surface-500 truncate hover:text-primary-500 transition-colors" 
+                                   x-text="track.artist"></a>
                                 <span x-show="track.isPremium" class="whitespace-nowrap mr-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 leading-none">پریمیوم</span>
                                 <span x-show="track.isPaid && !track.isPremium" class="whitespace-nowrap mr-1 text-xs font-bold text-primary-500" x-text="track.price ? track.price.toLocaleString('fa-IR') + ' ت' : ''"></span>
                             </div>

@@ -14,10 +14,10 @@ class ArtistPlanResource extends Resource
 {
     protected static ?string $model = ArtistPlan::class;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت';
+    protected static string|\UnitEnum|null $navigationGroup = 'مالی و اشتراک‌ها';
     protected static ?string $modelLabel = 'پلن هنرمند';
     protected static ?string $pluralModelLabel = 'پلن‌های هنرمند';
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $form): Schema
     {

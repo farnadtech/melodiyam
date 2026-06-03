@@ -124,6 +124,31 @@
                 @error('phone') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="otp_password" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">رمز عبور</label>
+                    <input
+                        wire:model="password"
+                        id="otp_password"
+                        type="password"
+                        placeholder="رمز عبور"
+                        class="input-field"
+                    >
+                    @error('password') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="otp_password_confirmation" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">تکرار رمز عبور</label>
+                    <input
+                        wire:model="password_confirmation"
+                        id="otp_password_confirmation"
+                        type="password"
+                        placeholder="تکرار رمز عبور"
+                        class="input-field"
+                    >
+                </div>
+            </div>
+
             <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">
                 <span wire:loading.remove>ارسال کد تأیید</span>
                 <span wire:loading>

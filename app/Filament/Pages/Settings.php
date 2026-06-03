@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Schemas\Components\Actions as SchemaActions;
 use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -28,10 +29,10 @@ class Settings extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string | \UnitEnum | null $navigationGroup = 'سیستم';
+    protected static string | \UnitEnum | null $navigationGroup = 'تنظیمات سیستم';
     protected static ?string $title = 'تنظیمات سایت';
-    protected static ?string $navigationLabel = 'تنظیمات';
-    protected static ?int $navigationSort = 99;
+    protected static ?string $navigationLabel = 'تنظیمات عمومی';
+    protected static ?int $navigationSort = 1;
 
     public array $data = [];
 
@@ -66,6 +67,34 @@ class Settings extends Page implements HasForms
         $settings['earnings_min_payout'] = $earningsSettings->min_payout_toman;
         $settings['earnings_payout_description'] = $earningsSettings->payout_description;
 
+        // Load SMS Provider settings
+        $activeSms = \App\Models\SmsProvider::where('is_active', true)->first();
+        if ($activeSms) {
+            $settings['sms_provider'] = $activeSms->driver;
+        }
+        
+        $melipayamak = \App\Models\SmsProvider::where('driver', 'melipayamak')->first();
+        if ($melipayamak) {
+            $settings['melipayamak_username'] = $melipayamak->credentials['username'] ?? '';
+            $settings['melipayamak_password'] = $melipayamak->credentials['password'] ?? '';
+            $settings['melipayamak_from'] = $melipayamak->credentials['from'] ?? '';
+            $settings['melipayamak_otp_pattern'] = $melipayamak->credentials['otp_pattern'] ?? '';
+        }
+
+        $smsir = \App\Models\SmsProvider::where('driver', 'smsir')->first();
+        if ($smsir) {
+            $settings['smsir_api_key'] = $smsir->credentials['api_key'] ?? '';
+            $settings['smsir_line_number'] = $smsir->credentials['line_number'] ?? '';
+            $settings['smsir_otp_pattern'] = $smsir->credentials['otp_pattern'] ?? '';
+        }
+
+        // Load payment gateway settings
+        $settings['zibal_merchant'] = Setting::get('zibal_merchant', '');
+        $settings['payping_token']  = Setting::get('payping_token', '');
+        // active_gateways is JSON in settings — decode to array for CheckboxList
+        $ag = Setting::get('active_gateways', '');
+        $settings['active_gateways'] = $ag ? (is_array($ag) ? $ag : json_decode($ag, true)) : [];
+
         return $settings;
     }
 
@@ -77,7 +106,7 @@ class Settings extends Page implements HasForms
                 Tabs::make('تنظیمات')->tabs([
 
                     // ── Tab 1: General ──
-                    Tab::make('⚙️ عمومی')->schema([
+                    Tab::make('عمومی')->icon('heroicon-o-cog')->schema([
                         Section::make('اطلاعات سایت')->schema([
                             TextInput::make('site_name')->label('نام سایت (فارسی)')->required(),
                             TextInput::make('site_name_en')->label('نام سایت (انگلیسی)'),
@@ -122,13 +151,14 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 2: Auth & Registration ──
-                    Tab::make('👤 ثبت‌نام و احراز هویت')->schema([
+                    Tab::make('احراز هویت')->icon('heroicon-o-user-circle')->schema([
                         Section::make('روش احراز هویت')->schema([
                             Select::make('auth_type')
                                 ->label('روش ورود و ثبت‌نام')
                                 ->options([
                                     'password' => 'رمز عبور + ایمیل/موبایل',
                                     'otp' => 'کد OTP + موبایل',
+                                    'both' => 'هر دو (رمز عبور یا OTP)',
                                 ])
                                 ->default('password')
                                 ->helperText('انتخاب روش احراز هویت برای کاربران'),
@@ -140,98 +170,78 @@ class Settings extends Page implements HasForms
                             Toggle::make('allow_artist_register')->label('ثبت‌نام هنرمند'),
                             Toggle::make('auto_approve_artist')->label('تأیید خودکار هنرمند'),
                         ])->columns(3),
-                        Section::make('اشتراک هنرمندان')
-                            ->description('اگر فعال باشد، هنرمندان برای آپلود آهنگ و آلبوم باید اشتراک فعال داشته باشند.')
-                            ->schema([
-                                Toggle::make('artist_subscription_required')
-                                    ->label('اشتراک هنرمند اجباری')
-                                    ->helperText('در صورت فعال بودن، هنرمند بدون اشتراک نمی‌تواند آپلود کند'),
-                            ])->columns(1),
                     ]),
 
                     // ── Tab 3: Content & Music ──
-                    Tab::make('🎵 محتوا و موسیقی')->schema([
+                    Tab::make('محتوا')->icon('heroicon-o-musical-note')->schema([
                         Section::make('محدودیت‌های پخش')->schema([
                             TextInput::make('free_stream_limit')->label('سقف پخش رایگان (۰ = نامحدود)')->numeric(),
-                            Toggle::make('allow_download_free')->label('دانلود برای کاربران رایگان'),
-                            Toggle::make('allow_download_premium')->label('دانلود برای کاربران پریمیوم'),
                             TextInput::make('premium_preview_seconds')
                                 ->label('پیش‌نمایش محتوای پریمیوم (ثانیه)')
                                 ->numeric()->default(30)->minValue(0)->suffix('ثانیه')
                                 ->helperText('مدت پیش‌نمایش رایگان برای آهنگ‌ها و قسمت‌های پادکست پریمیوم. ۰ = بدون پیش‌نمایش'),
-                        ])->columns(3),
-                        Section::make('آپلود و صفحه اصلی')->schema([
+                        ])->columns(2),
+                        Section::make('آپلود')->schema([
+                            Toggle::make('user_upload_enabled')
+                                ->label('فعال بودن سیستم آپلود کاربر')
+                                ->helperText('در صورت فعال بودن، کاربران عادی با دسترسی لازم می‌توانند آهنگ آپلود کنند.')
+                                ->default(false),
                             Toggle::make('auto_approve_content')
-                                ->label('تأیید خودکار محتوا')
+                                ->label('تأیید خودکار محتوای هنرمندان')
                                 ->helperText('در صورت غیرفعال بودن، آهنگ‌ها، آلبوم‌ها و پادکست‌های هنرمندان باید توسط مدیر تایید شوند.')
                                 ->default(false),
+                            Toggle::make('auto_approve_user_content')
+                                ->label('تأیید خودکار محتوای کاربران عادی')
+                                ->helperText('در صورت غیرفعال بودن، آهنگ‌های آپلود شده توسط کاربران عادی باید توسط مدیر تایید شوند.')
+                                ->default(true),
                             TextInput::make('max_upload_size_mb')->label('حداکثر حجم آپلود (MB)')->numeric(),
-                            TextInput::make('featured_tracks_count')->label('تعداد آهنگ‌های ویژه')->numeric(),
-                            TextInput::make('home_new_releases')->label('تعداد جدیدترین‌ها در خانه')->numeric(),
-                        ])->columns(3),
+                        ])->columns(2),
                     ]),
 
                     // ── Tab 4: Premium & Payment ──
-                    Tab::make('💎 پریمیوم و پرداخت')->schema([
+                    Tab::make('پرداخت')->icon('heroicon-o-credit-card')->schema([
                         Section::make('اشتراک')
                             ->description('روزهای آزمایشی هر پلن را از بخش «اشتراک ← طرح‌های اشتراک» تنظیم کنید.')
                             ->schema([
                                 Toggle::make('premium_enabled')->label('فعال بودن پریمیوم'),
                                 TextInput::make('currency')->label('واحد پول'),
-                            ])->columns(2),
+                                Toggle::make('artist_subscription_required')
+                                    ->label('اشتراک هنرمند اجباری')
+                                    ->helperText('هنرمند بدون اشتراک فعال نمی‌تواند آهنگ یا آلبوم آپلود کند'),
+                            ])->columns(3),
                         Section::make('درگاه پرداخت')->schema([
-                            Select::make('payment_gateway')
-                                ->label('درگاه پرداخت فعال')
+                            \Filament\Forms\Components\CheckboxList::make('active_gateways')
+                                ->label('درگاه‌های پرداخت فعال')
                                 ->options([
-                                    ''          => '— غیرفعال —',
-                                    'zarinpal'  => 'زرین‌پال',
-                                    'idpay'     => 'آیدی‌پی (IDPay)',
-                                    'payir'     => 'Pay.ir',
-                                    'nextpay'   => 'نکست‌پی',
-                                    'vandar'    => 'وندار',
+                                    'zarinpal' => 'زرین‌پال',
+                                    'zibal'    => 'زیبال (Zibal)',
+                                    'payping'  => 'پی‌پینگ (PayPing)',
                                 ])
-                                ->live()
+                                ->columns(3)
+                                ->helperText('می‌توانید چند درگاه همزمان فعال کنید — کاربر در صفحه پرداخت انتخاب می‌کند')
                                 ->columnSpanFull(),
 
                             // Zarinpal
                             TextInput::make('zarinpal_merchant')
                                 ->label('Merchant ID زرین‌پال')
                                 ->placeholder('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
-                                ->visible(fn($get) => $get('payment_gateway') === 'zarinpal')
                                 ->columnSpanFull(),
                             Toggle::make('zarinpal_sandbox')
-                                ->label('حالت آزمایشی (Sandbox) زرین‌پال')
-                                ->visible(fn($get) => $get('payment_gateway') === 'zarinpal'),
+                                ->label('حالت آزمایشی (Sandbox) زرین‌پال'),
 
-                            // IDPay
-                            TextInput::make('idpay_api_key')
-                                ->label('API Key آیدی‌پی')
-                                ->password()->revealable()
-                                ->visible(fn($get) => $get('payment_gateway') === 'idpay'),
-                            Toggle::make('idpay_sandbox')
-                                ->label('حالت آزمایشی (Sandbox) آیدی‌پی')
-                                ->visible(fn($get) => $get('payment_gateway') === 'idpay'),
+                            // Zibal
+                            TextInput::make('zibal_merchant')
+                                ->label('Merchant زیبال')
+                                ->placeholder('zibal یا کد merchant شما')
+                                ->helperText('برای تست از مقدار "zibal" استفاده کنید')
+                                ->columnSpanFull(),
 
-                            // Pay.ir
-                            TextInput::make('payir_api')
-                                ->label('API Key پی‌ایر')
+                            // PayPing
+                            TextInput::make('payping_token')
+                                ->label('Token پی‌پینگ')
                                 ->password()->revealable()
-                                ->visible(fn($get) => $get('payment_gateway') === 'payir'),
-
-                            // Nextpay
-                            TextInput::make('nextpay_api')
-                                ->label('API Key نکست‌پی')
-                                ->password()->revealable()
-                                ->visible(fn($get) => $get('payment_gateway') === 'nextpay'),
-
-                            // Vandar
-                            TextInput::make('vandar_api')
-                                ->label('API Key وندار')
-                                ->password()->revealable()
-                                ->visible(fn($get) => $get('payment_gateway') === 'vandar'),
-                            TextInput::make('vandar_mobile')
-                                ->label('موبایل وندار')
-                                ->visible(fn($get) => $get('payment_gateway') === 'vandar'),
+                                ->helperText('توکن Bearer از پنل پی‌پینگ')
+                                ->columnSpanFull(),
                         ])->columns(2),
 
                         Section::make('تنظیمات مالی')->schema([
@@ -268,7 +278,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 5: Social ──
-                    Tab::make('🔗 شبکه‌های اجتماعی')->schema([
+                    Tab::make('شبکه‌های اجتماعی')->icon('heroicon-o-share')->schema([
                         Section::make()->schema([
                             TextInput::make('social_instagram')->label('اینستاگرام')->prefix('instagram.com/')->url(),
                             TextInput::make('social_telegram')->label('تلگرام')->prefix('t.me/'),
@@ -279,7 +289,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 6: SEO ──
-                    Tab::make('🔍 سئو')->schema([
+                    Tab::make('سئو')->icon('heroicon-o-magnifying-glass')->schema([
                         Section::make()->schema([
                             TextInput::make('meta_title')->label('عنوان متا'),
                             Textarea::make('meta_description')->label('توضیحات متا')->rows(2),
@@ -289,12 +299,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 7: Email / Notifications ──
-                    Tab::make('📧 ایمیل و اعلان‌ها')->schema([
-                        Section::make('اعلان‌های مدیر')->schema([
-                            Toggle::make('notify_new_track')->label('اعلان آهنگ جدید'),
-                            Toggle::make('notify_new_user')->label('اعلان کاربر جدید'),
-                            Toggle::make('admin_email_notify')->label('ایمیل به مدیر'),
-                        ])->columns(3),
+                    Tab::make('ایمیل و پیامک')->icon('heroicon-o-envelope')->schema([
                         Section::make('تنظیمات SMTP')->schema([
                             TextInput::make('smtp_host')->label('SMTP Host'),
                             TextInput::make('smtp_port')->label('SMTP Port')->numeric(),
@@ -324,10 +329,66 @@ class Settings extends Page implements HasForms
                                      ->action(fn (array $data) => $this->testSmtpConnection($data)),
                              ]),
                         ])->columns(3),
+
+                        Section::make('قالب ایمیل‌های سیستمی')
+                            ->description('تمام ایمیل‌های ارسالی از سیستم (اعلان‌ها، کدهای تایید و غیره) در این قالب ارسال می‌شوند.')
+                            ->schema([
+                                ColorPicker::make('email_header_color')
+                                    ->label('رنگ هدر ایمیل')
+                                    ->hexColor()
+                                    ->default('#6366f1'),
+                                TextInput::make('email_footer_text')
+                                    ->label('متن فوتر ایمیل')
+                                    ->placeholder('این ایمیل از طرف سایت ما ارسال شده است.')
+                                    ->helperText('می‌توانید از HTML ساده استفاده کنید'),
+                            ])->columns(2),
+
+                        Section::make('درگاه‌های پیامک')->schema([
+                            Select::make('sms_provider')
+                                ->label('درگاه پیامک فعال')
+                                ->options([
+                                    'melipayamak' => 'ملی پیامک',
+                                    'smsir' => 'Sms.ir',
+                                ])
+                                ->reactive()
+                                ->default('melipayamak'),
+
+                                Grid::make(2)->schema([
+                                    TextInput::make('melipayamak_username')->label('نام کاربری ملی پیامک'),
+                                    TextInput::make('melipayamak_password')->label('رمز عبور ملی پیامک')->password()->revealable(),
+                                    TextInput::make('melipayamak_from')->label('خط فرستنده ملی پیامک'),
+                                    TextInput::make('melipayamak_otp_pattern')->label('کد الگوی OTP (ملی پیامک)'),
+                                ])->visible(fn($get) => $get('sms_provider') === 'melipayamak'),
+
+                                SchemaActions::make([
+                                     Action::make('test_pattern')
+                                         ->label('تست ارسال پترن (OTP)')
+                                         ->color('success')
+                                         ->icon('heroicon-o-shield-check')
+                                         ->form([
+                                             TextInput::make('test_phone')
+                                                 ->label('شماره موبایل تست')
+                                                 ->required()
+                                                 ->default(fn() => auth()->user()->phone),
+                                             TextInput::make('test_code')
+                                                 ->label('کد تایید تست')
+                                                 ->required()
+                                                 ->default(fn() => rand(100000, 999999)),
+                                         ])
+                                         ->action(fn (array $data) => $this->testPatternConnection($data)),
+                                 ]),
+
+                            // Sms.ir
+                            Grid::make(2)->schema([
+                                TextInput::make('smsir_api_key')->label('API Key (Sms.ir)'),
+                                TextInput::make('smsir_line_number')->label('خط اختصاصی (Sms.ir)'),
+                                TextInput::make('smsir_otp_pattern')->label('کد الگوی OTP (Sms.ir)'),
+                            ])->visible(fn($get) => $get('sms_provider') === 'smsir'),
+                        ]),
                     ]),
 
                     // ── Tab 8: Theme ──
-                    Tab::make('🎨 تم و رنگ‌ها')->schema([
+                    Tab::make('تم و رنگ‌ها')->icon('heroicon-o-paint-brush')->schema([
                         SchemaActions::make([
                             Action::make('resetTheme')
                                 ->label('ریست همه رنگ‌ها به پیش‌فرض')
@@ -339,27 +400,54 @@ class Settings extends Page implements HasForms
                                 ->modalSubmitActionLabel('بله، ریست کن')
                                 ->action('resetTheme'),
                         ]),
-                        Section::make('رنگ‌های اصلی سایت')
-                            ->description('بعد از ذخیره، صفحه سایت را رفرش کنید.')
+
+                        Section::make('رنگ‌های اصلی')
+                            ->description('رنگ‌های پایه که در کل سایت استفاده می‌شوند.')
                             ->schema([
-                                ColorPicker::make('theme_primary')->label('رنگ اصلی (Primary)')->hexColor(),
-                                ColorPicker::make('theme_secondary')->label('رنگ ثانویه (Secondary)')->hexColor(),
-                                ColorPicker::make('theme_accent')->label('رنگ تاکیدی (Accent)')->hexColor(),
-                                ColorPicker::make('theme_danger')->label('رنگ خطر (Danger)')->hexColor(),
-                                ColorPicker::make('theme_success')->label('رنگ موفقیت (Success)')->hexColor(),
+                                ColorPicker::make('theme_primary')->label('Primary — دکمه‌ها، لینک‌ها، تاکید')->hexColor(),
+                                ColorPicker::make('theme_secondary')->label('Secondary — رنگ دوم')->hexColor(),
+                                ColorPicker::make('theme_accent')->label('Accent — رنگ تاکیدی')->hexColor(),
+                                ColorPicker::make('theme_danger')->label('Danger — خطا، حذف')->hexColor(),
+                                ColorPicker::make('theme_success')->label('Success — موفقیت، تأیید')->hexColor(),
+                                ColorPicker::make('theme_warning')->label('Warning — هشدار')->hexColor(),
                             ])->columns(3),
-                        Section::make('رنگ‌های پس‌زمینه')->schema([
-                            ColorPicker::make('theme_bg_light')->label('پس‌زمینه حالت روشن')->hexColor(),
-                            ColorPicker::make('theme_bg_dark')->label('پس‌زمینه حالت تاریک')->hexColor(),
-                            ColorPicker::make('theme_surface_light')->label('سطح کارت (روشن)')->hexColor(),
-                            ColorPicker::make('theme_surface_dark')->label('سطح کارت (تاریک)')->hexColor(),
-                        ])->columns(2),
-                        Section::make('گرادیانت پلیر و هدر')->schema([
-                            ColorPicker::make('theme_gradient_from')->label('شروع گرادیانت')->hexColor(),
-                            ColorPicker::make('theme_gradient_to')->label('پایان گرادیانت')->hexColor(),
-                            ColorPicker::make('theme_player_bg')->label('پس‌زمینه پلیر')->hexColor(),
-                        ])->columns(3),
-                        Section::make('فونت')->schema([
+
+                        Section::make('پس‌زمینه و سطح‌ها')
+                            ->schema([
+                                ColorPicker::make('theme_bg_light')->label('پس‌زمینه — حالت روشن')->hexColor(),
+                                ColorPicker::make('theme_bg_dark')->label('پس‌زمینه — حالت تاریک')->hexColor(),
+                                ColorPicker::make('theme_surface_light')->label('سطح کارت — روشن')->hexColor(),
+                                ColorPicker::make('theme_surface_dark')->label('سطح کارت — تاریک')->hexColor(),
+                            ])->columns(2),
+
+                        Section::make('سایدبار')
+                            ->description('رنگ‌های نوار کناری (sidebar) برای هر دو پنل شنونده و هنرمند.')
+                            ->schema([
+                                ColorPicker::make('theme_sidebar_bg_light')->label('پس‌زمینه سایدبار — روشن')->hexColor(),
+                                ColorPicker::make('theme_sidebar_bg_dark')->label('پس‌زمینه سایدبار — تاریک')->hexColor(),
+                                ColorPicker::make('theme_sidebar_text')->label('رنگ متن آیتم‌ها')->hexColor(),
+                                ColorPicker::make('theme_sidebar_active_bg')->label('پس‌زمینه آیتم فعال')->hexColor(),
+                                ColorPicker::make('theme_sidebar_active_text')->label('رنگ متن آیتم فعال')->hexColor(),
+                                ColorPicker::make('theme_sidebar_border')->label('رنگ خط جداکننده')->hexColor(),
+                            ])->columns(3),
+
+                        Section::make('هدر / نوار بالا')
+                            ->schema([
+                                ColorPicker::make('theme_header_bg_light')->label('پس‌زمینه هدر — روشن')->hexColor(),
+                                ColorPicker::make('theme_header_bg_dark')->label('پس‌زمینه هدر — تاریک')->hexColor(),
+                                ColorPicker::make('theme_header_border')->label('رنگ خط پایین هدر')->hexColor(),
+                            ])->columns(3),
+
+                        Section::make('پلیر و گرادیانت')
+                            ->schema([
+                                ColorPicker::make('theme_gradient_from')->label('شروع گرادیانت')->hexColor(),
+                                ColorPicker::make('theme_gradient_to')->label('پایان گرادیانت')->hexColor(),
+                                ColorPicker::make('theme_player_bg')->label('پس‌زمینه پلیر')->hexColor(),
+                                ColorPicker::make('theme_player_text')->label('رنگ متن پلیر')->hexColor(),
+                                ColorPicker::make('theme_player_control')->label('رنگ دکمه‌های پلیر')->hexColor(),
+                            ])->columns(3),
+
+                        Section::make('فونت و گردی لبه‌ها')->schema([
                             Select::make('theme_font_fa')->label('فونت فارسی')
                                 ->options(['Vazirmatn' => 'Vazirmatn', 'IRANSans' => 'IRANSans', 'Sahel' => 'Sahel', 'Yekanbakh' => 'Yekanbakh']),
                             Select::make('theme_font_en')->label('فونت انگلیسی')
@@ -370,7 +458,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 9: Banners ──
-                    Tab::make('🎯 بنرهای سایدبار')->schema([
+                    Tab::make('بنرهای سایدبار')->icon('heroicon-o-rectangle-group')->schema([
 
                         Section::make('بنر پریمیوم (سایدبار)')
                             ->description('این بنر برای کاربران غیرپریمیوم در پایین سایدبار نمایش داده می‌شود.')
@@ -460,7 +548,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 10: Sidebar Footer ──
-                    Tab::make('📑 فوتر سایدبار')->schema([
+                    Tab::make('فوتر سایدبار')->icon('heroicon-o-document-text')->schema([
                         Section::make('بخش فوتر سایدبار')
                             ->description('این بخش قبل از بنرهای پایین سایدبار نمایش داده می‌شود و می‌تواند شامل لینک‌های مفید و متن کوتاه باشد.')
                             ->schema([
@@ -487,7 +575,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 11: Storage ──
-                    Tab::make('🗄️ ذخیره‌سازی')->schema([
+                    Tab::make('ذخیره‌سازی')->icon('heroicon-o-server')->schema([
                         Section::make('درایور ذخیره‌سازی')->schema([
                             Select::make('storage_driver')->label('درایور')
                                 ->options([
@@ -518,7 +606,7 @@ class Settings extends Page implements HasForms
                     ]),
 
                     // ── Tab 11: Artist Earnings ──
-                    Tab::make('💰 درآمد هنرمندان')->schema([
+                    Tab::make('درآمد هنرمندان')->icon('heroicon-o-banknotes')->schema([
                         Section::make('فعال‌سازی سیستم درآمدزایی')->schema([
                             Toggle::make('earnings_enabled')
                                 ->label('سیستم درآمدزایی فعال باشد')
@@ -576,9 +664,92 @@ class Settings extends Page implements HasForms
             ]);
         }
 
+        // Save SMS Provider settings
+        if (isset($data['sms_provider'])) {
+            $activeDriver = $data['sms_provider'];
+            
+            // Deactivate all first
+            \App\Models\SmsProvider::query()->update(['is_active' => false]);
+
+            // Melipayamak
+            \App\Models\SmsProvider::updateOrCreate(
+                ['driver' => 'melipayamak'],
+                [
+                    'name' => 'ملی پیامک',
+                    'is_active' => $activeDriver === 'melipayamak',
+                    'credentials' => [
+                        'username' => $data['melipayamak_username'] ?? '',
+                        'password' => $data['melipayamak_password'] ?? '',
+                        'from' => $data['melipayamak_from'] ?? '',
+                        'otp_pattern' => $data['melipayamak_otp_pattern'] ?? '',
+                    ],
+                ]
+            );
+
+            // Sms.ir
+            \App\Models\SmsProvider::updateOrCreate(
+                ['driver' => 'smsir'],
+                [
+                    'name' => 'Sms.ir',
+                    'is_active' => $activeDriver === 'smsir',
+                    'credentials' => [
+                        'api_key' => $data['smsir_api_key'] ?? '',
+                        'line_number' => $data['smsir_line_number'] ?? '',
+                        'otp_pattern' => $data['smsir_otp_pattern'] ?? '',
+                    ],
+                ]
+            );
+
+            unset($data['sms_provider'], $data['melipayamak_username'], $data['melipayamak_password'], $data['melipayamak_from'], $data['melipayamak_otp_pattern'], $data['smsir_api_key'], $data['smsir_line_number'], $data['smsir_otp_pattern']);
+        }
+
+        // Save payment gateway config
+        foreach (['zibal_merchant', 'payping_token', 'zarinpal_merchant', 'zarinpal_sandbox'] as $key) {
+            if (array_key_exists($key, $data)) {
+                Setting::set($key, is_bool($data[$key]) ? ($data[$key] ? '1' : '0') : ($data[$key] ?? ''));
+                unset($data[$key]);
+            }
+        }
+        if (array_key_exists('active_gateways', $data)) {
+            Setting::set('active_gateways', json_encode($data['active_gateways'] ?? []));
+            unset($data['active_gateways']);
+        }
+
         // Save other settings
         foreach ($data as $key => $value) {
             Setting::set($key, is_bool($value) ? ($value ? '1' : '0') : $value);
+        }
+
+        // ── Auto-sync NotificationSettings based on auth_type ──
+        if (isset($data['auth_type'])) {
+            $authType = $data['auth_type'];
+
+            // otp_code: فعال اگر auth_type = otp یا both
+            $otpViaSms = in_array($authType, ['otp', 'both']);
+            \App\Models\NotificationSetting::updateOrCreate(
+                ['event_key' => 'otp_code'],
+                [
+                    'event_label'  => 'ارسال کد تایید (OTP)',
+                    'recipient_type' => 'user',
+                    'via_sms'      => $otpViaSms,
+                    'via_database' => false,
+                    'via_email'    => false,
+                ]
+            );
+
+            // password_recovery: فعال اگر auth_type = otp یا both
+            $recoveryViaSms   = in_array($authType, ['otp', 'both']);
+            $recoveryViaEmail = in_array($authType, ['password', 'both']);
+            \App\Models\NotificationSetting::updateOrCreate(
+                ['event_key' => 'password_recovery'],
+                [
+                    'event_label'  => 'بازیابی رمز عبور',
+                    'recipient_type' => 'user',
+                    'via_sms'      => $recoveryViaSms,
+                    'via_email'    => $recoveryViaEmail,
+                    'via_database' => false,
+                ]
+            );
         }
 
         Cache::flush();
@@ -656,6 +827,118 @@ class Settings extends Page implements HasForms
         }
     }
 
+    public function testSmsConnection(array $data): void
+    {
+        $formData = $this->form->getState();
+        $provider = $formData['sms_provider'];
+        $phone = $data['test_phone'];
+        $message = $data['test_message'];
+
+        $credentials = [];
+        if ($provider === 'melipayamak') {
+            $credentials = [
+                'username' => $formData['melipayamak_username'],
+                'password' => $formData['melipayamak_password'],
+                'from' => $formData['melipayamak_from'],
+            ];
+            $driverClass = \App\Services\SmsDrivers\MelipayamakDriver::class;
+        } else {
+            $credentials = [
+                'api_key' => $formData['smsir_api_key'],
+                'line_number' => $formData['smsir_line_number'],
+            ];
+            $driverClass = \App\Services\SmsDrivers\SmsIrDriver::class;
+        }
+
+        try {
+            $driver = new $driverClass($credentials);
+            $result = $driver->sendText($phone, $message);
+
+            if ($result['success']) {
+                Notification::make()
+                    ->title('پیامک با موفقیت ارسال شد! ✅')
+                    ->body('پاسخ درگاه: ' . json_encode($result['response'], JSON_UNESCAPED_UNICODE))
+                    ->success()
+                    ->persistent()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title('خطا در ارسال پیامک ❌')
+                    ->body('پیام خطا: ' . ($result['message'] ?? 'نامشخص') . "\nپاسخ: " . json_encode($result['response'] ?? '', JSON_UNESCAPED_UNICODE))
+                    ->danger()
+                    ->persistent()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('خطای سیستم ❌')
+                ->body('خطا: ' . $e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function testPatternConnection(array $data): void
+    {
+        $formData = $this->form->getState();
+        $provider = $formData['sms_provider'];
+        $phone = $data['test_phone'];
+        $code = $data['test_code'];
+
+        $credentials = [];
+        if ($provider === 'melipayamak') {
+            $credentials = [
+                'username' => $formData['melipayamak_username'],
+                'password' => $formData['melipayamak_password'],
+                'otp_pattern' => $formData['melipayamak_otp_pattern'],
+            ];
+            $patternId = $credentials['otp_pattern'];
+            $driverClass = \App\Services\SmsDrivers\MelipayamakDriver::class;
+        } else {
+            $credentials = [
+                'api_key' => $formData['smsir_api_key'],
+                'line_number' => $formData['smsir_line_number'],
+                'otp_pattern' => $formData['smsir_otp_pattern'],
+            ];
+            $patternId = $credentials['otp_pattern'];
+            $driverClass = \App\Services\SmsDrivers\SmsIrDriver::class;
+        }
+
+        if (!$patternId) {
+            Notification::make()->title('کد الگو تنظیم نشده است')->danger()->send();
+            return;
+        }
+
+        try {
+            $driver = new $driverClass($credentials);
+            $result = $driver->sendByPattern($phone, $patternId, ['code' => $code]);
+
+            if ($result['success']) {
+                Notification::make()
+                    ->title('پیامک پترن با موفقیت ارسال شد! ✅')
+                    ->body('پاسخ درگاه: ' . json_encode($result['response'], JSON_UNESCAPED_UNICODE))
+                    ->success()
+                    ->persistent()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title('خطا در ارسال پترن ❌')
+                    ->body('پیام خطا: ' . ($result['message'] ?? 'نامشخص') . "\nپاسخ: " . json_encode($result['response'] ?? '', JSON_UNESCAPED_UNICODE))
+                    ->danger()
+                    ->persistent()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('خطای سیستم ❌')
+                ->body('خطا: ' . $e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    }
+
     public function testFtpConnection(): void
     {
         $data = $this->form->getState();
@@ -697,9 +980,12 @@ class Settings extends Page implements HasForms
     {
         $allDefaults = Setting::defaults();
         $themeKeys = [
-            'theme_primary', 'theme_secondary', 'theme_accent', 'theme_danger', 'theme_success',
+            'theme_primary', 'theme_secondary', 'theme_accent', 'theme_danger', 'theme_success', 'theme_warning',
             'theme_bg_light', 'theme_bg_dark', 'theme_surface_light', 'theme_surface_dark',
-            'theme_gradient_from', 'theme_gradient_to', 'theme_player_bg',
+            'theme_gradient_from', 'theme_gradient_to', 'theme_player_bg', 'theme_player_text', 'theme_player_control',
+            'theme_sidebar_bg_light', 'theme_sidebar_bg_dark', 'theme_sidebar_text',
+            'theme_sidebar_active_bg', 'theme_sidebar_active_text', 'theme_sidebar_border',
+            'theme_header_bg_light', 'theme_header_bg_dark', 'theme_header_border',
             'theme_font_fa', 'theme_font_en', 'theme_radius',
         ];
 

@@ -116,10 +116,10 @@
         </div>
         <div class="flex items-center gap-3">
             <a x-show="adConfig?.button_text && adConfig?.button_url"
-               :href="adConfig.button_url"
+               :href="adConfig?.button_url"
                target="_blank"
                class="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-400 text-white text-sm font-medium transition-colors"
-               x-text="adConfig.button_text">
+               x-text="adConfig?.button_text">
             </a>
             <div class="flex items-center gap-1.5">
                 <div class="w-32 h-1.5 rounded-full bg-white/20 overflow-hidden">

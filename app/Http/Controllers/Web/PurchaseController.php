@@ -45,7 +45,7 @@ class PurchaseController extends Controller
             return redirect()->back()->with('info', 'این محتوا را قبلاً خریده‌اید.');
         }
 
-        $wallet    = $user->getOrCreateWallet();
+        $wallet     = $user->getOrCreateWallet();
         $finalPrice = (int) ($item->discount_price ?: $item->price);
 
         return view('purchase.confirm', compact('item', 'type', 'wallet', 'finalPrice'));
@@ -106,10 +106,49 @@ class PurchaseController extends Controller
 
         $wallet = $user->getOrCreateWallet();
 
+        // Gateway payment option
+        if ($request->input('gateway') && !$request->input('pay_with_wallet', false)) {
+            $selectedGateway = $request->input('gateway');
+            $activeGateways  = \App\Services\PaymentService::activeGateways();
+            if (!array_key_exists($selectedGateway, $activeGateways)) {
+                $selectedGateway = array_key_first($activeGateways);
+            }
+            if ($selectedGateway) {
+                // Tax
+                $taxPercent = (float) \App\Models\Setting::get('transaction_tax_percent', 0);
+                $taxAmount  = (int) round($finalPrice * $taxPercent / 100);
+
+                $service = new \App\Services\PaymentService($selectedGateway);
+                $result  = $service->request([
+                    'user_id'      => $user->id,
+                    'amount'       => $finalPrice,
+                    'tax_amount'   => $taxAmount,
+                    'fee_amount'   => 0,
+                    'description'  => 'خرید: ' . $item->title,
+                    'payment_type' => 'track_purchase',
+                    'payable_type' => get_class($item),
+                    'payable_id'   => $item->id,
+                    'mobile'       => $user->phone,
+                    'callback_url' => route('payment.verify'),
+                ]);
+                if (!$result['success']) {
+                    return back()->with('error', $result['message'] ?? 'خطا در اتصال به درگاه.');
+                }
+                // Store pending purchase data in session for verify callback
+                session([
+                    'pending_purchase_' . $result['payment']->id => [
+                        'type'       => $validated['type'],
+                        'item_id'    => $item->id,
+                        'coupon_id'  => $coupon?->id,
+                    ]
+                ]);
+                return redirect($result['url']);
+            }
+        }
+
         if ($wallet->balance < $finalPrice) {
             return back()->with('error', 'موجودی کیف پول کافی نیست. موجودی فعلی: ' . number_format($wallet->balance) . ' تومان');
         }
-
         // پیدا کردن قانون کمیسیون
         $artistId = $item instanceof Track ? $item->artist_id : $item->artist_id;
         $genreId  = $item instanceof Track ? $item->genre_id  : $item->genre_id;
@@ -157,7 +196,7 @@ class PurchaseController extends Controller
         }
 
         // ثبت فروش
-        Sale::create([
+        $sale = Sale::create([
             'buyer_id'          => $user->id,
             'seller_id'         => $sellerId,
             'saleable_type'     => get_class($item),
@@ -170,13 +209,24 @@ class PurchaseController extends Controller
             'payment_method'    => 'wallet',
         ]);
 
+        // ارسال اعلان به هنرمند
+        if ($sellerId && $sellerId !== $user->id) {
+            $sellerUser = \App\Models\User::find($sellerId);
+            if ($sellerUser) {
+                \App\Services\NotificationDispatcher::dispatch('track_purchased_artist', [
+                    'track_title' => $item->title,
+                    'amount' => number_format($finalPrice),
+                ], $sellerUser);
+            }
+        }
+
         // ثبت استفاده از کوپن
         if ($coupon) {
             $coupon->increment('used_count');
             $coupon->users()->attach($user->id, ['used_at' => now()]);
         }
 
-        return back()->with('success', '«' . $item->title . '» با موفقیت خریداری شد!');
+        return redirect()->route('library.purchases')->with('success', 'خرید با موفقیت انجام شد.');
     }
 
     public function userPurchases()

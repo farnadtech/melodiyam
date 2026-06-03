@@ -14,11 +14,11 @@ use Filament\Tables\Table;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
-    protected static string | \UnitEnum | null $navigationGroup = 'مدیریت کاربران';
-    protected static ?string $modelLabel = 'کاربر';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
+    protected static string|\UnitEnum|null   $navigationGroup = 'مدیریت کاربران';
+    protected static ?string $modelLabel       = 'کاربر';
     protected static ?string $pluralModelLabel = 'کاربران';
-    protected static ?int $navigationSort = 1;
+    protected static ?int    $navigationSort   = 1;
 
     public static function form(Schema $form): Schema
     {
@@ -45,8 +45,7 @@ class UserResource extends Resource
 
             \Filament\Schemas\Components\Section::make('تغییر رمز عبور')->schema([
                 Forms\Components\TextInput::make('password')
-                    ->label('رمز عبور جدید')
-                    ->password()
+                    ->label('رمز عبور جدید')->password()
                     ->dehydrateStateUsing(fn ($state) => \Hash::make($state))
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $context): bool => $context === 'create')
@@ -70,20 +69,27 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('avatar')->label('آواتار')->circular()->disk('public')->defaultImageUrl(asset('images/default-avatar.png')),
+                Tables\Columns\ImageColumn::make('avatar')
+                    ->label('آواتار')->circular()->disk('public')
+                    ->defaultImageUrl(asset('images/default-avatar.png')),
                 Tables\Columns\TextColumn::make('id')->label('#')->sortable(),
                 Tables\Columns\TextColumn::make('name')->label('نام')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('phone')->label('موبایل')->searchable(),
                 Tables\Columns\TextColumn::make('email')->label('ایمیل')->searchable(),
                 Tables\Columns\BadgeColumn::make('type')->label('نوع')
-                    ->colors(['primary' => 'listener', 'success' => 'artist', 'danger' => 'admin', 'warning' => 'moderator'])
+                    ->colors(['primary' => 'listener','success' => 'artist','danger' => 'admin','warning' => 'moderator'])
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'listener' => 'شنونده',
-                        'artist' => 'هنرمند',
-                        'admin' => 'مدیر',
+                        'listener'  => 'شنونده',
+                        'artist'    => 'هنرمند',
+                        'admin'     => 'مدیر',
                         'moderator' => 'ناظر',
-                        default => $state,
+                        default     => $state,
                     }),
+                Tables\Columns\TextColumn::make('wallet.balance')
+                    ->label('کیف پول')
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((int)$state) . ' ت' : '—')
+                    ->sortable()
+                    ->color(fn ($state) => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 Tables\Columns\IconColumn::make('is_active')->label('فعال')->boolean(),
                 Tables\Columns\IconColumn::make('is_premium')->label('پریمیوم')->boolean(),
                 Tables\Columns\TextColumn::make('created_at')->label('تاریخ ثبت')
@@ -92,7 +98,7 @@ class UserResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')->label('نوع')
-                    ->options(['listener' => 'شنونده', 'artist' => 'هنرمند', 'admin' => 'مدیر', 'moderator' => 'ناظر']),
+                    ->options(['listener' => 'شنونده','artist' => 'هنرمند','admin' => 'مدیر','moderator' => 'ناظر']),
                 Tables\Filters\TernaryFilter::make('is_active')->label('فعال'),
                 Tables\Filters\TernaryFilter::make('is_premium')->label('پریمیوم'),
             ])
@@ -111,9 +117,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
+            'index'  => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'edit'   => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

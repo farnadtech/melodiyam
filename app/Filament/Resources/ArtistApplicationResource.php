@@ -19,10 +19,10 @@ class ArtistApplicationResource extends Resource
 {
     protected static ?string $model = ArtistApplication::class;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-user-plus';
-    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت';
+    protected static string|\UnitEnum|null $navigationGroup = 'مدیریت کاربران';
     protected static ?string $modelLabel = 'درخواست هنرمند';
     protected static ?string $pluralModelLabel = 'درخواست‌های هنرمند';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
     {

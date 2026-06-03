@@ -145,7 +145,7 @@ class TrackController extends Controller
             'duration'        => $duration,
             'lyrics'          => $request->lyrics,
             'is_explicit'     => $request->boolean('is_explicit'),
-            'is_downloadable' => \App\Models\Setting::get('allow_download_free', true) || \App\Models\Setting::get('allow_download_premium', true),
+            'is_downloadable' => true, // Content is technically downloadable, plan controls access
             'is_for_sale'     => $request->boolean('is_for_sale'),
             'price'           => $request->is_for_sale ? $request->price : null,
             'discount_price'  => $request->is_for_sale ? $request->discount_price : null,

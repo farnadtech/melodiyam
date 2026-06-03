@@ -15,10 +15,10 @@ class PlaylistResource extends Resource
 {
     protected static ?string $model = Playlist::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-queue-list';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'مدیریت موسیقی';
     protected static ?string $modelLabel = 'پلی‌لیست';
     protected static ?string $pluralModelLabel = 'پلی‌لیست‌ها';
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 7;
 
     public static function form(Schema $form): Schema
     {

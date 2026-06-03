@@ -14,10 +14,10 @@ class GenreResource extends Resource
 {
     protected static ?string $model = Genre::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-squares-2x2';
-    protected static string | \UnitEnum | null $navigationGroup = 'محتوا';
+    protected static string | \UnitEnum | null $navigationGroup = 'مدیریت موسیقی';
     protected static ?string $modelLabel = 'ژانر';
     protected static ?string $pluralModelLabel = 'ژانرها';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Schema $form): Schema
     {

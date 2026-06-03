@@ -2,50 +2,47 @@
     <h2 class="text-2xl font-display font-bold text-surface-900 dark:text-white text-center mb-2">ورود به ملودیام</h2>
     <p class="text-sm text-surface-500 text-center mb-6">روش ورود خود را انتخاب کنید</p>
 
-    {{-- Method Tabs - Only show when auth_type is not set to a specific method --}}
+    {{-- Method Tabs - Only show when auth_type is 'both' --}}
     @if($authType === 'password')
-        {{-- Only show email tab for password mode --}}
         <div class="bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 rounded-xl p-4 mb-6 text-center">
-            <p class="text-sm text-primary-700 dark:text-primary-400">ورود با ایمیل و رمز عبور</p>
+            <p class="text-sm text-primary-700 dark:text-primary-400">ورود با ایمیل/شماره و رمز عبور</p>
         </div>
     @elseif($authType === 'otp')
-        {{-- No tabs for OTP mode - only phone method is available --}}
         <div class="bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 rounded-xl p-4 mb-6 text-center">
             <p class="text-sm text-primary-700 dark:text-primary-400">ورود با شماره موبایل و کد OTP</p>
         </div>
-    @else
-        {{-- When auth_type is not set, show both tabs --}}
+    @elseif($authType === 'both')
         <div class="flex rounded-xl bg-surface-100 dark:bg-surface-800 p-1 mb-6">
             <button
-                wire:click="switchMethod('email')"
-                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all {{ $loginMethod === 'email' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700' }}"
+                wire:click="switchMethod('password')"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all {{ $loginMethod === 'password' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700' }}"
             >
-                ایمیل و رمز عبور
+                رمز عبور
             </button>
             <button
-                wire:click="switchMethod('phone')"
-                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all {{ $loginMethod === 'phone' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700' }}"
+                wire:click="switchMethod('otp')"
+                class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all {{ $loginMethod === 'otp' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700' }}"
             >
-                شماره موبایل
+                کد تایید (OTP)
             </button>
         </div>
     @endif
 
-    {{-- Email Login --}}
-    @if($loginMethod === 'email')
-        <form wire:submit="loginWithEmail" class="space-y-5">
+    {{-- Password Login --}}
+    @if($loginMethod === 'password')
+        <form wire:submit="loginWithPassword" class="space-y-5">
             <div>
-                <label for="email" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">ایمیل</label>
+                <label for="identifier" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">ایمیل یا شماره موبایل</label>
                 <input
-                    wire:model="email"
-                    id="email"
-                    type="email"
-                    placeholder="example@email.com"
+                    wire:model="identifier"
+                    id="identifier"
+                    type="text"
+                    placeholder="example@email.com یا 09123456789"
                     class="input-field text-left ltr"
                     dir="ltr"
                     autofocus
                 >
-                @error('email') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                @error('identifier') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div>
@@ -64,8 +61,8 @@
             </div>
 
             <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="loginWithEmail">ورود</span>
-                <span wire:loading wire:target="loginWithEmail">
+                <span wire:loading.remove wire:target="loginWithPassword">ورود</span>
+                <span wire:loading wire:target="loginWithPassword">
                     <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -74,8 +71,8 @@
             </button>
         </form>
 
-    {{-- Phone OTP Login - Only show if auth_type allows it --}}
-    @elseif($authType !== 'password' && !$codeSent)
+    {{-- Phone OTP Login --}}
+    @elseif($loginMethod === 'otp' && !$codeSent)
         <form wire:submit="sendCode" class="space-y-5">
             <div>
                 <label for="phone" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">شماره موبایل</label>
