@@ -1,244 +1,146 @@
 param(
     [Parameter(Mandatory=$true)]  [string]$Version,
-    [Parameter(Mandatory=$false)] [string]$FromTag = "",
-    [Parameter(Mandatory=$false)] [ValidateSet("full","diff","custom")] [string]$Mode = "full"
+    [Parameter(Mandatory=$false)] [string]$UpdateServerUrl = 'https://iranbooklet.ir/melodiyam',
+    [Parameter(Mandatory=$false)] [string]$Changelog = ''
 )
 
 Set-Location $PSScriptRoot
 
-$OutputDir   = Join-Path $PSScriptRoot "dist"
-$TempDir     = Join-Path $env:TEMP "melodiyam_update_$Version"
-$ZipPath     = Join-Path $OutputDir "update-v$Version.zip"
-$ManifestOut = Join-Path $OutputDir "update-v$Version.manifest.json"
-$VersionOut  = Join-Path $OutputDir "version.json"
-
-$ExcludeDirs = @(
-    "vendor", "node_modules", "storage", "dist", ".git",
-    "public\storage", "public\uploads", ".kilo", ".kiro",
-    "tests", "__pycache__"
-)
-$ExcludeFiles = @(
-    ".env", ".env.backup", ".env.production",
-    "*.log", "*.lock", "package-lock.json",
-    "build-update.ps1"
-)
-
-$CoreDirs = @(
-    "app", "bootstrap", "config", "database",
-    "lang", "resources", "routes", "public"
-)
-$CoreFiles = @(
-    "artisan", "composer.json", ".env.example",
-    ".gitignore", ".editorconfig"
-)
+$OutputDir  = Join-Path $PSScriptRoot "dist"
+$TempUpdate = Join-Path $env:TEMP "melodiyam_upd_$Version"
+$UpdateZip  = Join-Path $OutputDir "melodiyam-v$Version-update.zip"
 
 if (!(Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir | Out-Null }
-if (Test-Path $TempDir)      { Remove-Item -Recurse -Force $TempDir }
-New-Item -ItemType Directory -Path $TempDir | Out-Null
+if (Test-Path $TempUpdate)   { Remove-Item -Recurse -Force $TempUpdate }
+New-Item -ItemType Directory -Path $TempUpdate | Out-Null
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host "  Melodiyam Update Package Builder" -ForegroundColor Cyan
-Write-Host "  Version: $Version  |  Mode: $Mode" -ForegroundColor Cyan
+Write-Host "  Version: $Version" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
-function ShouldExclude {
-    param([string]$relativePath)
-    $normalized = $relativePath -replace "\\", "/"
-    foreach ($dir in $Script:ExcludeDirs) {
-        if ($normalized -like "$dir/*" -or $normalized -eq $dir) { return $true }
+# ─── Step 1: Collect files ─────────────────────────────────────────────────
+Write-Host "[1/4] Collecting files..." -ForegroundColor Yellow
+
+$IncludeDirs = @("app","bootstrap","config","database","lang","public","resources","routes")
+$IncludeRootFiles = @("artisan","composer.json","composer.lock",".env.example",".gitignore",".editorconfig","version.json","vite.config.js","package.json")
+
+$ExcludeRelPaths = @(
+    "storage/app/public","storage/app/private","storage/app/temp-updates",
+    "storage/logs","storage/backups",
+    "storage/framework/cache/data","storage/framework/sessions","storage/framework/views",
+    "public/storage","public/uploads","database/database.sqlite"
+)
+$ExcludeFileNames = @(".env",".env.backup",".env.production",".env.local","installed.lock","*.log","Thumbs.db",".DS_Store","install.php")
+
+function ShouldExclude([string]$rel) {
+    $norm = $rel.Replace("\", "/")
+    foreach ($ex in $ExcludeRelPaths) {
+        if ($norm.StartsWith($ex)) { return $true }
     }
-    $fileName = Split-Path $relativePath -Leaf
-    foreach ($pattern in $Script:ExcludeFiles) {
-        if ($fileName -like $pattern) { return $true }
+    $fname = [System.IO.Path]::GetFileName($rel)
+    foreach ($p in $ExcludeFileNames) {
+        if ($fname -like $p) { return $true }
     }
     return $false
 }
 
-function CopyFile {
-    param([string]$src, [string]$rel)
-    $dest    = Join-Path $Script:TempDir $rel
-    $destDir = Split-Path $dest -Parent
-    if (!(Test-Path $destDir)) {
-        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-    }
-    Copy-Item -Path $src -Destination $dest -Force
+function CopyToDir([string]$src, [string]$rel, [string]$destBase) {
+    $target = Join-Path $destBase $rel
+    $dir = [System.IO.Path]::GetDirectoryName($target)
+    if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    Copy-Item -Path $src -Destination $target -Force
 }
 
-$FilesToInclude = @()
-$MigrationFiles = @()
-$DeletedFiles   = @()
+$count = 0
+$fileList = @()
 
-# ---------- FULL ----------
-if ($Mode -eq "full") {
-    Write-Host "[1/5] Mode: FULL - collecting all project files..." -ForegroundColor Yellow
-
-    foreach ($dir in $CoreDirs) {
-        $fullDir = Join-Path $PSScriptRoot $dir
-        if (!(Test-Path $fullDir)) { continue }
-        Get-ChildItem -Path $fullDir -Recurse -File | ForEach-Object {
-            $rel = $_.FullName.Substring($PSScriptRoot.Length + 1)
-            if (-not (ShouldExclude $rel)) {
-                $FilesToInclude += $rel
-                if ($rel -match "^database[/\\]migrations[/\\].*\.php$") {
-                    $MigrationFiles += $rel
-                }
-            }
-        }
-    }
-
-    foreach ($f in $CoreFiles) {
-        $fullPath = Join-Path $PSScriptRoot $f
-        if (Test-Path $fullPath) {
-            $FilesToInclude += $f
-        }
-    }
-
-    if (Test-Path (Join-Path $PSScriptRoot "version.json")) {
-        if ($FilesToInclude -notcontains "version.json") {
-            $FilesToInclude += "version.json"
-        }
-    }
-}
-# ---------- DIFF ----------
-elseif ($Mode -eq "diff") {
-    if (!$FromTag) {
-        Write-Host "ERROR: -FromTag is required for diff mode." -ForegroundColor Red
-        exit 1
-    }
-
-    $TagCheck = git tag -l "$FromTag" 2>$null
-    if (!$TagCheck) {
-        Write-Host "ERROR: git tag '$FromTag' not found." -ForegroundColor Red
-        git tag -l
-        exit 1
-    }
-
-    Write-Host "[1/5] Mode: DIFF from $FromTag to HEAD..." -ForegroundColor Yellow
-    $ChangedFiles = git diff --name-only "$FromTag" HEAD 2>$null
-    $DeletedFiles = git diff --name-only --diff-filter=D "$FromTag" HEAD 2>$null
-
-    foreach ($file in $ChangedFiles) {
-        if (ShouldExclude $file) { continue }
-        if (!(Test-Path (Join-Path $PSScriptRoot $file))) { continue }
-        $FilesToInclude += $file
-        if ($file -match "^database/migrations/.*\.php$") {
-            $MigrationFiles += $file
-        }
-    }
-
-    if ($FilesToInclude -notcontains "version.json") {
-        $FilesToInclude += "version.json"
-    }
-}
-# ---------- CUSTOM ----------
-elseif ($Mode -eq "custom") {
-    $customListFile = Join-Path $PSScriptRoot "custom-files.txt"
-    if (!(Test-Path $customListFile)) {
-        Write-Host "ERROR: custom-files.txt not found." -ForegroundColor Red
-        exit 1
-    }
-    $customFiles = Get-Content $customListFile | Where-Object { $_ -notmatch "^\s*#" -and $_.Trim() -ne "" }
-    foreach ($f in $customFiles) {
-        $full = Join-Path $PSScriptRoot $f.Trim()
-        if (Test-Path $full) {
-            $FilesToInclude += $f.Trim()
+foreach ($dir in $IncludeDirs) {
+    $fullDir = Join-Path $PSScriptRoot $dir
+    if (!(Test-Path $fullDir)) { continue }
+    Get-ChildItem -Path $fullDir -Recurse -File | ForEach-Object {
+        $rel = $_.FullName.Substring($PSScriptRoot.Length + 1)
+        if (!(ShouldExclude $rel)) {
+            CopyToDir $_.FullName $rel $TempUpdate
+            $fileList += $rel.Replace("\", "/")
+            $count++
         }
     }
 }
 
-$FilesToInclude = $FilesToInclude | Sort-Object -Unique
-$totalFiles     = $FilesToInclude.Count
-Write-Host "  Files collected: $totalFiles" -ForegroundColor Green
-Write-Host ""
-
-# ---------- manifest ----------
-Write-Host "[2/5] Building manifest.json..." -ForegroundColor Yellow
-
-$changelog = "Update to version $Version"
-if ($FromTag) {
-    $gitLog = git log "$FromTag..HEAD" --oneline 2>$null
-    if ($gitLog) {
-        $changelog = ($gitLog | ForEach-Object { "- $_" }) -join "`n"
+foreach ($f in $IncludeRootFiles) {
+    $fp = Join-Path $PSScriptRoot $f
+    if (Test-Path $fp) {
+        CopyToDir $fp $f $TempUpdate
+        $fileList += $f
+        $count++
     }
 }
 
-$fromVerValue = if ($FromTag) { $FromTag } else { "any" }
+Write-Host "  Files collected: $count" -ForegroundColor Green
 
-$manifest = [ordered]@{
+# ─── Step 2: version.json + manifest.json ──────────────────────────────────
+Write-Host "[2/4] Writing version.json and manifest.json..." -ForegroundColor Yellow
+
+$downloadUrl = "$UpdateServerUrl/melodiyam-v$Version-update.zip"
+
+$versionObj = [ordered]@{
     version      = $Version
-    from_version = $fromVerValue
     released_at  = (Get-Date -Format "yyyy-MM-dd")
-    mode         = $Mode
-    files        = $FilesToInclude
-    migrations   = $MigrationFiles
-    delete       = $DeletedFiles
+    download_url = $downloadUrl
+    changelog    = $Changelog
+}
+$versionJson = $versionObj | ConvertTo-Json
+
+$versionJson | Out-File -FilePath (Join-Path $TempUpdate "version.json") -Encoding utf8
+$versionJson | Out-File -FilePath (Join-Path $PSScriptRoot "version.json") -Encoding utf8
+
+$manifestObj = [ordered]@{ version = $Version; files = $fileList }
+$manifestObj | ConvertTo-Json -Depth 3 | Out-File -FilePath (Join-Path $TempUpdate "manifest.json") -Encoding utf8
+
+Write-Host "  version.json written (v$Version, download_url set)" -ForegroundColor Green
+Write-Host "  manifest.json written ($($fileList.Count) files)" -ForegroundColor Green
+
+# ─── Step 3: Create ZIP ────────────────────────────────────────────────────
+Write-Host "[3/4] Creating update ZIP..." -ForegroundColor Yellow
+
+if (Test-Path $UpdateZip) { Remove-Item $UpdateZip -Force }
+
+if (Get-Command "7z" -ErrorAction SilentlyContinue) {
+    & 7z a -tzip -mx=5 $UpdateZip "$TempUpdate\*" | Out-Null
+} else {
+    Compress-Archive -Path "$TempUpdate\*" -DestinationPath $UpdateZip -Force
 }
 
-$manifestJson = $manifest | ConvertTo-Json -Depth 10
-$manifestJson | Out-File -FilePath $ManifestOut -Encoding utf8
-Write-Host "  Manifest saved: $ManifestOut" -ForegroundColor Green
+$sizeMB = [math]::Round((Get-Item $UpdateZip).Length / 1MB, 2)
+Write-Host "  $UpdateZip - $sizeMB MB" -ForegroundColor Green
 
-# ---------- copy files ----------
-Write-Host "[3/5] Copying files to temp dir..." -ForegroundColor Yellow
-$copied  = 0
-$skipped = 0
+Remove-Item -Recurse -Force $TempUpdate
 
-foreach ($file in $FilesToInclude) {
-    $src = Join-Path $PSScriptRoot $file
-    if (Test-Path $src) {
-        CopyFile $src $file
-        $copied++
-    } else {
-        Write-Host "  WARNING: not found - $file" -ForegroundColor DarkYellow
-        $skipped++
-    }
+# ─── Step 4: Git commit + tag ──────────────────────────────────────────────
+Write-Host "[4/4] Git commit and tag..." -ForegroundColor Yellow
+
+if (Get-Command "git" -ErrorAction SilentlyContinue) {
+    git add -A
+    git commit -m "release: v$Version"
+    git tag -a "v$Version" -m "Version $Version"
+    Write-Host "  Committed and tagged v$Version" -ForegroundColor Green
+} else {
+    Write-Host "  git not found, skipping." -ForegroundColor DarkYellow
 }
 
-$manifestJson | Out-File -FilePath (Join-Path $TempDir "manifest.json") -Encoding utf8
-Write-Host "  Copied: $copied  |  Not found: $skipped" -ForegroundColor Green
-
-# ---------- ZIP ----------
-Write-Host "[4/5] Creating ZIP archive..." -ForegroundColor Yellow
-
-if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
-Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force
-
-$zipBytes  = (Get-Item $ZipPath).Length
-$zipKB     = [math]::Round($zipBytes / 1024, 1)
-$zipMB     = [math]::Round($zipBytes / 1048576, 2)
-
-Remove-Item -Recurse -Force $TempDir
-
-Write-Host "  ZIP created: $ZipPath" -ForegroundColor Green
-Write-Host "  Size: $zipKB KB / $zipMB MB  |  $totalFiles files" -ForegroundColor Green
-
-# ---------- version.json for server ----------
-Write-Host "[5/5] Building server version.json..." -ForegroundColor Yellow
-
-$serverMeta = [ordered]@{
-    version      = $Version
-    min_version  = "1.0.0"
-    changelog    = $changelog
-    released_at  = (Get-Date -Format "yyyy-MM-dd")
-    download_url = "https://iranbooklet.ir/melodiyam/update-v$Version.zip"
-    manifest_url = "https://iranbooklet.ir/melodiyam/update-v$Version.manifest.json"
-}
-$serverMeta | ConvertTo-Json | Out-File -FilePath $VersionOut -Encoding utf8
-Write-Host "  version.json saved: $VersionOut" -ForegroundColor Green
-
-# ---------- summary ----------
+# ─── Summary ───────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  Done! Package built successfully." -ForegroundColor Green
+Write-Host "  Update package ready! v$Version" -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  ZIP   : $ZipPath" -ForegroundColor White
-Write-Host "  Size  : $zipKB KB" -ForegroundColor White
-Write-Host "  Files : $totalFiles" -ForegroundColor White
+Write-Host "  File: $UpdateZip" -ForegroundColor White
+Write-Host "  Size: $sizeMB MB" -ForegroundColor White
 Write-Host ""
-Write-Host "Next steps - upload these to server:" -ForegroundColor Cyan
-Write-Host "  dist\update-v$Version.zip" -ForegroundColor Gray
-Write-Host "  dist\version.json  (as version.json on server)" -ForegroundColor Gray
-Write-Host "  Server: https://iranbooklet.ir/melodiyam/" -ForegroundColor White
+Write-Host "  Next steps:" -ForegroundColor Cyan
+Write-Host "  1. Upload $UpdateZip  ->  $UpdateServerUrl/melodiyam-v$Version-update.zip" -ForegroundColor White
+Write-Host "  2. Upload version.json  ->  $UpdateServerUrl/version.json" -ForegroundColor White
+Write-Host "  3. git push && git push --tags" -ForegroundColor White
 Write-Host ""

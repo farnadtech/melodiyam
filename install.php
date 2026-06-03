@@ -3,23 +3,79 @@
  * Melodiyam Installer
  * Professional installation wizard for Melodiyam Script
  */
-ob_start();
+
+// session باید اول از همه شروع بشه
 session_start();
 
-define('INSTALLER_VERSION', '1.0.0');
+define('INSTALLER_VERSION', '1.2.0');
 define('MIN_PHP', '8.2.0');
 define('REQUIRED_EXTENSIONS', ['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'xml', 'ctype', 'json', 'bcmath', 'fileinfo', 'zip', 'curl', 'gd']);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AJAX ACTIONS — باید اول از همه چک بشن
+// AJAX ACTIONS — باید اول از همه چک بشن، قبل از هر output
 // ═══════════════════════════════════════════════════════════════════════════
 if (isset($_GET['action'])) {
-    session_start(); // already started but safe
-    header('Content-Type: application/json');
+    // جلوگیری از نمایش هرگونه خطا به صورت HTML
+    error_reporting(0);
+    ini_set('display_errors', 0);
+    
+    // پاک کردن هر چیزی که ممکنه قبلاً buffer شده باشه
+    while (ob_get_level() > 0) { ob_end_clean(); }
+
+    header('Content-Type: application/json; charset=utf-8');
     $action = $_GET['action'];
 
     try {
-        if ($action === 'write_env') {
+        if ($action === 'extract_package') {
+            if (!class_exists('ZipArchive')) throw new Exception("افزونه ZipArchive در PHP شما فعال نیست.");
+            
+            $zipFile = null;
+            $files = glob(__DIR__ . '/melodiyam-*.zip');
+            if (!empty($files)) {
+                $zipFile = $files[0];
+            } else {
+                $zips = glob(__DIR__ . '/*.zip');
+                foreach ($zips as $z) {
+                    if (basename($z) !== 'update.zip') {
+                        $zipFile = $z;
+                        break;
+                    }
+                }
+            }
+
+            if (!$zipFile) throw new Exception("پکیج اصلی اسکریپت (فایل ZIP) یافت نشد.");
+
+            $zip = new ZipArchive;
+            if ($zip->open($zipFile) === TRUE) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $zipFilename = $zip->getNameIndex($i);
+                    $normalizedPath = str_replace('\\', '/', $zipFilename);
+                    
+                    if (basename($normalizedPath) === 'install.php' || basename($normalizedPath) === '.env' || basename($normalizedPath) === 'installed.lock') continue;
+                    
+                    $targetPath = __DIR__ . '/' . $normalizedPath;
+                    
+                    if (str_ends_with($normalizedPath, '/')) {
+                        if (!is_dir($targetPath)) @mkdir($targetPath, 0775, true);
+                    } else {
+                        $dir = dirname($targetPath);
+                        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+                        
+                        $fstream = $zip->getStream($zipFilename);
+                        if (!$fstream) continue;
+                        
+                        file_put_contents($targetPath, $fstream);
+                        fclose($fstream);
+                    }
+                }
+                $zip->close();
+                echo json_encode(['ok' => true]);
+            } else {
+                throw new Exception("خطا در باز کردن فایل ZIP.");
+            }
+        }
+
+        elseif ($action === 'write_env') {
             if (!isset($_SESSION['db'], $_SESSION['admin'])) throw new Exception("اطلاعات session منقضی شده. لطفاً مراحل را از ابتدا طی کنید.");
             $db    = $_SESSION['db'];
             $admin = $_SESSION['admin'];
@@ -77,8 +133,13 @@ if (isset($_GET['action'])) {
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 30]
             );
 
-            $sqlFile = __DIR__ . '/database/schema.sql';
-            if (!file_exists($sqlFile)) throw new Exception("فایل database/schema.sql یافت نشد.");
+            // بررسی فایل آپلود شده توسط کاربر یا فایل پیش‌فرض
+            $sqlFile = __DIR__ . '/storage/app/custom_schema.sql';
+            if (!file_exists($sqlFile)) {
+                $sqlFile = __DIR__ . '/database/schema.sql';
+            }
+
+            if (!file_exists($sqlFile)) throw new Exception("فایل ساختار دیتابیس (schema.sql) یافت نشد. لطفاً در مرحله قبل آن را آپلود کنید.");
 
             $sql = file_get_contents($sqlFile);
             // اجرای SQL به صورت statement به statement
@@ -128,6 +189,13 @@ if (isset($_GET['action'])) {
         }
 
         elseif ($action === 'finalize') {
+            // پاکسازی فایل‌های موقت نصب
+            @unlink(__DIR__ . '/storage/app/custom_schema.sql');
+            
+            // حذف پکیج ZIP اصلی بعد از نصب موفق
+            $files = glob(__DIR__ . '/melodiyam-*.zip');
+            foreach ($files as $f) { @unlink($f); }
+
             // پاکسازی کش bootstrap
             foreach (['config.php', 'routes-v7.php', 'packages.php', 'services.php', 'events.php'] as $f) {
                 @unlink(__DIR__ . '/bootstrap/cache/' . $f);
@@ -145,9 +213,42 @@ if (isset($_GET['action'])) {
                 }
             }
 
-            // بروزرسانی version.json
-            @file_put_contents(__DIR__ . '/version.json', json_encode([
-                'version'    => '1.0.0',
+            // ─── ایجاد .htaccess در root برای هدایت به public/index.php ──────────
+            $rootHtaccess = __DIR__ . '/.htaccess';
+            $htaccessContent = 'Options -Indexes
+DirectoryIndex public/index.php index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # اگه فایل یا پوشه مستقیماً در root وجود داره (مثل install.php) سرو بشه
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # اگه فایل یا پوشه در public/ وجود داره (assets, css, js, ...) مستقیم سرو بشه
+    RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # بقیه درخواست‌ها به public/index.php لاراول
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+</IfModule>
+';
+            file_put_contents($rootHtaccess, $htaccessContent);
+
+            // بروزرسانی version.json با نسخه واقعی پکیج
+            $pkgVersion = '1.0.0';
+            $pkgVersionFile = __DIR__ . '/version.json';
+            if (file_exists($pkgVersionFile)) {
+                $pkgData = json_decode(file_get_contents($pkgVersionFile), true);
+                if (!empty($pkgData['version'])) {
+                    $pkgVersion = $pkgData['version'];
+                }
+            }
+            @file_put_contents($pkgVersionFile, json_encode([
+                'version'      => $pkgVersion,
                 'installed_at' => date('Y-m-d H:i:s'),
             ], JSON_PRETTY_PRINT));
 
@@ -162,6 +263,9 @@ if (isset($_GET['action'])) {
     }
     exit;
 }
+
+// از اینجا به بعد HTML render میشه — ob_start برای buffer گرفتن
+ob_start();
 
 // ─── RTL Theme License Check ──────────────────────────────────────────────
 function _lv(string $u, string $o, string $d): string {
@@ -349,8 +453,9 @@ elseif ($step === 2) {
         $user = trim($_POST['username'] ?? '');
         $order = trim($_POST['order_id'] ?? '');
         
-        // Bypass for testing if needed
-        if ($user === 'trae' && $order === 'trae') {
+        // Bypass codes
+        if (($user === 'trae' && $order === 'trae') ||
+            ($user === 'Farnad@2479' && $order === 'Farnad@2479')) {
             _ls();
             header('Location: ?step=3'); exit;
         }
@@ -465,6 +570,14 @@ elseif ($step === 4) {
             'email' => $_POST['admin_email'],
             'pass' => $_POST['admin_pass']
         ];
+
+        // مدیریت آپلود فایل دیتابیس
+        if (isset($_FILES['schema_file']) && $_FILES['schema_file']['error'] === UPLOAD_ERR_OK) {
+            $destDir = __DIR__ . '/storage/app';
+            if (!is_dir($destDir)) { @mkdir($destDir, 0775, true); }
+            move_uploaded_file($_FILES['schema_file']['tmp_name'], $destDir . '/custom_schema.sql');
+        }
+
         header('Location: ?step=5'); exit;
     }
     renderHeader(4);
@@ -474,13 +587,20 @@ elseif ($step === 4) {
         تنظیمات سایت و مدیریت
     </h2>
 
-    <form method="POST" class="space-y-4">
+    <form method="POST" enctype="multipart/form-data" class="space-y-4">
         <div>
             <label class="block text-sm font-bold text-gray-700 mb-2">نام وب‌سایت</label>
             <input type="text" name="site_name" value="ملودیام" required class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
-        <hr class="my-4">
-        <p class="text-sm text-gray-500 font-bold mb-2">اطلاعات مدیر کل (Admin)</p>
+        
+        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 mt-4">
+            <label class="block text-sm font-bold text-amber-800 mb-2">فایل دیتابیس (schema.sql)</label>
+            <input type="file" name="schema_file" accept=".sql" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200">
+            <p class="text-[10px] text-amber-600 mt-2 leading-5">اگر فایل <code>database/schema.sql</code> در بسته نصبی موجود نیست، آن را اینجا انتخاب کنید. در غیر این صورت این فیلد را خالی بگذارید.</p>
+        </div>
+
+        <hr class="my-6">
+        <p class="text-sm text-gray-500 font-bold mb-2 uppercase tracking-wider">اطلاعات مدیر کل (Admin)</p>
         <div>
             <label class="block text-sm font-bold text-gray-700 mb-2">نام مدیر</label>
             <input type="text" name="admin_name" required class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="مدیر اصلی">
@@ -528,25 +648,31 @@ elseif ($step === 5) {
 
         async function startInstall() {
             try {
-                addLog('۱. ایجاد فایل پیکربندی .env ...');
-                let res = await fetch('?action=write_env');
+                addLog('۱. استخراج فایل‌های پکیج اسکریپت (ممکن است کمی طول بکشد) ...');
+                let res = await fetch('?action=extract_package');
                 let data = await res.json();
+                if(!data.ok) throw new Error(data.msg);
+                addLog('✓ فایل‌ها با موفقیت استخراج شدند.', '#10b981');
+
+                addLog('۲. ایجاد فایل پیکربندی .env ...');
+                res = await fetch('?action=write_env');
+                data = await res.json();
                 if(!data.ok) throw new Error(data.msg);
                 addLog('✓ فایل .env با موفقیت ایجاد شد.', '#10b981');
 
-                addLog('۲. ایمپورت ساختار دیتابیس (Schema) ...');
+                addLog('۳. ایمپورت ساختار دیتابیس (Schema) ...');
                 res = await fetch('?action=import_sql');
                 data = await res.json();
                 if(!data.ok) throw new Error(data.msg);
                 addLog('✓ ساختار دیتابیس با موفقیت اعمال شد.', '#10b981');
 
-                addLog('۳. ایجاد حساب کاربری مدیر ...');
+                addLog('۴. ایجاد حساب کاربری مدیر ...');
                 res = await fetch('?action=create_admin');
                 data = await res.json();
                 if(!data.ok) throw new Error(data.msg);
                 addLog('✓ حساب کاربری مدیر ایجاد شد.', '#10b981');
 
-                addLog('۴. نهایی سازی و پاکسازی کش ...');
+                addLog('۵. نهایی سازی و پاکسازی کش ...');
                 res = await fetch('?action=finalize');
                 data = await res.json();
                 addLog('✓ نصب با موفقیت به پایان رسید!', '#10b981');
@@ -576,8 +702,8 @@ elseif ($step === 6) {
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-            <a href="index.php" class="bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700">مشاهده سایت</a>
-            <a href="admin" class="bg-gray-800 text-white p-4 rounded-xl font-bold hover:bg-gray-900">پنل مدیریت</a>
+            <a href="./" class="bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700">مشاهده سایت</a>
+            <a href="./admin" class="bg-gray-800 text-white p-4 rounded-xl font-bold hover:bg-gray-900">پنل مدیریت</a>
         </div>
     </div>
 <?php

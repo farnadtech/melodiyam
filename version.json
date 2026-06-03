@@ -1,4 +1,6 @@
-{
-    "version": "1.2.0",
-    "updated_at": "2026-06-03 08:27:19"
+﻿{
+    "version":  "1.2.1",
+    "released_at":  "2026-06-03",
+    "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.1-update.zip",
+    "changelog":  "fix htaccess fix 403 admin panel improve installer"
 }

@@ -1,33 +1,36 @@
 param(
-    [Parameter(Mandatory=$true)] [string]$Version,
-    [Parameter(Mandatory=$false)] [switch]$IncludeVendor = $false
+    [Parameter(Mandatory=$true)]  [string]$Version,
+    [Parameter(Mandatory=$false)] [switch]$IncludeVendor = $false,
+    [Parameter(Mandatory=$false)] [string]$UpdateServerUrl = 'https://iranbooklet.ir/melodiyam',
+    [Parameter(Mandatory=$false)] [string]$Changelog = ''
 )
 
 Set-Location $PSScriptRoot
 
-$OutputDir = Join-Path $PSScriptRoot "dist"
-$TempDir   = Join-Path $env:TEMP "melodiyam_pkg_$Version"
-$ZipPath   = Join-Path $OutputDir "melodiyam-v$Version.zip"
+$OutputDir  = Join-Path $PSScriptRoot "dist"
+$TempDir    = Join-Path $env:TEMP "melodiyam_pkg_$Version"
+$TempUpdate = Join-Path $env:TEMP "melodiyam_upd_$Version"
+$InstallZip = Join-Path $OutputDir "melodiyam-v$Version.zip"
+$UpdateZip  = Join-Path $OutputDir "melodiyam-v$Version-update.zip"
 
 if (!(Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir | Out-Null }
-if (Test-Path $TempDir)      { Remove-Item -Recurse -Force $TempDir }
-New-Item -ItemType Directory -Path $TempDir | Out-Null
+foreach ($d in ($TempDir, $TempUpdate)) {
+    if (Test-Path $d) { Remove-Item -Recurse -Force $d }
+    New-Item -ItemType Directory -Path $d | Out-Null
+}
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
-Write-Host "  Melodiyam Install Package Builder" -ForegroundColor Cyan
+Write-Host "  Melodiyam Package Builder" -ForegroundColor Cyan
 Write-Host "  Version: $Version" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# ─── Step 1: Export fresh schema.sql ───────────────────────────────────────
-Write-Host "[1/5] Exporting database schema..." -ForegroundColor Yellow
+# ─── Step 1: Export schema.sql ─────────────────────────────────────────────
+Write-Host "[1/6] Exporting database schema..." -ForegroundColor Yellow
 
 $envPath = Join-Path $PSScriptRoot ".env"
-if (!(Test-Path $envPath)) {
-    Write-Host "  WARNING: .env not found, schema export skipped." -ForegroundColor DarkYellow
-} else {
-    # Read DB credentials from .env
+if (Test-Path $envPath) {
     $envContent = Get-Content $envPath
     $dbHost = ($envContent | Select-String "^DB_HOST=(.+)$").Matches.Groups[1].Value.Trim()
     $dbPort = ($envContent | Select-String "^DB_PORT=(.+)$").Matches.Groups[1].Value.Trim()
@@ -38,181 +41,187 @@ if (!(Test-Path $envPath)) {
     if ($dbHost -and $dbName -and $dbUser) {
         $schemaPath = Join-Path $PSScriptRoot "database\schema.sql"
         $mysqldump = "mysqldump"
-        
-        # Try common XAMPP/WAMP paths
-        $candidates = @(
-            "C:\xampp\mysql\bin\mysqldump.exe",
-            "C:\wamp64\bin\mysql\mysql8.0.31\bin\mysqldump.exe",
-            "mysqldump"
-        )
-        foreach ($c in $candidates) {
+        foreach ($c in @("C:\xampp\mysql\bin\mysqldump.exe", "C:\wamp64\bin\mysql\mysql8.0.31\bin\mysqldump.exe")) {
             if (Test-Path $c -ErrorAction SilentlyContinue) { $mysqldump = $c; break }
         }
-
         $passArg = if ($dbPass) { "-p$dbPass" } else { "" }
         $portArg = if ($dbPort) { "--port=$dbPort" } else { "--port=3306" }
-        
-        $cmd = "& `"$mysqldump`" -h $dbHost $portArg -u $dbUser $passArg --no-data --routines --single-transaction $dbName"
-        $schema = Invoke-Expression $cmd 2>$null
+        $schema = Invoke-Expression "& `"$mysqldump`" -h $dbHost $portArg -u $dbUser $passArg --no-data --routines --single-transaction $dbName" 2>$null
         if ($schema) {
             $schema | Out-File -FilePath $schemaPath -Encoding utf8
-            Write-Host "  Schema exported: $schemaPath" -ForegroundColor Green
+            Write-Host "  Schema exported." -ForegroundColor Green
         } else {
             Write-Host "  mysqldump failed, using existing schema.sql" -ForegroundColor DarkYellow
         }
     }
+} else {
+    Write-Host "  WARNING: .env not found, schema export skipped." -ForegroundColor DarkYellow
 }
 
-# ─── Step 2: Define what to include ────────────────────────────────────────
-Write-Host "[2/5] Collecting files..." -ForegroundColor Yellow
+# ─── Step 2: Collect files ─────────────────────────────────────────────────
+Write-Host "[2/6] Collecting files..." -ForegroundColor Yellow
 
-# پوشه‌هایی که باید داخل پکیج باشن
-$IncludeDirs = @(
-    "app", "bootstrap", "config", "database",
-    "lang", "public", "resources", "routes", "storage"
-)
-$IncludeRootFiles = @(
-    "artisan", "composer.json", "composer.lock",
-    ".env.example", ".gitignore", ".editorconfig",
-    "install.php", "version.json",
-    "vite.config.js", "package.json", "tailwind.config.*"
-)
+$IncludeDirs = @("app","bootstrap","config","database","lang","public","resources","routes","storage")
+$IncludeRootFiles = @("artisan","composer.json","composer.lock",".env.example",".gitignore",".editorconfig","install.php","version.json","vite.config.js","package.json")
 
-# پوشه‌ها/فایل‌هایی که باید حذف بشن
 $ExcludeRelPaths = @(
-    "storage/logs",
-    "storage/backups",
-    "storage/framework/cache/data",
-    "storage/framework/sessions",
-    "storage/framework/views",
-    "storage/app/temp-updates",
-    "database/database.sqlite",
-    "public/storage",      # symlink - بعد از نصب ساخته میشه
-    "public/uploads"
+    "storage/app/public","storage/app/private","storage/app/temp-updates",
+    "storage/logs","storage/backups",
+    "storage/framework/cache/data","storage/framework/sessions","storage/framework/views",
+    "public/storage","public/uploads","database/database.sqlite"
 )
-$ExcludeFileNames = @(
-    ".env", ".env.backup", ".env.production", ".env.local",
-    "installed.lock", "*.log", "Thumbs.db", ".DS_Store"
-)
+$ExcludeFileNames = @(".env",".env.backup",".env.production",".env.local","installed.lock","*.log","Thumbs.db",".DS_Store")
 
-function ShouldExcludePkg {
-    param([string]$rel)
-    $norm = $rel -replace "\\", "/"
-    foreach ($ex in $Script:ExcludeRelPaths) {
-        $exNorm = $ex -replace "\\", "/"
-        if ($norm -like "$exNorm*") { return $true }
+function ShouldExclude([string]$rel) {
+    $norm = $rel.Replace("\", "/")
+    foreach ($ex in $ExcludeRelPaths) {
+        if ($norm.StartsWith($ex)) { return $true }
     }
-    $fname = Split-Path $rel -Leaf
-    foreach ($p in $Script:ExcludeFileNames) {
+    $fname = [System.IO.Path]::GetFileName($rel)
+    foreach ($p in $ExcludeFileNames) {
         if ($fname -like $p) { return $true }
     }
     return $false
 }
 
-function CopyToPkg {
-    param([string]$src, [string]$rel)
-    if (ShouldExcludePkg $rel) { return $false }
-    $dest = Join-Path $Script:TempDir $rel
-    $dir  = Split-Path $dest -Parent
+function CopyToDir([string]$src, [string]$rel, [string]$destBase) {
+    $target = Join-Path $destBase $rel
+    $dir = [System.IO.Path]::GetDirectoryName($target)
     if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    Copy-Item -Path $src -Destination $dest -Force
-    return $true
+    Copy-Item -Path $src -Destination $target -Force
 }
 
 $count = 0
+$updatedFiles = @()
 
-# کپی پوشه‌های اصلی
 foreach ($dir in $IncludeDirs) {
     $fullDir = Join-Path $PSScriptRoot $dir
     if (!(Test-Path $fullDir)) { continue }
     Get-ChildItem -Path $fullDir -Recurse -File | ForEach-Object {
         $rel = $_.FullName.Substring($PSScriptRoot.Length + 1)
-        if (CopyToPkg $_.FullName $rel) { $count++ }
+        if (!(ShouldExclude $rel)) {
+            CopyToDir $_.FullName $rel $TempDir
+            CopyToDir $_.FullName $rel $TempUpdate
+            $normRel = $rel.Replace("\", "/")
+            $updatedFiles += $normRel
+            $count++
+        }
     }
 }
 
-# کپی فایل‌های root
 foreach ($f in $IncludeRootFiles) {
-    $matches = Get-Item (Join-Path $PSScriptRoot $f) -ErrorAction SilentlyContinue
-    foreach ($m in $matches) {
-        $rel = $m.Name
-        if (CopyToPkg $m.FullName $rel) { $count++ }
+    $fp = Join-Path $PSScriptRoot $f
+    if (Test-Path $fp) {
+        CopyToDir $fp $f $TempDir
+        CopyToDir $fp $f $TempUpdate
+        $updatedFiles += $f
+        $count++
     }
 }
 
-# vendor - اختیاری
 if ($IncludeVendor) {
-    Write-Host "  Including vendor directory (this may take a while)..." -ForegroundColor DarkYellow
+    Write-Host "  Including vendor..." -ForegroundColor DarkYellow
     $vendorDir = Join-Path $PSScriptRoot "vendor"
     if (Test-Path $vendorDir) {
         Get-ChildItem -Path $vendorDir -Recurse -File | ForEach-Object {
             $rel = $_.FullName.Substring($PSScriptRoot.Length + 1)
-            if (CopyToPkg $_.FullName $rel) { $count++ }
+            if (!(ShouldExclude $rel)) {
+                CopyToDir $_.FullName $rel $TempDir
+                CopyToDir $_.FullName $rel $TempUpdate
+                $normRel = $rel.Replace("\", "/")
+                $updatedFiles += $normRel
+                $count++
+            }
         }
     }
-} else {
-    Write-Host "  Vendor excluded (buyer runs: composer install --no-dev)" -ForegroundColor DarkGray
 }
 
-# ایجاد پوشه‌های خالی ضروری در storage
-$storagePlaceholders = @(
-    "storage/app/public",
-    "storage/app/temp-updates",
-    "storage/framework/cache/data",
-    "storage/framework/sessions",
-    "storage/framework/views",
-    "storage/logs"
-)
-foreach ($sp in $storagePlaceholders) {
-    $spPath = Join-Path $TempDir $sp
-    if (!(Test-Path $spPath)) {
-        New-Item -ItemType Directory -Path $spPath -Force | Out-Null
-        # gitkeep placeholder
-        "" | Out-File -FilePath (Join-Path $spPath ".gitkeep") -Encoding utf8
+# storage placeholders
+foreach ($sp in @("storage/app/public","storage/app/temp-updates","storage/framework/cache/data","storage/framework/sessions","storage/framework/views","storage/logs")) {
+    foreach ($base in ($TempDir, $TempUpdate)) {
+        $spPath = Join-Path $base $sp
+        if (!(Test-Path $spPath)) {
+            New-Item -ItemType Directory -Path $spPath -Force | Out-Null
+            "" | Out-File -FilePath (Join-Path $spPath ".gitkeep") -Encoding utf8
+        }
     }
 }
 
 Write-Host "  Files collected: $count" -ForegroundColor Green
 
-# ─── Step 3: Update version.json داخل پکیج ─────────────────────────────────
-Write-Host "[3/5] Writing version.json..." -ForegroundColor Yellow
-$versionData = @{ version = $Version; released_at = (Get-Date -Format "yyyy-MM-dd") } | ConvertTo-Json
-$versionData | Out-File -FilePath (Join-Path $TempDir "version.json") -Encoding utf8
-Write-Host "  version.json written." -ForegroundColor Green
+# ─── Step 3: version.json ──────────────────────────────────────────────────
+Write-Host "[3/6] Writing version.json..." -ForegroundColor Yellow
 
-# ─── Step 4: Create ZIP ────────────────────────────────────────────────────
-Write-Host "[4/5] Creating ZIP archive..." -ForegroundColor Yellow
+$downloadUrl = "$UpdateServerUrl/melodiyam-v$Version-update.zip"
+$versionObj = @{
+    version      = $Version
+    released_at  = (Get-Date -Format "yyyy-MM-dd")
+    download_url = $downloadUrl
+    changelog    = $Changelog
+}
+$versionJson = $versionObj | ConvertTo-Json
 
-if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
+$versionJson | Out-File -FilePath (Join-Path $TempDir    "version.json") -Encoding utf8
+$versionJson | Out-File -FilePath (Join-Path $TempUpdate "version.json") -Encoding utf8
+$versionJson | Out-File -FilePath (Join-Path $PSScriptRoot "version.json") -Encoding utf8
 
-if (Get-Command "7z" -ErrorAction SilentlyContinue) {
-    Write-Host "  Using 7-Zip for compression..." -ForegroundColor DarkGray
-    & 7z a -tzip -mx=5 $ZipPath "$TempDir\*" | Out-Null
+Write-Host "  version.json written (v$Version)" -ForegroundColor Green
+
+# ─── Step 4: manifest.json for update package ──────────────────────────────
+Write-Host "[4/6] Writing update manifest.json..." -ForegroundColor Yellow
+
+$manifestObj = @{ version = $Version; files = $updatedFiles }
+$manifestJson = $manifestObj | ConvertTo-Json -Depth 3
+$manifestJson | Out-File -FilePath (Join-Path $TempUpdate "manifest.json") -Encoding utf8
+
+Write-Host "  manifest.json written ($($updatedFiles.Count) files)" -ForegroundColor Green
+
+# ─── Step 5: Create ZIPs ───────────────────────────────────────────────────
+Write-Host "[5/6] Creating ZIP archives..." -ForegroundColor Yellow
+
+$zipTargets = @(
+    @{ Src = $TempDir;    Out = $InstallZip; Label = "Install" }
+    @{ Src = $TempUpdate; Out = $UpdateZip;  Label = "Update"  }
+)
+
+foreach ($t in $zipTargets) {
+    if (Test-Path $t.Out) { Remove-Item $t.Out -Force }
+    if (Get-Command "7z" -ErrorAction SilentlyContinue) {
+        & 7z a -tzip -mx=5 $t.Out "$($t.Src)\*" | Out-Null
+    } else {
+        Compress-Archive -Path "$($t.Src)\*" -DestinationPath $t.Out -Force
+    }
+    $sizeMB = [math]::Round((Get-Item $t.Out).Length / 1MB, 2)
+    Write-Host "  [$($t.Label)] $(Split-Path $t.Out -Leaf) - $sizeMB MB" -ForegroundColor Green
+}
+
+foreach ($d in ($TempDir, $TempUpdate)) {
+    Remove-Item -Recurse -Force $d
+}
+
+# ─── Step 6: Git ───────────────────────────────────────────────────────────
+Write-Host "[6/6] Git commit and tag..." -ForegroundColor Yellow
+
+if (Get-Command "git" -ErrorAction SilentlyContinue) {
+    git add -A 2>&1 | Out-Null
+    git commit -m "release: v$Version" 2>&1
+    git tag -a "v$Version" -m "Version $Version" 2>&1
+    Write-Host "  Committed and tagged v$Version" -ForegroundColor Green
+    Write-Host "  Run: git push && git push --tags" -ForegroundColor DarkGray
 } else {
-    Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force
+    Write-Host "  git not found, skipping." -ForegroundColor DarkYellow
 }
 
-$zipBytes = (Get-Item $ZipPath).Length
-$zipKB    = [math]::Round($zipBytes / 1024, 1)
-$zipMB    = [math]::Round($zipBytes / 1048576, 2)
-
-Remove-Item -Recurse -Force $TempDir
-Write-Host "  ZIP created: $ZipPath" -ForegroundColor Green
-Write-Host "  Size: $zipKB KB / $zipMB MB" -ForegroundColor Green
-
-# ─── Step 5: Summary ───────────────────────────────────────────────────────
+# ─── Summary ───────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  Install package ready!" -ForegroundColor Green
+Write-Host "  Done! v$Version" -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Green
-Write-Host "  File : $ZipPath" -ForegroundColor White
-Write-Host "  Size : $zipKB KB" -ForegroundColor White
+Write-Host "  Install : $InstallZip" -ForegroundColor White
+Write-Host "  Update  : $UpdateZip" -ForegroundColor White
 Write-Host ""
-Write-Host "Checklist before sending to customers:" -ForegroundColor Cyan
-if (!$IncludeVendor) {
-    Write-Host "  [!] vendor/ NOT included - buyer must run: composer install --no-dev" -ForegroundColor Yellow
-}
-Write-Host "  [x] install.php included" -ForegroundColor Green
-Write-Host "  [x] database/schema.sql included" -ForegroundColor Green
-Write-Host "  [x] version.json = $Version" -ForegroundColor Green
+Write-Host "  Next steps:" -ForegroundColor Cyan
+Write-Host "  1. Upload update zip  -> $UpdateServerUrl/melodiyam-v$Version-update.zip" -ForegroundColor White
+Write-Host "  2. Upload version.json -> $UpdateServerUrl/version.json" -ForegroundColor White
+Write-Host "  3. git push && git push --tags" -ForegroundColor White
 Write-Host ""

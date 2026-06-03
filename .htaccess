@@ -1,0 +1,20 @@
+Options -Indexes
+DirectoryIndex public/index.php index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # اگه فایل یا پوشه مستقیماً در root وجود داره (مثل install.php) سرو بشه
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # اگه فایل یا پوشه در public/ وجود داره (assets, css, js, ...) مستقیم سرو بشه
+    RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # بقیه درخواست‌ها به public/index.php لاراول
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+</IfModule>
