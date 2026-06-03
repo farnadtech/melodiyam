@@ -1,0 +1,132 @@
+﻿@php
+    $pbEnabled = \App\Models\Setting::get('premium_banner_enabled', '1') === '1';
+    $abEnabled = \App\Models\Setting::get('artist_banner_enabled',  '1') === '1';
+    // Premium banner vars
+    $_pbImg  = \App\Models\Setting::get('premium_banner_image');
+    $pbImg   = $_pbImg ? asset('storage/' . $_pbImg) : null;
+    $pbFrom  = \App\Models\Setting::get('premium_banner_bg_from');
+    $pbTo    = \App\Models\Setting::get('premium_banner_bg_to');
+    $pbStyle = $pbImg ? "background-image:url('{$pbImg}');background-size:cover;background-position:center;" : ($pbFrom && $pbTo ? "background:linear-gradient(135deg,{$pbFrom},{$pbTo});" : '');
+    $pbTitle = \App\Models\Setting::get('premium_banner_title',    'ملودیام پریمیوم');
+    $pbSub   = \App\Models\Setting::get('premium_banner_subtitle', 'بدون تبلیغات، کیفیت بالا');
+    $pbBtn   = \App\Models\Setting::get('premium_banner_btn_text', 'ارتقا حساب');
+    $pbUrl   = (string)(\App\Models\Setting::get('premium_banner_btn_url') ?: '/premium');
+    $pbColor = (string)(\App\Models\Setting::get('premium_banner_text_color') ?: '#ffffff');
+    // Artist banner vars
+    $_abImg  = \App\Models\Setting::get('artist_banner_image');
+    $abImg   = $_abImg ? asset('storage/' . $_abImg) : null;
+    $abFrom  = \App\Models\Setting::get('artist_banner_bg_from');
+    $abTo    = \App\Models\Setting::get('artist_banner_bg_to');
+    $abStyle = $abImg ? "background-image:url('{$abImg}');background-size:cover;background-position:center;" : ($abFrom && $abTo ? "background:linear-gradient(135deg,{$abFrom},{$abTo});" : '');
+    $abTitle = \App\Models\Setting::get('artist_banner_title',    'هنرمند شوید!');
+    $abSub   = \App\Models\Setting::get('artist_banner_subtitle', 'موسیقی‌تان را با جهان به اشتراک بگذارید');
+    $abBtn   = \App\Models\Setting::get('artist_banner_btn_text', 'شروع کنید');
+    $abUrl   = (string)(\App\Models\Setting::get('artist_banner_btn_url') ?: '/become-artist');
+    $abColor = (string)(\App\Models\Setting::get('artist_banner_text_color') ?: '#ffffff');
+
+    // Sidebar footer vars
+    $sfEnabled = \App\Models\Setting::get('sidebar_footer_enabled', '1') === '1';
+    $sfDesc = \App\Models\Setting::get('sidebar_footer_description');
+    $sfLinks = \App\Models\Setting::get('sidebar_footer_links', []);
+    if (is_string($sfLinks)) {
+        $sfLinks = json_decode($sfLinks, true) ?: [];
+    }
+@endphp
+
+{{-- Desktop Sidebar --}}
+<aside
+    id="app-sidebar"
+    class="hidden lg:flex flex-col w-72 border-l transition-all duration-300 h-screen"
+    style="background-color: var(--sidebar-bg, white); border-color: var(--sidebar-border, #e2e8f0);"
+    x-show="sidebarOpen"
+    x-data="{ playerActive: false }"
+    x-init="playerActive = !!$store.player.currentTrack; $watch('$store.player.currentTrack', v => playerActive = !!v)"
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0 -translate-x-4"
+    x-transition:enter-end="opacity-100 translate-x-0"
+>
+    {{-- Logo --}}
+    <div class="p-6 border-b border-surface-200 dark:border-surface-800">
+        <a href="{{ url('/') }}" wire:navigate class="flex items-center gap-3">
+            @if($siteLogo)
+                <img src="{{ $siteLogo }}" alt="{{ $siteName }}" 
+                     style="height: {{ $logoHeight }}px; max-height: 150px;" 
+                     class="w-auto object-contain">
+            @else
+                <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white flex-shrink-0">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+            @endif
+            
+            @if($showSiteName)
+                <span class="text-xl font-bold font-display text-gradient">{{ $siteName }}</span>
+            @endif
+        </a>
+    </div>
+
+    {{-- Navigation --}}
+    <nav class="flex-1 p-4 pb-24 space-y-1 overflow-y-auto scrollbar-hide">
+
+        @php
+        $navLink = fn($path, $label, $icon, $exact = false) =>
+            '<a href="' . url($path) . '" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ' .
+            (($exact ? request()->is(ltrim($path,'/')) || request()->is('/') && $path === '/' : request()->is(ltrim($path,'/').'*'))
+                ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400'
+                : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800') .
+            '">' . $icon . '<span>' . $label . '</span></a>';
+        @endphp
+
+        <p class="text-xs font-medium text-surface-400 dark:text-surface-500 px-3 mb-2">کشف موسیقی</p>
+
+        <a href="{{ url('/') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('/') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>خانه</span>
+        </a>
+
+        @auth
+        <a href="{{ url('/feed') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('feed*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2zM14 2v4h4"/></svg>
+            <span>فید فعالیت‌ها</span>
+        </a>
+        @endauth
+
+        <a href="{{ url('/discover') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('discover*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            <span>کشف کن</span>
+        </a>
+
+        <a href="{{ route('genre.index') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('genres*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+            <span>ژانرها</span>
+        </a>
+
+        <a href="{{ url('/browse') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('browse*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>مرور</span>
+        </a>
+
+        <a href="{{ url('/albums') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('albums*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z"/></svg>
+            <span>آلبوم‌ها</span>
+        </a>
+
+        <a href="{{ url('/search') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('search*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <span>جستجو</span>
+        </a>
+
+        <a href="{{ url('/podcasts') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('podcasts*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+            <span>پادکست</span>
+        </a>
+
+        <a href="{{ url('/playlists') }}" wire:navigate class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->is('playlists*') ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h10M4 18h10m3-2v6m3-3H14"/></svg>
+            <span>پلی‌لیست‌ها</span>
+        </a>
+
+        @auth
+            {{-- ===== کتابخانه accordion ===== --}}
+            <div class="pt-4 mt-4 border-t border-surface-200 dark:border-surface-800" x-data="{ libOpen: {{ request()->is(library*) ? true : false }} }">

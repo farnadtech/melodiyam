@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.2.1",
-    "released_at":  "2026-06-03",
-    "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.1-update.zip",
-    "changelog":  "fix htaccess fix 403 admin panel improve installer"
+    "version":  "1.2.2",
+    "released_at":  "2026-06-04",
+    "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.2-update.zip",
+    "changelog":  "sidebar collapsible dropdown reorganization, removed section dividers"
 }
