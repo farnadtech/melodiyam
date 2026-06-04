@@ -10,11 +10,13 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -77,9 +79,37 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\DemoModeGuard::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                function (): string {
+                    if (auth()->check() && auth()->user()->isDemo()) {
+                        $badge = '<div style="position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.15);backdrop-filter:blur(12px);border:1px solid rgba(245,158,11,0.25);color:#d97706;border-radius:9999px;padding:5px 16px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);white-space:nowrap;"><svg style="width:14px;height:14px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg><span>' . 'حالت نمایشی (دمو)' . '</span></div>';
+                        $script = '<script>'
+                            . 'window.showDemoToast=function(msg){'
+                            . 'var t=document.createElement("div");'
+                            . 't.style.cssText="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:999999;background:rgba(225,29,72,0.95);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);backdrop-filter:blur(8px);animation:fadeInUp .3s ease;white-space:nowrap;";'
+                            . 't.textContent=msg||"' . 'شما در حالت نمایشی (دمو) هستید و امکان ایجاد تغییرات را ندارید.' . '";'
+                            . 'document.body.appendChild(t);'
+                            . 'setTimeout(function(){t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(function(){t.remove()},300)},4000);'
+                            . '};'
+                            . 'if(!document.getElementById("demo-toast-style")){'
+                            . 'var s=document.createElement("style");s.id="demo-toast-style";'
+                            . 's.textContent="@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}";'
+                            . 'document.head.appendChild(s);'
+                            . '}'
+                            . 'window.addEventListener("demo-blocked",function(e){'
+                            . 'window.showDemoToast(e.detail?.message||e.detail?.params?.message);'
+                            . '});'
+                            . '</script>';
+                        return Blade::render($badge . $script);
+                    }
+                    return '';
+                },
+            );
     }
 }

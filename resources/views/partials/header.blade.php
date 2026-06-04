@@ -1,4 +1,17 @@
-<header id="app-header" class="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 backdrop-blur-xl border-b" style="background-color: var(--header-bg, rgba(255,255,255,0.8)); border-color: var(--header-border, #e2e8f0)50;">
+<header id="app-header" class="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 backdrop-blur-xl border-b relative" style="background-color: var(--header-bg, rgba(255,255,255,0.8)); border-color: var(--header-border, #e2e8f0)50;">
+
+    {{-- Demo Mode Badge (centered in header) --}}
+    @auth
+        @if(auth()->user()->isDemo())
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.15);backdrop-filter:blur(12px);border:1px solid rgba(245,158,11,0.25);color:#d97706;border-radius:9999px;padding:5px 16px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.08);white-space:nowrap;">
+            <svg style="width:14px;height:14px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <span>حالت نمایشی (دمو)</span>
+        </div>
+        @endif
+    @endauth
 
     {{-- Right Side: Mobile menu + Search --}}
     <div class="flex items-center gap-3">

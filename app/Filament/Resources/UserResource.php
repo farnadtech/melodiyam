@@ -55,9 +55,10 @@ class UserResource extends Resource
 
             \Filament\Schemas\Components\Section::make('وضعیت')->schema([
                 Forms\Components\Toggle::make('is_active')->label('فعال')->default(true),
+                Forms\Components\Toggle::make('is_demo')->label('حالت نمایشی (دمو)')->helperText('در صورت فعال بودن، کاربر فقط امکان مشاهده دارد و نمی‌تواند تغییری ایجاد کند.'),
                 Forms\Components\Toggle::make('is_premium')->label('پریمیوم'),
                 \App\Filament\Forms\Components\JalaliDatePicker::make('premium_expires_at')->label('انقضای پریمیوم'),
-            ])->columns(3),
+            ])->columns(2),
 
             \Filament\Schemas\Components\Section::make('بیوگرافی')->schema([
                 Forms\Components\Textarea::make('bio')->label('بیو')->rows(3),
@@ -91,6 +92,7 @@ class UserResource extends Resource
                     ->sortable()
                     ->color(fn ($state) => ($state ?? 0) > 0 ? 'success' : 'gray'),
                 Tables\Columns\IconColumn::make('is_active')->label('فعال')->boolean(),
+                Tables\Columns\IconColumn::make('is_demo')->label('دمو')->boolean(),
                 Tables\Columns\IconColumn::make('is_premium')->label('پریمیوم')->boolean(),
                 Tables\Columns\TextColumn::make('created_at')->label('تاریخ ثبت')
                     ->formatStateUsing(fn ($state) => $state ? Jalali::format($state, 'Y/m/d') : '-')
@@ -100,6 +102,7 @@ class UserResource extends Resource
                 Tables\Filters\SelectFilter::make('type')->label('نوع')
                     ->options(['listener' => 'شنونده','artist' => 'هنرمند','admin' => 'مدیر','moderator' => 'ناظر']),
                 Tables\Filters\TernaryFilter::make('is_active')->label('فعال'),
+                Tables\Filters\TernaryFilter::make('is_demo')->label('دمو'),
                 Tables\Filters\TernaryFilter::make('is_premium')->label('پریمیوم'),
             ])
             ->actions([

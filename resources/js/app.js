@@ -425,3 +425,29 @@ document.addEventListener('livewire:navigated', () => {
     const isDark = dark === null ? true : dark === 'true';
     document.documentElement.classList.toggle('dark', isDark);
 });
+
+// Demo mode: toast helper & interceptors
+window.showDemoToast = function(msg) {
+    window.dispatchEvent(new CustomEvent('flash-message', {
+        detail: {
+            message: msg || 'شما در حالت نمایشی (دمو) هستید و امکان ایجاد تغییرات را ندارید.',
+            type: 'error'
+        }
+    }));
+};
+
+// Listen for Livewire dispatch 'demo-blocked' event (returned as 200 with dispatches effect)
+window.addEventListener('demo-blocked', function(e) {
+    window.showDemoToast(e.detail?.message || e.detail?.params?.message);
+});
+
+// Intercept non-Livewire fetch requests that return 403 (e.g. regular form POSTs)
+var _origFetch = window.fetch;
+window.fetch = function() {
+    return _origFetch.apply(this, arguments).then(function(response) {
+        if (response.status === 403 && response.headers.get('X-Demo-Blocked') === '1') {
+            window.showDemoToast();
+        }
+        return response;
+    });
+};

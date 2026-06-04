@@ -21,7 +21,7 @@ class User extends Authenticatable implements FilamentUser
     protected $fillable = [
         'name', 'username', 'email', 'phone', 'password', 'avatar', 'bio',
         'birth_date', 'gender', 'country', 'city', 'type', 'is_active',
-        'is_premium', 'premium_expires_at', 'preferences',
+        'is_demo', 'is_premium', 'premium_expires_at', 'preferences',
         'email_verified_at', 'phone_verified_at',
     ];
 
@@ -39,6 +39,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'preferences' => 'array',
             'is_active' => 'boolean',
+            'is_demo' => 'boolean',
             'is_premium' => 'boolean',
             'birth_date' => 'date',
         ];
@@ -185,6 +186,11 @@ class User extends Authenticatable implements FilamentUser
     }
 
     // ── Helpers ──
+
+    public function isDemo(): bool
+    {
+        return (bool) $this->is_demo;
+    }
 
     public function isArtist(): bool
     {
