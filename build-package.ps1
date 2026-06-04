@@ -189,7 +189,26 @@ foreach ($t in $zipTargets) {
     if (Get-Command "7z" -ErrorAction SilentlyContinue) {
         & 7z a -tzip -mx=5 $t.Out "$($t.Src)\*" | Out-Null
     } else {
+        Add-Type -AssemblyName System.IO.Compression
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
         Compress-Archive -Path "$($t.Src)\*" -DestinationPath $t.Out -Force
+
+        # Fix: rebuild ZIP with forward-slash paths (Compress-Archive uses \ on Windows)
+        $zip = [System.IO.Compression.ZipFile]::Open($t.Out, 'Update')
+        $broken = @($zip.Entries | Where-Object { $_.FullName -match '\\' })
+        if ($broken.Count -gt 0) {
+            foreach ($entry in $broken) {
+                $newName = $entry.FullName.Replace('\', '/')
+                $newEntry = $zip.CreateEntry($newName, [System.IO.Compression.CompressionLevel]::Optimal)
+                $src = $entry.Open()
+                $dst = $newEntry.Open()
+                $src.CopyTo($dst)
+                $dst.Dispose(); $src.Dispose()
+                $entry.Delete()
+            }
+            Write-Host "  $($t.Label): fixed $($broken.Count) backslash paths -> forward slash" -ForegroundColor DarkYellow
+        }
+        $zip.Dispose()
     }
     $sizeMB = [math]::Round((Get-Item $t.Out).Length / 1MB, 2)
     Write-Host "  [$($t.Label)] $(Split-Path $t.Out -Leaf) - $sizeMB MB" -ForegroundColor Green

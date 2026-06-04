@@ -203,7 +203,31 @@ Write-Host "  Copied: $copied  |  Not found: $skipped" -ForegroundColor Green
 Write-Host "[4/5] Creating ZIP archive..." -ForegroundColor Yellow
 
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
-Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force
+
+if (Get-Command "7z" -ErrorAction SilentlyContinue) {
+    & 7z a -tzip -mx=5 $ZipPath "$TempDir\*" | Out-Null
+} else {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    Compress-Archive -Path "$TempDir\*" -DestinationPath $ZipPath -Force
+
+    # Fix: rebuild ZIP with forward-slash paths (Compress-Archive uses \ on Windows)
+    $zip = [System.IO.Compression.ZipFile]::Open($ZipPath, 'Update')
+    $broken = @($zip.Entries | Where-Object { $_.FullName -match '\\' })
+    if ($broken.Count -gt 0) {
+        foreach ($entry in $broken) {
+            $newName = $entry.FullName.Replace('\', '/')
+            $newEntry = $zip.CreateEntry($newName, [System.IO.Compression.CompressionLevel]::Optimal)
+            $src = $entry.Open()
+            $dst = $newEntry.Open()
+            $src.CopyTo($dst)
+            $dst.Dispose(); $src.Dispose()
+            $entry.Delete()
+        }
+        Write-Host "  Fixed $($broken.Count) backslash paths -> forward slash (Linux-safe)" -ForegroundColor DarkYellow
+    }
+    $zip.Dispose()
+}
 
 $zipBytes  = (Get-Item $ZipPath).Length
 $zipKB     = [math]::Round($zipBytes / 1024, 1)

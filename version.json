@@ -1,6 +1,6 @@
 ﻿{
     "released_at":  "2026-06-04",
-    "changelog":  "sidebar collapsible dropdown, OPcache fix in updater",
+    "changelog":  "sidebar collapsible dropdown, OPcache fix, ZIP path fix",
     "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.2-update.zip",
     "version":  "1.2.2"
 }
