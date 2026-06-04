@@ -469,8 +469,8 @@ class Settings extends Page implements HasForms
                                     ->columnSpanFull(),
                                 TextInput::make('premium_banner_title')
                                     ->label('عنوان بنر')
-                                    ->default('ملودیام پریمیوم')
-                                    ->placeholder('ملودیام پریمیوم'),
+                                    ->default(config('app.name') . ' پریمیوم')
+                                    ->placeholder(config('app.name') . ' پریمیوم'),
                                 TextInput::make('premium_banner_subtitle')
                                     ->label('زیرعنوان')
                                     ->default('بدون تبلیغات، کیفیت بالا')
@@ -559,7 +559,7 @@ class Settings extends Page implements HasForms
                                 Textarea::make('sidebar_footer_description')
                                     ->label('متن توضیحی کوتاه')
                                     ->rows(2)
-                                    ->placeholder('مثلاً: تمامی حقوق برای ملودیام محفوظ است.'),
+                                    ->placeholder('مثلاً: تمامی حقوق برای ' . config('app.name') . ' محفوظ است.'),
                                 
                                 \Filament\Forms\Components\Repeater::make('sidebar_footer_links')
                                     ->label('لینک‌های مفید')

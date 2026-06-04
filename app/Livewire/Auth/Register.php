@@ -11,7 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.auth')]
-#[Title('ثبت‌نام - ملودیام')]
+#[Title('ثبت‌نام')]
 class Register extends Component
 {
     public string $authType = 'password'; // 'password' or 'otp' - from settings

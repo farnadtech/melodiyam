@@ -20,7 +20,7 @@ class TestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'تست تنظیمات ایمیل ملودیام',
+            subject: 'تست تنظیمات ایمیل ' . config('app.name'),
         );
     }
 

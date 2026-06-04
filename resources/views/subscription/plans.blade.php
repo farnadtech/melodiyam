@@ -1,4 +1,4 @@
-<x-layouts.app title="پریمیوم ملودیام">
+<x-layouts.app :title="'پریمیوم ' . config('app.name')">
     <div class="p-4 lg:p-8 space-y-10">
 
         @if(!($premiumEnabled ?? true))
@@ -13,7 +13,7 @@
         <div class="text-center max-w-2xl mx-auto">
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-medium mb-4">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
-                ملودیام پریمیوم
+                {{ config('app.name') }} پریمیوم
             </div>
             <h1 class="text-3xl lg:text-4xl font-display font-extrabold text-surface-900 dark:text-white mb-4">
                 تجربه موسیقی بدون محدودیت

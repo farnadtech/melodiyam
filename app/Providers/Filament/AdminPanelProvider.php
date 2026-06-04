@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName($settings['site_name'] ?? 'ملودیام')
+            ->brandName($settings['site_name'] ?? config('app.name'))
             ->brandLogo($logo)
             ->favicon($favicon)
             ->colors([

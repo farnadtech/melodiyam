@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-2xl font-display font-bold text-surface-900 dark:text-white text-center mb-2">ورود به ملودیام</h2>
+    <h2 class="text-2xl font-display font-bold text-surface-900 dark:text-white text-center mb-2">ورود به {{ config('app.name') }}</h2>
     <p class="text-sm text-surface-500 text-center mb-6">روش ورود خود را انتخاب کنید</p>
 
     {{-- Method Tabs - Only show when auth_type is 'both' --}}

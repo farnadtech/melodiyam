@@ -13,7 +13,7 @@ class Setting extends Model
     {
         return [
             // General
-            'site_name' => 'ملودیام',
+            'site_name' => config('app.name', 'Melodiyam'),
             'site_name_en' => 'Melodiyam',
             'show_site_name_in_sidebar' => '1',
             'logo_height_px' => '40',

@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-2xl font-display font-bold text-surface-900 dark:text-white text-center mb-2">ثبت‌نام در ملودیام</h2>
+    <h2 class="text-2xl font-display font-bold text-surface-900 dark:text-white text-center mb-2">ثبت‌نام در {{ config('app.name') }}</h2>
     <p class="text-sm text-surface-500 text-center mb-8">حساب جدید بسازید و از موسیقی لذت ببرید</p>
 
     {{-- Method Tabs - Only show when auth_type is not set to a specific method --}}

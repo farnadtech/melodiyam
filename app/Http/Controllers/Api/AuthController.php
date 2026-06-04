@@ -33,7 +33,7 @@ class AuthController extends Controller
 
         $user = User::firstOrCreate(
             ['phone' => $request->phone],
-            ['name' => 'کاربر ملودیام', 'phone_verified_at' => now(), 'type' => 'listener']
+            ['name' => 'کاربر جدید', 'phone_verified_at' => now(), 'type' => 'listener']
         );
 
         $token = $user->createToken('api-token')->plainTextToken;

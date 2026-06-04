@@ -68,7 +68,7 @@ $ExcludeRelPaths = @(
     "storage/app/public","storage/app/private","storage/app/temp-updates",
     "storage/logs","storage/backups",
     "storage/framework/cache/data","storage/framework/sessions","storage/framework/views",
-    "public/storage","public/uploads","database/database.sqlite"
+    "public/storage","public/uploads","public/hot","database/database.sqlite"
 )
 $ExcludeFileNames = @(".env",".env.backup",".env.production",".env.local","installed.lock","*.log","Thumbs.db",".DS_Store")
 

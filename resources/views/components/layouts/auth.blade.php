@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'ورود' }} - {{ \App\Models\Setting::get('site_name', 'ملودیام') }}</title>
+    <title>{{ $title ?? 'ورود' }} - {{ \App\Models\Setting::get('site_name', config('app.name')) }}</title>
 
     @php $ts = \App\Models\Setting::getByGroup('theme'); @endphp
     <script>
@@ -57,7 +57,7 @@
                     </svg>
                 </div>
                 @endif
-                <span class="text-2xl font-display font-extrabold text-gradient">{{ \App\Models\Setting::get('site_name', 'ملودیام') }}</span>
+                <span class="text-2xl font-display font-extrabold text-gradient">{{ \App\Models\Setting::get('site_name', config('app.name')) }}</span>
             </a>
         </div>
 

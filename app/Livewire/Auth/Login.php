@@ -12,7 +12,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.auth')]
-#[Title('ورود - ملودیام')]
+#[Title('ورود')]
 class Login extends Component
 {
     public string $loginMethod = 'password'; // 'password' or 'otp'
@@ -119,7 +119,7 @@ class Login extends Component
         $user = User::firstOrCreate(
             ['phone' => $this->phone],
             [
-                'name' => 'کاربر ملودیام',
+                'name' => 'کاربر جدید',
                 'phone_verified_at' => now(),
                 'type' => 'listener',
             ]

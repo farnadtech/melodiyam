@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'ملودیام' }} - {{ config('app.name') }}</title>
+    <title>{{ $title ?? config('app.name') }} - {{ config('app.name') }}</title>
     <meta name="description" content="{{ $metaDescription ?? 'پلتفرم استریم موسیقی فارسی - گوش دادن به بهترین موسیقی‌ها' }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])

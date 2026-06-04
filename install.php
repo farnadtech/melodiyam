@@ -7,7 +7,7 @@
 // session باید اول از همه شروع بشه
 session_start();
 
-define('INSTALLER_VERSION', '1.2.0');
+define('INSTALLER_VERSION', '1.2.3');
 define('MIN_PHP', '8.2.0');
 define('REQUIRED_EXTENSIONS', ['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'xml', 'ctype', 'json', 'bcmath', 'fileinfo', 'zip', 'curl', 'gd']);
 
@@ -51,7 +51,7 @@ if (isset($_GET['action'])) {
                     $zipFilename = $zip->getNameIndex($i);
                     $normalizedPath = str_replace('\\', '/', $zipFilename);
                     
-                    if (basename($normalizedPath) === 'install.php' || basename($normalizedPath) === '.env' || basename($normalizedPath) === 'installed.lock') continue;
+                    if (basename($normalizedPath) === 'install.php' || basename($normalizedPath) === '.env' || basename($normalizedPath) === 'installed.lock' || basename($normalizedPath) === 'hot') continue;
                     
                     $targetPath = __DIR__ . '/' . $normalizedPath;
                     
@@ -358,13 +358,168 @@ function renderHeader($step) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نصب هوشمند ملودیام</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <style>
-        body { font-family: Vazirmatn, sans-serif; background-color: #f8fafc; }
-        .step-active { color: #2563eb; border-bottom: 2px solid #2563eb; }
-        .step-done { color: #059669; }
-    </style>
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Vazirmatn, Tahoma, sans-serif; background-color: #f8fafc; color: #1f2937; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+input, button, select, textarea { font-family: inherit; font-size: inherit; }
+hr { border: 0; border-top: 1px solid #e5e7eb; }
+
+/* Layout */
+.min-h-screen { min-height: 100vh; }
+.flex { display: flex; }
+.grid { display: grid; }
+.block { display: block; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.flex-1 { flex: 1 1 0%; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.text-center { text-align: center; }
+.overflow-hidden { overflow: hidden; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+.whitespace-nowrap { white-space: nowrap; }
+.uppercase { text-transform: uppercase; }
+
+/* Sizing */
+.w-full { width: 100%; }
+.w-20 { width: 5rem; }
+.h-20 { height: 5rem; }
+.h-64 { height: 16rem; }
+.max-w-2xl { max-width: 42rem; }
+
+/* Spacing */
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.px-10 { padding-left: 2.5rem; padding-right: 2.5rem; }
+.pt-4 { padding-top: 1rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+
+/* Space-y utilities */
+.space-y-1 > * + * { margin-top: 0.25rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+
+/* Typography */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-\[10px\] { font-size: 10px; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.leading-5 { line-height: 1.25rem; }
+.leading-relaxed { line-height: 1.625; }
+.tracking-wider { letter-spacing: 0.05em; }
+
+/* Colors - Text */
+.text-white { color: #ffffff; }
+.text-gray-400 { color: #9ca3af; }
+.text-gray-500 { color: #6b7280; }
+.text-gray-700 { color: #374151; }
+.text-gray-800 { color: #1f2937; }
+.text-blue-100 { color: #dbeafe; }
+.text-blue-600 { color: #2563eb; }
+.text-green-400 { color: #4ade80; }
+.text-green-600 { color: #16a34a; }
+.text-red-600 { color: #dc2626; }
+.text-red-700 { color: #b91c1c; }
+.text-amber-600 { color: #d97706; }
+.text-amber-700 { color: #b45309; }
+.text-amber-800 { color: #92400e; }
+.text-yellow-800 { color: #854d0e; }
+
+/* Colors - Background */
+.bg-white { background-color: #ffffff; }
+.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-200 { background-color: #e5e7eb; }
+.bg-gray-800 { background-color: #1f2937; }
+.bg-gray-900 { background-color: #111827; }
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-blue-600 { background-color: #2563eb; }
+.bg-green-100 { background-color: #dcfce7; }
+.bg-green-50 { background-color: #f0fdf4; }
+.bg-red-50 { background-color: #fef2f2; }
+.bg-amber-50 { background-color: #fffbeb; }
+.bg-amber-100 { background-color: #fef3c7; }
+.bg-yellow-50 { background-color: #fefce8; }
+
+/* Border */
+.border { border: 1px solid #e5e7eb; }
+.border-b { border-bottom: 1px solid #e5e7eb; }
+.border-0 { border: 0; }
+.border-red-100 { border-color: #fee2e2; }
+.border-green-100 { border-color: #dcfce7; }
+.border-amber-100 { border-color: #fef3c7; }
+.border-yellow-100 { border-color: #fef9c3; }
+
+/* Rounded */
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* Shadow */
+.shadow-xl { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+
+/* List */
+.list-disc { list-style-type: disc; }
+.list-inside { list-style-position: inside; }
+
+/* Outline & Transition */
+.outline-none { outline: none; }
+.transition { transition-property: color, background-color, border-color, box-shadow; transition-duration: 150ms; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Last child */
+.last\:border-0:last-child { border: 0; }
+
+/* Hover states */
+.hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+.hover\:bg-gray-900:hover { background-color: #111827; }
+
+/* Focus states */
+.focus\:ring-2:focus { box-shadow: 0 0 0 2px #3b82f6; }
+.focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px #3b82f6; }
+
+/* File input pseudo-element */
+input[type=file]::file-selector-button {
+    margin-right: 1rem; padding: 0.5rem 1rem; border-radius: 9999px; border: 0;
+    font-size: 0.875rem; font-weight: 600; background-color: #fef3c7; color: #b45309; cursor: pointer;
+}
+input[type=file]::file-selector-button:hover { background-color: #fde68a; }
+
+/* Installer step states */
+.step-active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+.step-done { color: #059669; }
+</style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">

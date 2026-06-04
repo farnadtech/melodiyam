@@ -7,7 +7,7 @@
     $pbFrom  = \App\Models\Setting::get('premium_banner_bg_from');
     $pbTo    = \App\Models\Setting::get('premium_banner_bg_to');
     $pbStyle = $pbImg ? "background-image:url('{$pbImg}');background-size:cover;background-position:center;" : ($pbFrom && $pbTo ? "background:linear-gradient(135deg,{$pbFrom},{$pbTo});" : '');
-    $pbTitle = \App\Models\Setting::get('premium_banner_title',    'ملودیام پریمیوم');
+    $pbTitle = \App\Models\Setting::get('premium_banner_title',    config('app.name') . ' پریمیوم');
     $pbSub   = \App\Models\Setting::get('premium_banner_subtitle', 'بدون تبلیغات، کیفیت بالا');
     $pbBtn   = \App\Models\Setting::get('premium_banner_btn_text', 'ارتقا حساب');
     $pbUrl   = (string)(\App\Models\Setting::get('premium_banner_btn_url') ?: '/premium');
