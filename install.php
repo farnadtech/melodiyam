@@ -154,10 +154,10 @@ if (isset($_GET['action'])) {
             }
             $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
 
-            // بروزرسانی نام سایت در settings
+            // بروزرسانی نام سایت در settings (REPLACE INTO چون جدول ممکنه خالی باشه)
             if (isset($_SESSION['admin']['site_name'])) {
                 try {
-                    $pdo->prepare("UPDATE settings SET value=? WHERE `key`='site_name'")->execute([$_SESSION['admin']['site_name']]);
+                    $pdo->prepare("REPLACE INTO settings (`key`, `value`, `group`, `type`, `created_at`, `updated_at`) VALUES ('site_name', ?, 'general', 'text', NOW(), NOW())")->execute([$_SESSION['admin']['site_name']]);
                 } catch (PDOException $ignored) {}
             }
 
