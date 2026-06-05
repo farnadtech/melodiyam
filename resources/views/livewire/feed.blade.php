@@ -19,8 +19,8 @@
         @forelse($activities as $activity)
             <div class="activity-item group animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {{-- Header: User/Artist info --}}
-                <div class="flex items-center space-x-3 space-x-reverse mb-4 text-sm">
-                    <div class="relative">
+                <div class="flex items-center gap-3 mb-4 text-sm">
+                    <div class="relative flex-shrink-0">
                         <img src="{{ $activity->user->getAvatarUrl() }}" 
                              class="w-8 h-8 rounded-full object-cover border border-gray-700">
                         @if($activity->user->artist)
@@ -29,9 +29,12 @@
                             </div>
                         @endif
                     </div>
-                    <div class="flex flex-col">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-gray-200 font-bold hover:text-white cursor-pointer transition">{{ $activity->user->name }}</span>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-gray-200 font-bold hover:text-white cursor-pointer transition">
+                                {{-- اگه هنرمنده اسم هنرمندیشو نشون بده --}}
+                                {{ $activity->user->artist?->display_name ?? $activity->user->name }}
+                            </span>
                             <span class="text-gray-500">
                                 @if($activity->type === 'reposted')
                                     این را بازنشر کرد

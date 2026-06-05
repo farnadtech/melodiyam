@@ -87,6 +87,15 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');
 
+// Public duration auto-fix — called by browser when audio metadata loads (no auth needed)
+Route::post('/api/track/{track}/fix-duration', function (\App\Models\Track $track) {
+    $validated = request()->validate(['duration' => 'required|integer|min:1']);
+    if (!$track->duration || $track->duration <= 0) {
+        $track->update(['duration' => $validated['duration']]);
+    }
+    return response()->json(['ok' => true]);
+});
+
 // Live stats endpoint — returns fresh play/like/comment counts for a track (no auth needed)
 Route::get('/api/track/{track}/stats', function (\App\Models\Track $track) {
     $user = auth()->user();
@@ -518,7 +527,7 @@ Route::middleware('auth')->group(function () {
     // Track duration update (auto-fix for missing durations)
     Route::post('/api/tracks/{track}/update-duration', function (\App\Models\Track $track) {
         $validated = request()->validate(['duration' => 'required|integer|min:1']);
-        if (!$track->duration) {
+        if (!$track->duration || $track->duration <= 0) {
             $track->update(['duration' => $validated['duration']]);
         }
         return response()->json(['success' => true]);

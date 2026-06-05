@@ -51,18 +51,21 @@ function registerAlpineStuff(Alpine) {
                 this.duration = this.audio.duration;
                 
                 // If track duration is 0 or missing in DB, update it now that we have it from the browser
-                if (this.currentTrack && !this.currentTrack.duration && this.duration > 0) {
-                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                    if (csrf) {
-                        fetch('/api/tracks/' + this.currentTrack.id + '/update-duration', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrf
-                            },
-                            body: JSON.stringify({ duration: Math.round(this.duration) })
-                        }).catch(() => {});
+                if (this.currentTrack && this.duration > 0) {
+                    const trackId = String(this.currentTrack.id);
+                    if (!trackId.startsWith('episode-')) {
+                        const stored = this.currentTrack.duration;
+                        if (!stored || stored <= 0) {
+                            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                            const url = '/api/track/' + trackId + '/fix-duration';
+                            const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+                            if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+                            fetch(url, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ duration: Math.round(this.duration) })
+                            }).catch(() => {});
+                        }
                     }
                 }
             });
