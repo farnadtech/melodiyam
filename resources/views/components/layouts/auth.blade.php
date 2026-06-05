@@ -11,6 +11,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
@@ -31,6 +34,7 @@
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta name="base-url" content="{{ url('/') }}">
     <style>
         :root {
             --admin-primary:       {{ $ts['theme_primary']       ?? '#0ea5e9' }};

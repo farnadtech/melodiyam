@@ -20,6 +20,9 @@
     <meta name="apple-touch-fullscreen" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    <meta name="msapplication-TileColor" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp

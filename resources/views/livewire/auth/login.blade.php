@@ -30,7 +30,7 @@
 
     {{-- Password Login --}}
     @if($loginMethod === 'password')
-        <form wire:submit="loginWithPassword" class="space-y-5">
+        <form wire:submit.prevent="loginWithPassword" class="space-y-5">
             <div>
                 <label for="identifier" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">ایمیل یا شماره موبایل</label>
                 <input
@@ -73,7 +73,7 @@
 
     {{-- Phone OTP Login --}}
     @elseif($loginMethod === 'otp' && !$codeSent)
-        <form wire:submit="sendCode" class="space-y-5">
+        <form wire:submit.prevent="sendCode" class="space-y-5">
             <div>
                 <label for="phone" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">شماره موبایل</label>
                 <input
@@ -101,7 +101,7 @@
 
     {{-- OTP Verify --}}
     @else
-        <form wire:submit="verify" class="space-y-5">
+        <form wire:submit.prevent="verify" class="space-y-5">
             <div>
                 <label for="code" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">کد تأیید</label>
                 <p class="text-xs text-surface-500 mb-3">کد ۶ رقمی ارسال شده به {{ $phone }} را وارد کنید</p>
