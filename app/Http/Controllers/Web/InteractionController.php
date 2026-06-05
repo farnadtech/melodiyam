@@ -8,6 +8,7 @@ use App\Models\Like;
 use App\Models\Repost;
 use App\Models\Report;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class InteractionController extends Controller
@@ -31,6 +32,7 @@ class InteractionController extends Controller
         if ($like) {
             $like->delete();
             $this->decrementCount($type, $request->id, 'like_count');
+            Cache::forget("discover.rec.{$user->id}");
             return response()->json(['liked' => false]);
         }
 
@@ -41,6 +43,7 @@ class InteractionController extends Controller
         ]);
         
         $this->incrementCount($type, $request->id, 'like_count');
+        Cache::forget("discover.rec.{$user->id}");
 
         // Record Activity for Feed
         \App\Models\Activity::create([
@@ -156,6 +159,7 @@ class InteractionController extends Controller
 
         if ($follow) {
             $follow->delete();
+            Cache::forget("discover.rec.{$user->id}");
             return response()->json(['following' => false]);
         }
 
@@ -164,6 +168,8 @@ class InteractionController extends Controller
             'followable_type' => $type,
             'followable_id' => $request->id,
         ]);
+
+        Cache::forget("discover.rec.{$user->id}");
 
         // Send Notification
         $target = $type::find($request->id);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use App\Services\RecommendationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -158,22 +159,10 @@ class LibraryController extends Controller
 
     public function discover(): View
     {
-        $newReleases = \App\Models\Track::with('artist')
-            ->latest()
-            ->take(20)
-            ->get();
+        $user = auth()->user();
+        $data = app(RecommendationService::class)->getRecommendations($user);
 
-        $topArtists = \App\Models\Artist::orderByDesc('followers_count')
-            ->take(12)
-            ->get();
-
-        $newAlbums = \App\Models\Album::with('artist')
-            ->where('status', 'published')
-            ->latest()
-            ->take(12)
-            ->get();
-
-        return view('discover', compact('newReleases', 'topArtists', 'newAlbums'));
+        return view('discover', $data);
     }
 
     public function profile(): View
