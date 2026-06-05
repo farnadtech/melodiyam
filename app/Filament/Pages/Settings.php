@@ -491,7 +491,8 @@ class Settings extends Page implements HasForms
                                 ColorPicker::make('theme_gradient_from')->label('شروع گرادیانت')->hexColor(),
                                 ColorPicker::make('theme_gradient_to')->label('پایان گرادیانت')->hexColor(),
                                 ColorPicker::make('theme_player_bg')->label('پس‌زمینه پلیر')->hexColor(),
-                                ColorPicker::make('theme_player_text')->label('رنگ متن پلیر')->hexColor(),
+                                ColorPicker::make('theme_player_text')->label('رنگ متن پلیر (حالت تاریک)')->hexColor(),
+                                ColorPicker::make('player_text_color_light')->label('رنگ متن پلیر (حالت روشن)')->hexColor()->helperText('رنگ متن player در light mode - برای خوانایی بهتر'),
                                 ColorPicker::make('theme_player_control')->label('رنگ دکمه‌های پلیر')->hexColor(),
                             ])->columns(3),
 

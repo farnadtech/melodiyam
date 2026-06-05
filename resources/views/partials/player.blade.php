@@ -141,6 +141,7 @@
 
 {{-- Global Music Player --}}
 <div
+    id="global-player"
     wire:persist="global-music-player"
     x-data="{ showQueue: false }"
     x-cloak
@@ -151,7 +152,9 @@
     class="fixed bottom-0 inset-x-0 z-[100]"
     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
 >
-    <div id="global-player-bar" class="bg-white/98 dark:bg-surface-900/98 backdrop-blur-2xl border-t border-surface-200/60 dark:border-surface-800/60 px-3 lg:px-4 py-2 lg:py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <div id="global-player-bar" class="bg-white/98 dark:bg-surface-900/98 backdrop-blur-2xl border-t border-surface-200/60 dark:border-surface-800/60 px-3 lg:px-4 py-2 lg:py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
+         style="@if(\App\Models\Setting::get('player_text_color_light')) color: {{ \App\Models\Setting::get('player_text_color_light') }}; @endif">
+
 
         {{-- Desktop Player --}}
         <div class="hidden lg:flex items-center gap-4 max-w-screen-2xl mx-auto">
