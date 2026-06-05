@@ -1,5 +1,5 @@
 {{-- Mobile Bottom Navigation --}}
-<nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 transition-transform duration-300"
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-[90] bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 transition-transform duration-300"
      x-data
      :style="'padding-bottom: env(safe-area-inset-bottom, 0px)'"
      :class="$store.player.currentTrack ? 'translate-y-[-72px]' : 'translate-y-0'"

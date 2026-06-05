@@ -90,7 +90,12 @@
             @include('partials.header')
 
             {{-- Main Content --}}
-            <main class="flex-1 overflow-y-auto pb-40 md:pb-32">
+            {{-- pb values: mobile no-player=40(nav)+safe, mobile+player=40(nav)+20(player)+safe, desktop no-player=16, desktop+player=36 --}}
+            <main class="flex-1 overflow-y-auto"
+                  :class="$store.player.currentTrack
+                      ? 'pb-56 md:pb-44'
+                      : 'pb-20 md:pb-6'"
+            >
                 {{-- Flash Messages --}}
                 <div x-data="{ 
                     show: false, 
@@ -158,10 +163,10 @@
 
     </div>
 
-    {{-- Global Player --}}
+    {{-- Global Player (z-100, above mobile nav) --}}
     @include('partials.player')
 
-    {{-- Mobile Navigation --}}
+    {{-- Mobile Navigation (z-90, below player) --}}
     @include('partials.mobile-nav')
 
     @livewireScripts

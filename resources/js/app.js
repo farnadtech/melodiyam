@@ -364,7 +364,7 @@ function registerAlpineStuff(Alpine) {
         },
 
         get formattedDuration() {
-            return this.formatTime(this.duration);
+            return (this.duration && this.duration > 0) ? this.formatTime(this.duration) : '--:--';
         },
 
         formatTime(seconds) {
