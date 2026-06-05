@@ -30,7 +30,7 @@
             --admin-gradient-from: {{ $ts['theme_gradient_from'] ?? '#0ea5e9' }};
             --admin-gradient-to:   {{ $ts['theme_gradient_to']   ?? '#d946ef' }};
             --admin-player-bg:     {{ $ts['theme_player_bg']     ?? '#1a1a2e' }};
-            --admin-player-text:   {{ $ts['theme_player_text']   ?? '#ffffff' }};
+            --admin-player-text:   {{ $ts['theme_player_text_light'] ?? '#ffffff' }};
             --admin-player-ctrl:   {{ $ts['theme_player_control']?? '#0ea5e9' }};
             --color-red-500:       {{ $ts['theme_danger']        ?? '#ef4444' }};
             --color-emerald-500:   {{ $ts['theme_success']       ?? '#10b981' }};
@@ -56,6 +56,7 @@
 
         /* Dark mode */
         html.dark {
+            --admin-player-text: {{ $ts['theme_player_text'] ?? '#ffffff' }};
             --color-surface-950: {{ $ts['theme_bg_dark']      ?? '#020617' }};
             --color-surface-900: {{ $ts['theme_surface_dark'] ?? '#0f172a' }};
             --color-surface-800: color-mix(in srgb, {{ $ts['theme_surface_dark'] ?? '#0f172a' }} 70%, white);
@@ -71,10 +72,16 @@
         #global-player-bar {
             background-color: var(--admin-player-bg) !important;
             color: var(--admin-player-text) !important;
+            border-color: color-mix(in srgb, var(--admin-player-text) 12%, transparent) !important;
         }
-        #global-player-bar .player-control-btn {
-            color: var(--admin-player-ctrl) !important;
-        }
+        #global-player-bar .player-text { color: var(--admin-player-text) !important; }
+        #global-player-bar .player-text-muted { color: color-mix(in srgb, var(--admin-player-text) 55%, transparent) !important; }
+        #global-player-bar .player-icon { color: color-mix(in srgb, var(--admin-player-text) 50%, transparent) !important; }
+        #global-player-bar .player-icon-active { color: var(--admin-player-ctrl) !important; }
+        #global-player-bar .player-control-btn,
+        #global-player-bar .player-btn { color: var(--admin-player-ctrl) !important; }
+        #global-player-bar .player-btn:hover { background-color: color-mix(in srgb, var(--admin-player-text) 8%, transparent) !important; }
+        #global-player-bar .player-progress-track { background-color: color-mix(in srgb, var(--admin-player-text) 15%, transparent) !important; }
         html.dark body  { background-color: {{ $ts['theme_bg_dark']   ?? '#020617' }} !important; }
         html:not(.dark) body { background-color: {{ $ts['theme_bg_light'] ?? '#f8fafc' }} !important; }
 
@@ -88,6 +95,14 @@
         }
         /* Header */
         #app-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
+
+        /* Default content padding (overridden by layout manager when player opens) */
+        @media (max-width: 1023px) {
+            #main-content { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px); }
+        }
+        @media (min-width: 1024px) {
+            #main-content { padding-bottom: 24px; }
+        }
     </style>
     <link rel="icon" href="{{ $siteFavicon ?? asset('images/favicon.ico') }}">
     <meta name="base-url" content="{{ url('/') }}">
@@ -199,7 +214,7 @@
             @endauth
 
             {{-- Main Content --}}
-            <main class="flex-1 overflow-y-auto pb-32 md:pb-6">
+            <main id="main-content" class="flex-1 overflow-y-auto">
                 {{ $slot }}
             </main>
 
@@ -214,6 +229,89 @@
 
     {{-- Mobile Navigation --}}
     @include('partials.mobile-nav')
+
+    {{-- Layout Manager: dynamic padding when player is open --}}
+    <script>
+    (function() {
+        'use strict';
+
+        var _lastPlayerState = null;
+        var _layoutInterval = null;
+
+        function updateLayout() {
+            var main = document.getElementById('main-content');
+            var nav = document.getElementById('mobile-bottom-nav');
+            var playerBar = document.getElementById('global-player-bar');
+
+            if (!main) return;
+
+            var isMobile = window.innerWidth < 1024;
+            var hasPlayer = false;
+
+            try {
+                hasPlayer = !!(window.Alpine && Alpine.store && Alpine.store('player') && Alpine.store('player').currentTrack);
+            } catch(e) {}
+
+            var navHeight = (isMobile && nav) ? (nav.offsetHeight || 60) : 0;
+            var playerHeight = (playerBar && hasPlayer) ? (playerBar.offsetHeight || 74) : 0;
+
+            var safeArea = 0;
+            try {
+                var sat = getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)');
+                if (sat) safeArea = parseInt(sat, 10) || 0;
+            } catch(e) {}
+
+            if (isMobile) {
+                if (nav) {
+                    nav.style.transform = hasPlayer ? 'translateY(-' + playerHeight + 'px)' : 'translateY(0)';
+                }
+                main.style.paddingBottom = (navHeight + playerHeight + safeArea + 12) + 'px';
+            } else {
+                if (nav) nav.style.transform = 'translateY(0)';
+                main.style.paddingBottom = (hasPlayer ? (playerHeight + 24) : 24) + 'px';
+            }
+
+            _lastPlayerState = hasPlayer;
+        }
+
+        function startLayoutManager() {
+            updateLayout();
+
+            if (_layoutInterval) clearInterval(_layoutInterval);
+
+            _layoutInterval = setInterval(function() {
+                var currentState = false;
+                try {
+                    currentState = !!(window.Alpine && Alpine.store && Alpine.store('player') && Alpine.store('player').currentTrack);
+                } catch(e) {}
+
+                if (currentState !== _lastPlayerState || currentState) {
+                    updateLayout();
+                }
+            }, 300);
+        }
+
+        window.addEventListener('resize', updateLayout);
+        window.addEventListener('load', startLayoutManager);
+        document.addEventListener('DOMContentLoaded', startLayoutManager);
+        document.addEventListener('livewire:navigated', function() {
+            setTimeout(startLayoutManager, 100);
+        });
+        document.addEventListener('alpine:initialized', startLayoutManager);
+
+        if (typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(updateLayout);
+            function attachObserver() {
+                var player = document.getElementById('global-player-bar');
+                var nav = document.getElementById('mobile-bottom-nav');
+                if (player) ro.observe(player);
+                if (nav) ro.observe(nav);
+            }
+            document.addEventListener('DOMContentLoaded', attachObserver);
+            document.addEventListener('livewire:navigated', attachObserver);
+        }
+    })();
+    </script>
 
     @livewireScripts
     @stack('scripts')

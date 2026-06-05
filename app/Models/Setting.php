@@ -68,6 +68,7 @@ class Setting extends Model
             'theme_gradient_to' => '#d946ef',
             'theme_player_bg' => '#1a1a2e',
             'theme_player_text' => '#ffffff',
+            'theme_player_text_light' => '#ffffff',
             'theme_player_control' => '#0ea5e9',
             'theme_sidebar_bg_light' => '#ffffff',
             'theme_sidebar_bg_dark' => '#0f172a',

@@ -491,8 +491,8 @@ class Settings extends Page implements HasForms
                                 ColorPicker::make('theme_gradient_from')->label('شروع گرادیانت')->hexColor(),
                                 ColorPicker::make('theme_gradient_to')->label('پایان گرادیانت')->hexColor(),
                                 ColorPicker::make('theme_player_bg')->label('پس‌زمینه پلیر')->hexColor(),
-                                ColorPicker::make('theme_player_text')->label('رنگ متن پلیر (حالت تاریک)')->hexColor(),
-                                ColorPicker::make('player_text_color_light')->label('رنگ متن پلیر (حالت روشن)')->hexColor()->helperText('رنگ متن player در light mode - برای خوانایی بهتر'),
+                                ColorPicker::make('theme_player_text_light')->label('رنگ متن پلیر — روشن')->hexColor(),
+                                ColorPicker::make('theme_player_text')->label('رنگ متن پلیر — تاریک')->hexColor(),
                                 ColorPicker::make('theme_player_control')->label('رنگ دکمه‌های پلیر')->hexColor(),
                             ])->columns(3),
 
@@ -1128,7 +1128,7 @@ class Settings extends Page implements HasForms
         $themeKeys = [
             'theme_primary', 'theme_secondary', 'theme_accent', 'theme_danger', 'theme_success', 'theme_warning',
             'theme_bg_light', 'theme_bg_dark', 'theme_surface_light', 'theme_surface_dark',
-            'theme_gradient_from', 'theme_gradient_to', 'theme_player_bg', 'theme_player_text', 'theme_player_control',
+            'theme_gradient_from', 'theme_gradient_to', 'theme_player_bg', 'theme_player_text_light', 'theme_player_text', 'theme_player_control',
             'theme_sidebar_bg_light', 'theme_sidebar_bg_dark', 'theme_sidebar_text',
             'theme_sidebar_active_bg', 'theme_sidebar_active_text', 'theme_sidebar_border',
             'theme_header_bg_light', 'theme_header_bg_dark', 'theme_header_border',

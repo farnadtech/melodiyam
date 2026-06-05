@@ -1,7 +1,6 @@
 resources/views/layouts/app.blade.php
 resources/views/partials/mobile-nav.blade.php
 resources/views/partials/player.blade.php
-app/Filament/Pages/Settings.php
 public/build/manifest.json
 public/build/assets/app-BQuneRk5.js
-public/build/assets/app-BC2U1GnN.css
+public/build/assets/app-Cg5ZSRfa.css
