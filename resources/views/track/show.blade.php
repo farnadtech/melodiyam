@@ -201,11 +201,17 @@
                         <div x-show="plOpen" @click.outside="plOpen = false" x-transition x-cloak class="absolute top-full mt-2 right-0 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 py-1.5 min-w-52 z-20 max-h-64 overflow-y-auto">
                             <p class="text-xs font-medium text-surface-400 px-3 py-1.5 border-b border-surface-100 dark:border-surface-700 mb-1">افزودن به پلی‌لیست</p>
                             @php 
-                                $userPlaylists = auth()->user()->playlists()
-                                    ->where('is_auto_generated', false)
-                                    ->where('is_system', false)
-                                    ->orderBy('title')
-                                    ->get(); 
+                                $userPlaylistsQuery = auth()->user()->playlists();
+                                
+                                // Check if the columns exist to avoid QueryException if migrations aren't run yet
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('playlists', 'is_auto_generated')) {
+                                    $userPlaylistsQuery->where('is_auto_generated', false);
+                                }
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('playlists', 'is_system')) {
+                                    $userPlaylistsQuery->where('is_system', false);
+                                }
+                                
+                                $userPlaylists = $userPlaylistsQuery->orderBy('title')->get(); 
                             @endphp
                             @forelse($userPlaylists as $pl)
                             <button @click="
