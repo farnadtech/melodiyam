@@ -41,7 +41,7 @@ class PlaylistController extends Controller
         $playlist->load(['user']);
         
         $tracks = $playlist->tracks()
-            ->with('artist')
+            ->with(['artist', 'album'])
             ->sort($sort)
             ->get();
 
@@ -79,9 +79,14 @@ class PlaylistController extends Controller
         return redirect()->route('playlist.show', $playlist)->with('success', 'پلی‌لیست ساخته شد.');
     }
 
-    public function edit(Playlist $playlist): View
+    public function edit(Playlist $playlist): View|RedirectResponse
     {
         abort_unless($playlist->user_id === auth()->id(), 403);
+        
+        if ($playlist->is_auto_generated || $playlist->is_system) {
+            return redirect()->route('playlist.show', $playlist)->with('error', 'شما نمی‌توانید پلی‌لیست‌های سیستمی را ویرایش کنید.');
+        }
+
         $playlist->load('tracks');
         return view('playlist.edit', compact('playlist'));
     }
@@ -89,6 +94,10 @@ class PlaylistController extends Controller
     public function update(Request $request, Playlist $playlist): RedirectResponse
     {
         abort_unless($playlist->user_id === auth()->id(), 403);
+
+        if ($playlist->is_auto_generated || $playlist->is_system) {
+            return redirect()->route('playlist.show', $playlist)->with('error', 'شما نمی‌توانید پلی‌لیست‌های سیستمی را ویرایش کنید.');
+        }
 
         $validated = $request->validate([
             'title'       => 'required|string|max:255|unique:playlists,title,' . $playlist->id,
@@ -114,6 +123,10 @@ class PlaylistController extends Controller
     public function destroy(Playlist $playlist): RedirectResponse
     {
         abort_unless($playlist->user_id === auth()->id(), 403);
+
+        if ($playlist->is_auto_generated || $playlist->is_system) {
+            return redirect()->route('playlist.show', $playlist)->with('error', 'شما نمی‌توانید پلی‌لیست‌های سیستمی را حذف کنید.');
+        }
 
         if ($playlist->cover_image) {
             Storage::disk('public')->delete($playlist->cover_image);

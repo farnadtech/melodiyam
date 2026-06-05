@@ -524,7 +524,7 @@ class RecommendationService
                 $playlist = Playlist::create([
                     'user_id' => $user->id,
                     'title' => $template['name'],
-                    'description' => 'پلی\u200cلیست هوشمند شخصی\u200cسازی\u200cشده برای شما',
+                    'description' => 'پلی‌لیست هوشمند شخصی‌سازی‌شده برای شما',
                     'cover_image' => $template['cover_image'] ?? null,
                     'visibility' => 'private',
                     'is_auto_generated' => true,

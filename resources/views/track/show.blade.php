@@ -200,17 +200,37 @@
                         </button>
                         <div x-show="plOpen" @click.outside="plOpen = false" x-transition x-cloak class="absolute top-full mt-2 right-0 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 py-1.5 min-w-52 z-20 max-h-64 overflow-y-auto">
                             <p class="text-xs font-medium text-surface-400 px-3 py-1.5 border-b border-surface-100 dark:border-surface-700 mb-1">افزودن به پلی‌لیست</p>
-                            @php $userPlaylists = auth()->user()->playlists()->orderBy('title')->get(); @endphp
+                            @php 
+                                $userPlaylists = auth()->user()->playlists()
+                                    ->where('is_auto_generated', false)
+                                    ->where('is_system', false)
+                                    ->orderBy('title')
+                                    ->get(); 
+                            @endphp
                             @forelse($userPlaylists as $pl)
                             <button @click="
                                 fetch('{{ route('playlist.add-track') }}', {
                                     method: 'POST',
                                     headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'},
                                     body: JSON.stringify({playlist_id: {{ $pl->id }}, track_id: {{ $track->id }}})
-                                }).then(r => r.json()).then(d => {
+                                }).then(r => {
+                                    return r.json().then(data => ({status: r.status, ok: r.ok, data})).catch(() => ({status: r.status, ok: r.ok, data: {}}));
+                                }).then(res => {
                                     plOpen = false;
-                                    if (d.exists) { toast = 'این آهنگ قبلاً در این پلی‌لیست موجود است'; toastType = 'warning'; }
-                                    else { toast = 'به پلی‌لیست اضافه شد'; toastType = 'success'; }
+                                    if (!res.ok) {
+                                        toast = (res.data && (res.data.error || res.data.message)) ? (res.data.error || res.data.message) : 'خطایی در ثبت رخ داد';
+                                        toastType = 'warning';
+                                    } else if (res.data.exists) {
+                                        toast = 'این آهنگ قبلاً در این پلی‌لیست موجود است';
+                                        toastType = 'warning';
+                                    } else {
+                                        toast = 'به پلی‌لیست اضافه شد';
+                                        toastType = 'success';
+                                    }
+                                }).catch(err => {
+                                    plOpen = false;
+                                    toast = 'خطا در ارتباط با سرور';
+                                    toastType = 'warning';
                                 });
                             " class="flex items-center gap-2 w-full px-3 py-2 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors text-right mx-1" style="width:calc(100% - 0.5rem)">
                                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>

@@ -73,7 +73,9 @@ class LibraryController extends Controller
 
         $savedPlaylists = auth()->user()->likes()
             ->where('likeable_type', \App\Models\Playlist::class)
-            ->with('likeable.user')
+            ->with(['likeable' => function($query) {
+                $query->withCount('tracks')->with('user');
+            }])
             ->latest()
             ->get()
             ->pluck('likeable')

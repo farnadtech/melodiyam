@@ -1,5 +1,9 @@
 <x-layouts.app :title="$playlist->title">
-    <div class="p-4 lg:p-8 space-y-8">
+    <div class="p-4 lg:p-8 space-y-8" x-data="{ toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
+        {{-- Toast notification --}}
+        <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
+            <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
+        </div>
 
         <div class="flex flex-col md:flex-row gap-6 md:gap-8">
             <div class="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 mx-auto md:mx-0 relative bg-surface-100 dark:bg-surface-800">
@@ -82,11 +86,21 @@
                     {{-- Owner Actions --}}
                     @auth
                     @if(auth()->id() === $playlist->user_id)
-                    <a href="{{ route('playlist.edit', $playlist) }}" wire:navigate
-                        class="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 bg-surface-100 dark:bg-surface-800 text-sm font-medium transition-colors hover:bg-surface-200 dark:hover:bg-surface-700">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                        ویرایش
-                    </a>
+                        @if($playlist->is_auto_generated || $playlist->is_system)
+                            <button
+                                @click="toast = 'این پلی‌لیست توسط سیستم مدیریت می‌شود و قابل ویرایش نیست.'; toastType = 'info'"
+                                class="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-200 dark:border-surface-700 text-surface-400 bg-surface-100 dark:bg-surface-800 text-sm font-medium transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                ویرایش
+                            </button>
+                        @else
+                            <a href="{{ route('playlist.edit', $playlist) }}" wire:navigate
+                                class="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 bg-surface-100 dark:bg-surface-800 text-sm font-medium transition-colors hover:bg-surface-200 dark:hover:bg-surface-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                ویرایش
+                            </a>
+                        @endif
                     @endif
                     @endauth
                 </div>

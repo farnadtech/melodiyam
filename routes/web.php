@@ -339,6 +339,48 @@ Route::get('/artist/{artist}', [ArtistController::class, 'show'])->name('artist.
 Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
 Route::get('/playlist/{playlist}', [PlaylistController::class, 'show'])->name('playlist.show');
 Route::middleware('auth')->group(function () {
+    // Move static routes above dynamic ones to avoid 404
+    Route::post('/playlist/add-track', function () {
+        $validated = request()->validate([
+            'playlist_id' => 'required|integer',
+            'track_id' => 'required|integer|exists:tracks,id',
+        ]);
+
+        $playlist = auth()->user()->playlists()->findOrFail($validated['playlist_id']);
+
+        if ($playlist->is_auto_generated || $playlist->is_system) {
+            return response()->json(['added' => false, 'error' => 'شما نمی‌توانید آهنگ به پلی‌لیست‌های سیستمی اضافه کنید.'], 403);
+        }
+
+        if ($playlist->tracks()->where('track_id', $validated['track_id'])->exists()) {
+            return response()->json(['added' => false, 'exists' => true]);
+        }
+
+        $maxPos = $playlist->tracks()->max('playlist_track.position') ?? 0;
+        $playlist->tracks()->attach($validated['track_id'], [
+            'position' => $maxPos + 1,
+            'added_by' => auth()->id(),
+        ]);
+        $playlist->recalculate();
+
+        return response()->json(['added' => true, 'exists' => false]);
+    })->name('playlist.add-track');
+
+    Route::post('/playlist/create', function () {
+        $validated = request()->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $playlist = auth()->user()->playlists()->create([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'visibility' => 'private',
+        ]);
+
+        return response()->json(['id' => $playlist->id, 'slug' => $playlist->slug]);
+    })->name('playlist.create.json');
+
     Route::get('/playlists/create', [PlaylistController::class, 'create'])->name('playlist.create');
     Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlist.store');
     Route::get('/playlist/{playlist}/edit', [PlaylistController::class, 'edit'])->name('playlist.edit');
@@ -549,44 +591,7 @@ Route::middleware('auth')->group(function () {
         return response()->json(['liked' => $liked, 'count' => $count]);
     })->name('comment.like');
 
-    // Add track to playlist
-    Route::post('/playlist/add-track', function () {
-        $validated = request()->validate([
-            'playlist_id' => 'required|integer',
-            'track_id' => 'required|integer|exists:tracks,id',
-        ]);
-
-        $playlist = auth()->user()->playlists()->findOrFail($validated['playlist_id']);
-
-        if ($playlist->tracks()->where('track_id', $validated['track_id'])->exists()) {
-            return response()->json(['added' => false, 'exists' => true]);
-        }
-
-        $maxPos = $playlist->tracks()->max('playlist_track.position') ?? 0;
-        $playlist->tracks()->attach($validated['track_id'], [
-            'position' => $maxPos + 1,
-            'added_by' => auth()->id(),
-        ]);
-        $playlist->recalculate();
-
-        return response()->json(['added' => true, 'exists' => false]);
-    })->name('playlist.add-track');
-
-    // Create playlist
-    Route::post('/playlist/create', function () {
-        $validated = request()->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-        ]);
-
-        $playlist = auth()->user()->playlists()->create([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'visibility' => 'private',
-        ]);
-
-        return response()->json(['id' => $playlist->id, 'slug' => $playlist->slug]);
-    })->name('playlist.create');
+    // Repost track
 
     // Like check
     Route::get('/like/check', function () {
