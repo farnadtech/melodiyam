@@ -1,7 +1,7 @@
 {{-- Mobile Bottom Navigation --}}
 <nav id="mobile-bottom-nav"
-     class="lg:hidden fixed bottom-0 inset-x-0 z-[100] bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50"
-     style="padding-bottom: env(safe-area-inset-bottom, 0px)"
+     class="lg:hidden fixed bottom-0 inset-x-0 z-[1000] bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50"
+     style="padding-bottom: env(safe-area-inset-bottom, 0px); isolation: isolate;"
      x-data
 >
     <div class="flex items-center justify-around py-2 px-2" x-data>

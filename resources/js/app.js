@@ -4,13 +4,22 @@ import { registerWaveform } from './waveform';
 import { registerTrackPage } from './track-page';
 
 const AUDIO_SINGLETON_KEY = '__melodiyamPlayerAudio';
-let _alpineRegistered = false;
-let _dragScrollRegistered = false;
+const ALPINE_REGISTERED_KEY = '__melodiyamAlpineRegistered';
+const DRAG_SCROLL_REGISTERED_KEY = '__melodiyamDragScrollRegistered';
 
 function getPlayerAudio() {
     if (!window[AUDIO_SINGLETON_KEY]) {
-        window[AUDIO_SINGLETON_KEY] = new Audio();
-        window[AUDIO_SINGLETON_KEY].setAttribute('data-melodiyam-player', '1');
+        const audio = new Audio();
+        audio.id = 'melodiyam-global-audio';
+        audio.setAttribute('data-melodiyam-player', '1');
+        audio.style.display = 'none';
+        // Wait for body to be available
+        if (document.body) {
+            document.body.appendChild(audio);
+        } else {
+            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(audio));
+        }
+        window[AUDIO_SINGLETON_KEY] = audio;
     }
     return window[AUDIO_SINGLETON_KEY];
 }
@@ -35,8 +44,8 @@ function ensureSinglePlayerDom() {
 }
 
 function registerAlpineStuff(Alpine) {
-    if (_alpineRegistered) return;
-    _alpineRegistered = true;
+    if (window[ALPINE_REGISTERED_KEY]) return;
+    window[ALPINE_REGISTERED_KEY] = true;
 
     registerWaveform(Alpine);
     registerTrackPage(Alpine);
@@ -489,8 +498,8 @@ function registerAlpineStuff(Alpine) {
 }
 
 function registerDragScroll(Alpine) {
-    if (_dragScrollRegistered) return;
-    _dragScrollRegistered = true;
+    if (window[DRAG_SCROLL_REGISTERED_KEY]) return;
+    window[DRAG_SCROLL_REGISTERED_KEY] = true;
 
     Alpine.directive('drag-scroll', (el) => {
         let isDown = false;
@@ -549,6 +558,13 @@ document.addEventListener('livewire:navigated', () => {
     const dark = localStorage.getItem('theme_dark');
     const isDark = dark === null ? true : dark === 'true';
     document.documentElement.classList.toggle('dark', isDark);
+    
+    // Ensure audio singleton persists in DOM
+    const audio = window[AUDIO_SINGLETON_KEY];
+    if (audio && !document.body.contains(audio)) {
+        document.body.appendChild(audio);
+    }
+
     ensureSinglePlayerDom();
     fixMobileLayout();
 

@@ -107,7 +107,7 @@
     x-cloak
     x-show="adPlaying"
     x-transition
-    class="fixed bottom-0 inset-x-0 z-[60] bg-gradient-to-t from-black/90 to-black/70 backdrop-blur-sm"
+    class="fixed bottom-0 inset-x-0 z-[1100] bg-gradient-to-t from-black/90 to-black/70 backdrop-blur-sm"
 >
     <div class="flex items-center justify-between px-4 py-3 max-w-screen-2xl mx-auto">
         <div class="flex items-center gap-3">
@@ -153,8 +153,8 @@
     x-transition:enter="transition ease-out duration-300"
     x-transition:enter-start="translate-y-full"
     x-transition:enter-end="translate-y-0"
-    class="fixed inset-x-0 z-[95] lg:z-[100] lg:bottom-0"
-    style="bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); transition: bottom 0.3s ease"
+    class="fixed inset-x-0 z-[995] lg:z-[1000] lg:bottom-0"
+    style="bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); transition: bottom 0.3s ease; isolation: isolate;"
 >
     <div id="global-player-bar" class="backdrop-blur-2xl border-t px-3 lg:px-4 py-2 lg:py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
 
