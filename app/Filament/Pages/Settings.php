@@ -11,6 +11,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -165,11 +166,58 @@ class Settings extends Page implements HasForms
                         ])->columns(1),
                         Section::make('تنظیمات ثبت‌نام')->schema([
                             Toggle::make('allow_registration')->label('ثبت‌نام آزاد'),
-                            Toggle::make('email_verification')->label('تأیید ایمیل اجباری'),
-                            Toggle::make('phone_verification')->label('تأیید موبایل اجباری'),
+                            Toggle::make('email_verification')->label('تأیید ایمیل اجباری')->live(),
+                            Toggle::make('phone_verification')->label('تأیید موبایل اجباری')->live(),
                             Toggle::make('allow_artist_register')->label('ثبت‌نام هنرمند'),
                             Toggle::make('auto_approve_artist')->label('تأیید خودکار هنرمند'),
                         ])->columns(3),
+
+                        // Warning: verification ON but notification channel OFF
+                        Section::make('⚠️ هشدار تنظیمات اعلانات')
+                            ->schema([
+                                Placeholder::make('verification_warning')
+                                    ->label('')
+                                    ->content(function ($get) {
+                                        $otpNotif = \App\Models\NotificationSetting::where('event_key', 'otp_code')->first();
+                                        $emailOn = (bool) $get('email_verification');
+                                        $phoneOn = (bool) $get('phone_verification');
+                                        $smsOff = $phoneOn && (!$otpNotif || !$otpNotif->via_sms);
+                                        $emailOff = $emailOn && (!$otpNotif || !$otpNotif->via_email);
+
+                                        $items = '';
+                                        if ($smsOff) {
+                                            $items .= '<li class="py-1"><strong>پیامک (SMS)</strong> برای رویداد «ارسال کد تایید (OTP)» غیرفعال است — تأیید موبایل بدون آن کار نمی‌کند.</li>';
+                                        }
+                                        if ($emailOff) {
+                                            $items .= '<li class="py-1"><strong>ایمیل</strong> برای رویداد «ارسال کد تایید (OTP)» غیرفعال است — تأیید ایمیل بدون آن کار نمی‌کند.</li>';
+                                        }
+
+                                        $link = \App\Filament\Pages\NotificationSettings::getUrl();
+
+                                        return new \Illuminate\Support\HtmlString('
+                                            <div class="fi-fo-placeholder text-sm">
+                                                <p class="mb-2 text-gray-700 dark:text-gray-300">
+                                                    برای اینکه کاربران بتوانند حساب خود را تأیید کنند، باید کانال‌های ارسال کد OTP فعال باشند.
+                                                    لطفاً کانال‌های زیر را فعال کنید:
+                                                </p>
+                                                <ul class="list-disc pr-5 mb-3 text-gray-600 dark:text-gray-400 space-y-1">' . $items . '</ul>
+                                                <a href="' . e($link) . '" class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                                                    ⚙️ رفتن به تنظیمات نوتیفیکیشن ←
+                                                </a>
+                                            </div>
+                                        ');
+                                    })
+                                    ->columnSpanFull(),
+                            ])
+                            ->visible(function ($get) {
+                                $emailOn = (bool) $get('email_verification');
+                                $phoneOn = (bool) $get('phone_verification');
+                                if (!$emailOn && !$phoneOn) return false;
+                                $otpNotif = \App\Models\NotificationSetting::where('event_key', 'otp_code')->first();
+                                if ($phoneOn && (!$otpNotif || !$otpNotif->via_sms)) return true;
+                                if ($emailOn && (!$otpNotif || !$otpNotif->via_email)) return true;
+                                return false;
+                            }),
                     ]),
 
                     // ── Tab 3: Content & Music ──
@@ -635,6 +683,53 @@ class Settings extends Page implements HasForms
                         ]),
                     ]),
 
+                    // ── Tab 12: PWA ──
+                    Tab::make('PWA (وب‌اپ)')->icon('heroicon-o-device-phone-mobile')->schema([
+                        Section::make('تنظیمات Progressive Web App')->schema([
+                            Toggle::make('pwa_enabled')
+                                ->label('فعال‌سازی PWA')
+                                ->helperText('امکان نصب اپلیکیشن روی گوشی‌های اندروید و آیفون'),
+                            TextInput::make('pwa_name')
+                                ->label('نام اپلیکیشن')
+                                ->helperText('نامی که هنگام نصب نمایش داده می‌شود')
+                                ->default(config('app.name')),
+                            TextInput::make('pwa_short_name')
+                                ->label('نام کوتاه')
+                                ->helperText('نام کوتاه برای نمایش در صفحه اصلی گوشی')
+                                ->default(config('app.name')),
+                        ])->columns(2),
+
+                        Section::make('آیکون اپلیکیشن')->schema([
+                            FileUpload::make('pwa_icon')
+                                ->label('آیکون PWA (PNG مربعی — حداقل 512×512)')
+                                ->image()
+                                ->acceptedFileTypes(['image/png'])
+                                ->directory('settings')
+                                ->disk('public')
+                                ->visibility('public')
+                                ->helperText('پس از ذخیره، خودکار در سایزهای 192×192، 512×512 و 180×180 تولید می‌شود.')
+                                ->columnSpanFull(),
+                        ]),
+
+                        Section::make('رنگ‌ها و نمایش')->schema([
+                            ColorPicker::make('pwa_theme_color')
+                                ->label('رنگ تم (Theme Color)')
+                                ->default('#0ea5e9'),
+                            ColorPicker::make('pwa_bg_color')
+                                ->label('رنگ پس‌زمینه (Background)')
+                                ->default('#020617'),
+                            Select::make('pwa_display')
+                                ->label('حالت نمایش')
+                                ->options([
+                                    'standalone' => 'Standalone (مثل اپلیکیشن)',
+                                    'fullscreen' => 'تمام صفحه',
+                                    'minimal-ui' => 'حداقل UI',
+                                    'browser' => 'مرورگر',
+                                ])
+                                ->default('standalone'),
+                        ])->columns(3),
+                    ]),
+
                 ]),
             ]);
     }
@@ -720,6 +815,15 @@ class Settings extends Page implements HasForms
             Setting::set($key, is_bool($value) ? ($value ? '1' : '0') : $value);
         }
 
+        // ── PWA Icon Resize ──
+        if (!empty($data['pwa_icon']) && is_string($data['pwa_icon'])) {
+            try {
+                $this->resizePwaIcon($data['pwa_icon']);
+            } catch (\Throwable $e) {
+                \Log::warning('PWA icon resize failed: ' . $e->getMessage());
+            }
+        }
+
         // ── Auto-sync NotificationSettings based on auth_type ──
         if (isset($data['auth_type'])) {
             $authType = $data['auth_type'];
@@ -758,6 +862,47 @@ class Settings extends Page implements HasForms
             ->title('تنظیمات با موفقیت ذخیره شد ✅')
             ->success()
             ->send();
+    }
+
+    protected function resizePwaIcon(string $iconPath): void
+    {
+        if (!extension_loaded('gd')) {
+            \Log::warning('PWA icon resize skipped: PHP GD extension not installed.');
+            return;
+        }
+
+        $fullPath = Storage::disk('public')->path($iconPath);
+        if (!file_exists($fullPath)) return;
+
+        $sizes = [192, 512, 180];
+        $dir = dirname($fullPath);
+        $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+        $base = pathinfo($fullPath, PATHINFO_FILENAME);
+
+        foreach ($sizes as $size) {
+            $resized = imagecreatetruecolor($size, $size);
+            $src = imagecreatefrompng($fullPath);
+            if (!$src) continue;
+
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+            imagefill($resized, 0, 0, $transparent);
+
+            $srcW = imagesx($src);
+            $srcH = imagesy($src);
+            imagecopyresampled($resized, $src, 0, 0, 0, 0, $size, $size, $srcW, $srcH);
+
+            $outFile = $dir . '/' . $base . '-' . $size . '.' . $ext;
+            imagepng($resized, $outFile, 9);
+            imagedestroy($resized);
+            imagedestroy($src);
+
+            // Save path relative to public disk
+            $relPath = str_replace(Storage::disk('public')->path(''), '', $outFile);
+            $relPath = ltrim(str_replace('\\', '/', $relPath), '/');
+            Setting::set("pwa_icon_{$size}", $relPath);
+        }
     }
 
     protected function getFormActions(): array

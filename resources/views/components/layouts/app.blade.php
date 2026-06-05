@@ -90,6 +90,18 @@
         #app-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
     </style>
     <link rel="icon" href="{{ $siteFavicon ?? asset('images/favicon.ico') }}">
+    {{-- PWA --}}
+    @if(\App\Models\Setting::get('pwa_enabled', '1'))
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
+    @if($_appleIcon)
+    <link rel="apple-touch-icon" href="{{ asset('storage/' . $_appleIcon) }}">
+    @endif
+    @endif
     @livewireStyles
     @if(!empty($googleAnalytics))
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ $googleAnalytics }}"></script>
@@ -121,6 +133,25 @@
 
             {{-- Top Header --}}
             @include('partials.header')
+
+            {{-- Verification Banner --}}
+            @auth
+            @php
+                $_reqEmail = \App\Models\Setting::get('email_verification', '0') === '1';
+                $_reqPhone = \App\Models\Setting::get('phone_verification', '0') === '1';
+                $_u = auth()->user();
+                $_needsVerify = ($_reqEmail && !$_u->email_verified_at) || ($_reqPhone && !$_u->phone_verified_at);
+            @endphp
+            @if($_needsVerify && !request()->routeIs('verify-account'))
+            <div class="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>حساب شما نیاز به احراز هویت دارد.</span>
+                </div>
+                <a href="{{ route('verify-account') }}" class="btn-primary text-xs py-1.5 px-4 rounded-lg flex-shrink-0">احراز هویت</a>
+            </div>
+            @endif
+            @endauth
 
             {{-- Main Content --}}
             <main class="flex-1 overflow-y-auto pb-24">

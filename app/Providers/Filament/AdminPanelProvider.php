@@ -73,7 +73,6 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
@@ -84,6 +83,16 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_START,
+                function (): string {
+                    $fontFamily = \App\Models\Setting::get('theme_font_fa', 'Vazirmatn');
+                    return '<link rel="preconnect" href="https://fonts.googleapis.com">'
+                        . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+                        . '<link href="https://fonts.googleapis.com/css2?family=' . urlencode($fontFamily) . ':wght@100..900&display=swap" rel="stylesheet">'
+                        . '<style>:root{--font-sans:"' . e($fontFamily) . '",ui-sans-serif,system-ui,sans-serif;--font-serif:"' . e($fontFamily) . '",ui-serif,Georgia,sans-serif;--font-mono:ui-monospace,monospace;}body{font-family:"' . e($fontFamily) . '",sans-serif!important;}[dir="rtl"]{font-family:"' . e($fontFamily) . '",sans-serif!important;}</style>';
+                },
+            )
             ->renderHook(
                 PanelsRenderHook::BODY_START,
                 function (): string {

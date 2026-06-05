@@ -12,6 +12,18 @@
     @livewireStyles
 
     <link rel="icon" href="{{ asset('images/favicon.ico') }}">
+    {{-- PWA --}}
+    @if(\App\Models\Setting::get('pwa_enabled', '1'))
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
+    @if($_appleIcon)
+    <link rel="apple-touch-icon" href="{{ asset('storage/' . $_appleIcon) }}">
+    @endif
+    @endif
 </head>
 <body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden">
 

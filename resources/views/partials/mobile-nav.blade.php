@@ -1,5 +1,9 @@
 {{-- Mobile Bottom Navigation --}}
-<nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 safe-area-bottom">
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 transition-transform duration-300"
+     x-data
+     :style="'padding-bottom: env(safe-area-inset-bottom, 0px)'"
+     :class="$store.player.currentTrack ? 'translate-y-[-72px]' : 'translate-y-0'"
+>
     <div class="flex items-center justify-around py-2 px-2" x-data>
         <a href="{{ url('/') }}" wire:navigate class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors
             {{ request()->is('/') ? 'text-primary-500' : 'text-surface-400 dark:text-surface-500' }}">

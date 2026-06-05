@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Http\Controllers\Web;
+
+use App\Http\Controllers\Controller;
+use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
+
+class ManifestController extends Controller
+{
+    public function __invoke(): JsonResponse
+    {
+        if (!Setting::get('pwa_enabled', '1')) {
+            return response()->json(['error' => 'PWA disabled'], 404);
+        }
+
+        $name = Setting::get('pwa_name', config('app.name'));
+        $shortName = Setting::get('pwa_short_name', config('app.name'));
+        $themeColor = Setting::get('pwa_theme_color', '#0ea5e9');
+        $bgColor = Setting::get('pwa_bg_color', '#020617');
+        $display = Setting::get('pwa_display', 'standalone');
+
+        $icons = [];
+        foreach ([192, 512] as $size) {
+            $path = Setting::get("pwa_icon_{$size}");
+            if ($path) {
+                $icons[] = [
+                    'src' => asset('storage/' . $path),
+                    'sizes' => "{$size}x{$size}",
+                    'type' => 'image/png',
+                    'purpose' => $size === 192 ? 'any maskable' : 'any',
+                ];
+            }
+        }
+
+        // Fallback icon if none uploaded
+        if (empty($icons)) {
+            $icons[] = [
+                'src' => asset('images/pwa-icon-192.png'),
+                'sizes' => '192x192',
+                'type' => 'image/png',
+            ];
+            $icons[] = [
+                'src' => asset('images/pwa-icon-512.png'),
+                'sizes' => '512x512',
+                'type' => 'image/png',
+            ];
+        }
+
+        return response()->json([
+            'name' => $name,
+            'short_name' => $shortName,
+            'description' => Setting::get('site_description', ''),
+            'start_url' => '/',
+            'scope' => '/',
+            'display' => $display,
+            'orientation' => 'portrait',
+            'theme_color' => $themeColor,
+            'background_color' => $bgColor,
+            'dir' => 'rtl',
+            'lang' => 'fa',
+            'icons' => $icons,
+        ], 200, [
+            'Content-Type' => 'application/manifest+json',
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+}

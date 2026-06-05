@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'ورود' }} - {{ \App\Models\Setting::get('site_name', config('app.name')) }}</title>
+    {{-- PWA --}}
+    @if(\App\Models\Setting::get('pwa_enabled', '1'))
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
+    @if($_appleIcon)
+    <link rel="apple-touch-icon" href="{{ asset('storage/' . $_appleIcon) }}">
+    @endif
+    @endif
 
     @php $ts = \App\Models\Setting::getByGroup('theme'); @endphp
     <script>
@@ -57,7 +69,9 @@
                     </svg>
                 </div>
                 @endif
-                <span class="text-2xl font-display font-extrabold text-gradient">{{ \App\Models\Setting::get('site_name', config('app.name')) }}</span>
+                @if($showSiteName)
+                <span class="text-2xl font-display font-extrabold text-gradient">{{ $siteName }}</span>
+                @endif
             </a>
         </div>
 

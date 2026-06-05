@@ -267,6 +267,13 @@ class User extends Authenticatable implements FilamentUser
         if ($this->avatar) {
             return asset('storage/' . $this->avatar);
         }
+
+        // Fallback to site logo, then default avatar
+        $siteLogo = Setting::get('site_logo');
+        if ($siteLogo) {
+            return asset('storage/' . $siteLogo);
+        }
+
         return asset('images/default-avatar.png');
     }
 }

@@ -7,7 +7,7 @@
 // session باید اول از همه شروع بشه
 session_start();
 
-define('INSTALLER_VERSION', '1.2.3');
+define('INSTALLER_VERSION', '1.2.5');
 define('MIN_PHP', '8.2.0');
 define('REQUIRED_EXTENSIONS', ['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'xml', 'ctype', 'json', 'bcmath', 'fileinfo', 'zip', 'curl', 'gd']);
 

@@ -27,6 +27,9 @@ use App\Livewire\Auth\ResetPassword;
 
 // ── Public Routes ──
 
+// PWA manifest
+Route::get('/manifest.json', \App\Http\Controllers\Web\ManifestController::class)->name('pwa.manifest');
+
 // DEBUG: Test login
 Route::get('/test-login', function () {
     $email = request('email', 'user@melodiyam.ir');
@@ -149,9 +152,13 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     
     // Check for quality request
     $requestedQuality = request('quality');
+    $streamUser = auth()->user();
+    $canHighQuality = $streamUser && $streamUser->isPremium()
+        && in_array($streamUser->activeSubscription?->plan?->audio_quality, ['high', 'lossless', 'hd']);
+
     if ($requestedQuality === 'medium' && $track->file_path_128 && file_exists(storage_path('app/public/' . $track->file_path_128))) {
         $path = storage_path('app/public/' . $track->file_path_128);
-    } elseif ($requestedQuality === 'high' && $track->file_path_320 && file_exists(storage_path('app/public/' . $track->file_path_320))) {
+    } elseif ($requestedQuality === 'high' && $canHighQuality && $track->file_path_320 && file_exists(storage_path('app/public/' . $track->file_path_320))) {
         $path = storage_path('app/public/' . $track->file_path_320);
     }
 
@@ -398,6 +405,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', ForgotPassword::class)->name('password.request');
     Route::get('/reset-password/{token}', ResetPassword::class)->name('password.reset');
 });
+
+// Verify Account (OTP)
+Route::get('/verify-account', \App\Livewire\VerifyAccount::class)->middleware('auth')->name('verify-account');
 
 Route::post('/logout', function () {
     auth()->logout();

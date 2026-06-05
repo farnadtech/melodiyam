@@ -148,6 +148,7 @@
     x-transition:enter-start="translate-y-full"
     x-transition:enter-end="translate-y-0"
     class="fixed bottom-0 inset-x-0 z-50"
+    style="padding-bottom: env(safe-area-inset-bottom, 0px)"
 >
     <div id="global-player-bar" class="bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-800/50 px-3 lg:px-4 py-2 lg:py-3">
 

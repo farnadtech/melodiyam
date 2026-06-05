@@ -105,6 +105,15 @@ class Setting extends Model
             // Payment gateways
             'zibal_merchant'   => '',
             'payping_token'    => '',
+
+            // PWA
+            'pwa_enabled' => '1',
+            'pwa_name' => config('app.name', 'Melodiyam'),
+            'pwa_short_name' => config('app.name', 'Melodiyam'),
+            'pwa_theme_color' => '#0ea5e9',
+            'pwa_bg_color' => '#020617',
+            'pwa_display' => 'standalone',
+            'pwa_icon' => '',
         ];
     }
 
@@ -121,16 +130,65 @@ class Setting extends Model
         });
     }
 
+    /**
+     * Auto-detect group from key prefix.
+     */
+    protected static function detectGroup(string $key): string
+    {
+        $prefixMap = [
+            'theme_'  => 'theme',
+            'pwa_'    => 'pwa',
+            'smtp_'   => 'smtp',
+            'mail_'   => 'smtp',
+            'ftp_'    => 'storage',
+            'storage_'=> 'storage',
+            'auth_'   => 'auth',
+            'allow_'  => 'auth',
+            'email_'  => 'smtp',
+            'zibal_'  => 'payment',
+            'payping_'=> 'payment',
+            'premium_'=> 'payment',
+            'deposit_'=> 'payment',
+            'withdraw_'=> 'payment',
+            'transaction_'=> 'payment',
+            'wallet_' => 'payment',
+            'card2card_'=> 'payment',
+            'currency'=> 'payment',
+            'sidebar_footer_'=> 'general',
+            'site_'   => 'general',
+            'show_'   => 'general',
+            'logo_'   => 'general',
+            'meta_'   => 'seo',
+            'google_' => 'seo',
+            'social_' => 'seo',
+            'maintenance_'=> 'general',
+            'user_upload_'=> 'content',
+            'free_stream_'=> 'content',
+            'auto_approve_'=> 'content',
+            'max_upload_'=> 'content',
+            'featured_'=> 'content',
+            'home_'   => 'content',
+            'artist_' => 'auth',
+        ];
+
+        foreach ($prefixMap as $prefix => $group) {
+            if (str_starts_with($key, $prefix)) {
+                return $group;
+            }
+        }
+
+        return 'general';
+    }
+
     public static function set(string $key, $value): void
     {
-        $setting = static::where('key', $key)->first();
-        $group = $setting?->group ?? 'general';
+        $group = static::detectGroup($key);
 
         if (is_array($value)) {
             $value = json_encode($value, JSON_UNESCAPED_UNICODE);
         }
 
-        static::updateOrCreate(['key' => $key], ['value' => $value]);
+        static::updateOrCreate(['key' => $key], ['value' => $value, 'group' => $group]);
         Cache::forget("setting.{$key}");
         Cache::forget('settings_all');
         Cache::forget("settings_group.{$group}");

@@ -309,7 +309,7 @@
             @endif
             @if($sfDesc)
             <div class="pt-3 border-t border-surface-100 dark:border-surface-800/50">
-                <p class="text-[10px] text-surface-400 leading-relaxed text-justify opacity-80">{{ $sfDesc }}</p>
+                <div class="text-[10px] text-surface-400 leading-relaxed text-justify opacity-80">{!! $sfDesc !!}</div>
             </div>
             @endif
         </div>
@@ -582,7 +582,7 @@
                     @endif
                     @if($sfDesc)
                     <div class="pt-2 border-t border-surface-100 dark:border-surface-800/50">
-                        <p class="text-[10px] text-surface-400 leading-relaxed opacity-80">{{ $sfDesc }}</p>
+                        <div class="text-[10px] text-surface-400 leading-relaxed opacity-80">{!! $sfDesc !!}</div>
                     </div>
                     @endif
                 </div>
