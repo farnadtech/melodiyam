@@ -242,7 +242,7 @@ class RecommendationService
             });
         }
 
-        $candidates = $query->limit(200)->get();
+        $candidates = $query->with('genres')->limit(200)->get();
 
         // Score each candidate
         $genreNames = $profile['genre_names'] ?? [];
@@ -318,7 +318,7 @@ class RecommendationService
         $topArtists = array_keys($profile['artists'] ?? []);
 
         // Exclude albums user already interacted with (via streamed tracks)
-        $streamedAlbumIds = Stream::where('user_id', $user->id)
+        $streamedAlbumIds = Stream::where('streams.user_id', $user->id)
             ->join('tracks', 'streams.track_id', '=', 'tracks.id')
             ->whereNotNull('tracks.album_id')
             ->pluck('tracks.album_id')
