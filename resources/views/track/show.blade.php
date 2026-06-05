@@ -89,8 +89,8 @@
                     <a href="{{ route('album.show', $track->album) }}" wire:navigate class="hover:text-primary-500">{{ $track->album->title }}</a>
                     @endif
                     <span>·</span>
-                    <span x-text="duration > 0 ? Math.floor(duration/60) + ':' + String(Math.floor(duration%60)).padStart(2,'0') : '{{ $track->duration > 0 ? $track->formattedDuration() : '' }}'">{{ $track->duration > 0 ? $track->formattedDuration() : '' }}</span>
-                    @if($track->duration > 0)<span>·</span>@endif
+                    <span x-show="duration > 0" x-text="Math.floor(duration/60) + ':' + String(Math.floor(duration%60)).padStart(2,'0')">{{ $track->duration > 0 ? $track->formattedDuration() : '--:--' }}</span>
+                    <span x-show="duration > 0">·</span>
                     <span x-text="playCount.toLocaleString() + ' پخش'">{{ number_format($track->play_count) }} پخش</span>
                 </div>
 

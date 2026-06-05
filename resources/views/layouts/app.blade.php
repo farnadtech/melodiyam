@@ -90,8 +90,7 @@
             @include('partials.header')
 
             {{-- Main Content --}}
-            {{-- Dynamic bottom padding based on player + mobile nav --}}
-            <main id="main-content" class="flex-1 overflow-y-auto">
+            <main id="main-content" class="flex-1 overflow-y-auto" style="padding-bottom: 0">
                 {{-- Flash Messages --}}
                 <div x-data="{ 
                     show: false, 
@@ -159,70 +158,99 @@
 
     </div>
 
-    {{-- Global Player (z-100, above mobile nav) --}}
+    {{-- Global Player (z-100) --}}
     @include('partials.player')
 
-    {{-- Mobile Navigation (z-90, below player) --}}
+    {{-- Mobile Navigation (z-90, moves up when player appears) --}}
     @include('partials.mobile-nav')
 
-    {{-- Dynamic bottom padding script --}}
+    {{-- Layout Manager Script --}}
     <script>
     (function() {
-        function updatePadding() {
+        'use strict';
+        
+        var _lastPlayerState = null;
+        var _layoutInterval = null;
+        
+        function updateLayout() {
             var main = document.getElementById('main-content');
+            var nav = document.getElementById('mobile-bottom-nav');
+            var playerBar = document.getElementById('global-player-bar');
+            
             if (!main) return;
-
+            
             var isMobile = window.innerWidth < 1024;
-            var hasPlayer = !!(window.Alpine
-                && typeof Alpine.store === 'function'
-                && Alpine.store('player')
-                && Alpine.store('player').currentTrack);
-
-            var navEl    = document.getElementById('mobile-bottom-nav');
-            var playerEl = document.getElementById('global-player-bar');
-
-            var navH    = (isMobile && navEl)    ? navEl.offsetHeight    : 0;
-            var playerH = playerEl               ? playerEl.offsetHeight : 0;
-
-            var safe = 0;
+            var hasPlayer = false;
+            
+            try {
+                hasPlayer = !!(window.Alpine && Alpine.store && Alpine.store('player') && Alpine.store('player').currentTrack);
+            } catch(e) {}
+            
+            var navHeight = (isMobile && nav) ? (nav.offsetHeight || 60) : 0;
+            var playerHeight = (playerBar && hasPlayer) ? (playerBar.offsetHeight || 74) : 0;
+            
+            // Safe area (iOS notch)
+            var safeArea = 0;
             try {
                 var sv = getComputedStyle(document.documentElement).getPropertyValue('--sat');
-                if (sv) safe = parseInt(sv, 10) || 0;
+                if (sv) safeArea = parseInt(sv, 10) || 0;
             } catch(e) {}
-
-            var pb;
+            
             if (isMobile) {
-                pb = navH + (hasPlayer ? playerH : 0) + safe;
+                // Mobile: Nav moves up when player appears
+                if (nav) {
+                    nav.style.transform = hasPlayer ? 'translateY(-' + playerHeight + 'px)' : 'translateY(0)';
+                }
+                // Main content padding = nav + (player if visible) + safe area
+                main.style.paddingBottom = (navHeight + playerHeight + safeArea + 8) + 'px';
             } else {
-                pb = hasPlayer ? (playerH + 8) : 8;
+                // Desktop: No nav, only player
+                if (nav) {
+                    nav.style.transform = 'translateY(0)';
+                }
+                main.style.paddingBottom = (hasPlayer ? (playerHeight + 20) : 20) + 'px';
             }
-            main.style.paddingBottom = pb + 'px';
+            
+            _lastPlayerState = hasPlayer;
         }
-
-        window.addEventListener('resize', updatePadding);
-        document.addEventListener('livewire:navigated', function() { setTimeout(updatePadding, 150); });
-        window.addEventListener('load', function() { setTimeout(updatePadding, 300); });
-
-        // Watch Alpine player store after Alpine is ready
-        document.addEventListener('alpine:initialized', function() {
-            updatePadding();
-            // Poll every 500ms for player state change (lightweight)
-            setInterval(updatePadding, 500);
+        
+        function startLayoutManager() {
+            updateLayout();
+            
+            if (_layoutInterval) clearInterval(_layoutInterval);
+            
+            // Poll every 300ms to detect player state changes
+            _layoutInterval = setInterval(function() {
+                var currentState = false;
+                try {
+                    currentState = !!(window.Alpine && Alpine.store && Alpine.store('player') && Alpine.store('player').currentTrack);
+                } catch(e) {}
+                
+                if (currentState !== _lastPlayerState) {
+                    updateLayout();
+                }
+            }, 300);
+        }
+        
+        // Event listeners
+        window.addEventListener('resize', updateLayout);
+        window.addEventListener('load', startLayoutManager);
+        document.addEventListener('DOMContentLoaded', startLayoutManager);
+        document.addEventListener('livewire:navigated', function() { 
+            setTimeout(startLayoutManager, 100); 
         });
-
-        // Also observe player bar size changes
+        document.addEventListener('alpine:initialized', startLayoutManager);
+        
+        // ResizeObserver for player/nav dimension changes
         if (typeof ResizeObserver !== 'undefined') {
-            var ro = new ResizeObserver(updatePadding);
+            var ro = new ResizeObserver(updateLayout);
             function attachObserver() {
-                var el = document.getElementById('global-player-bar');
-                if (el) ro.observe(el);
+                var player = document.getElementById('global-player-bar');
                 var nav = document.getElementById('mobile-bottom-nav');
+                if (player) ro.observe(player);
                 if (nav) ro.observe(nav);
             }
-            document.addEventListener('DOMContentLoaded', function() {
-                attachObserver();
-                updatePadding();
-            });
+            document.addEventListener('DOMContentLoaded', attachObserver);
             document.addEventListener('livewire:navigated', attachObserver);
         }
     })();
