@@ -24,9 +24,10 @@ class SmartPlaylistSettings extends Page implements HasForms
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-musical-note';
     protected static string|\UnitEnum|null $navigationGroup = 'تنظیمات سیستم';
-    protected static ?string $title = 'پلی‌لیست‌های هوشمند';
-    protected static ?string $navigationLabel = 'پلی‌لیست‌های هوشمند';
+    protected static ?string $title = "پلی\xE2\x80\x8Cلیست\xE2\x80\x8Cهای هوشمند";
+    protected static ?string $navigationLabel = "پلی\xE2\x80\x8Cلیست\xE2\x80\x8Cهای هوشمند";
     protected static ?int $navigationSort = 5;
+    protected string $view = 'filament.pages.smart-playlist-settings';
 
     public array $data = [];
 
