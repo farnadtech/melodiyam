@@ -19,6 +19,8 @@ class EnforceVerification
         'register',
         'password.request',
         'password.reset',
+        'pwa.manifest',
+        'pwa.debug',
     ];
 
     /**
@@ -31,6 +33,8 @@ class EnforceVerification
         'register',
         'forgot-password',
         'reset-password',
+        'manifest.json',
+        'sw.js',
     ];
 
     public function handle(Request $request, Closure $next): Response

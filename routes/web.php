@@ -30,6 +30,9 @@ use App\Livewire\Auth\ResetPassword;
 // PWA manifest
 Route::get('/manifest.json', \App\Http\Controllers\Web\ManifestController::class)->name('pwa.manifest');
 
+// PWA debug page
+Route::get('/pwa-debug', \App\Http\Controllers\Web\PwaDebugController::class)->name('pwa.debug');
+
 // DEBUG: Test login
 Route::get('/test-login', function () {
     $email = request('email', 'user@melodiyam.ir');
