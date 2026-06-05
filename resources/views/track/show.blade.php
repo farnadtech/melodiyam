@@ -9,7 +9,43 @@
                 {{-- Main image showing fully --}}
                 <img src="{{ $track->getCoverUrl() }}" alt="{{ $track->title }}" class="relative z-10 w-full h-full object-contain">
             </div>
-            <div class="flex flex-col justify-end text-center md:text-right">
+            <div class="flex flex-col justify-end text-center md:text-right"
+                x-data="{
+                    liked: {{ $userLikedTrack ? 'true' : 'false' }},
+                    likeCount: {{ $track->like_count ?? 0 }},
+                    reposted: {{ $userRepostedTrack ? 'true' : 'false' }},
+                    repostCount: {{ $track->repost_count ?? 0 }},
+                    playCount: {{ $track->play_count ?? 0 }},
+                    duration: {{ $track->duration ?? 0 }},
+                    shareOpen: false,
+                    plOpen: false,
+                    toast: '',
+                    toastType: 'success',
+                    _navListener: null,
+                    async refreshStats() {
+                        try {
+                            const r = await fetch('/api/track/{{ $track->id }}/stats');
+                            if (!r.ok) return;
+                            const d = await r.json();
+                            this.playCount   = d.play_count;
+                            this.likeCount   = d.like_count;
+                            this.repostCount = d.repost_count;
+                            this.liked       = d.user_liked;
+                            this.reposted    = d.user_reposted;
+                            if (d.duration > 0) this.duration = d.duration;
+                        } catch(e) {}
+                    },
+                    init() {
+                        this.$watch('toast', v => { if(v) setTimeout(() => this.toast = '', 3000) });
+                        this.refreshStats();
+                        this._navListener = () => this.refreshStats();
+                        document.addEventListener('livewire:navigated', this._navListener);
+                    },
+                    destroy() {
+                        if (this._navListener) document.removeEventListener('livewire:navigated', this._navListener);
+                    }
+                }"
+            >
                 @if($track->is_explicit)
                 <div class="mb-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 w-fit mx-auto md:mx-0">
                     <span class="flex items-center justify-center w-5 h-5 rounded bg-red-500 text-white text-[10px] font-bold">18+</span>
@@ -53,44 +89,17 @@
                     <a href="{{ route('album.show', $track->album) }}" wire:navigate class="hover:text-primary-500">{{ $track->album->title }}</a>
                     @endif
                     <span>·</span>
-                    <span>{{ $track->formattedDuration() }}</span>
+                    <span x-text="duration > 0 ? Math.floor(duration/60) + ':' + String(Math.floor(duration%60)).padStart(2,'0') : '{{ $track->formattedDuration() }}'">{{ $track->formattedDuration() }}</span>
                     <span>·</span>
                     <span x-text="playCount.toLocaleString() + ' پخش'">{{ number_format($track->play_count) }} پخش</span>
                 </div>
-                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start"
-                    x-data="{
-                        liked: {{ $userLikedTrack ? 'true' : 'false' }},
-                        likeCount: {{ $track->like_count ?? 0 }},
-                        reposted: {{ $userRepostedTrack ? 'true' : 'false' }},
-                        repostCount: {{ $track->repost_count ?? 0 }},
-                        playCount: {{ $track->play_count ?? 0 }},
-                        shareOpen: false,
-                        plOpen: false,
-                        toast: '',
-                        toastType: 'success',
-                        async refreshStats() {
-                            try {
-                                const r = await fetch('/api/track/{{ $track->id }}/stats');
-                                const d = await r.json();
-                                this.playCount    = d.play_count;
-                                this.likeCount    = d.like_count;
-                                this.repostCount  = d.repost_count;
-                                this.liked        = d.user_liked;
-                                this.reposted     = d.user_reposted;
-                            } catch(e) {}
-                        }
-                    }"
-                    x-init="
-                        $watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) });
-                        refreshStats();
-                        document.addEventListener('livewire:navigated', () => refreshStats());
-                    "
-                >
-                    {{-- Toast notification --}}
-                    <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
-                        <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
-                    </div>
 
+                {{-- Toast notification --}}
+                <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
+                    <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>
+                </div>
+
+                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start">
                     @if($canPlay)
                     <button
                         @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($track->artist->display_name ?? '') }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track) }}', artist_url: '{{ $track->artist ? route('artist.show', $track->artist) : '' }}', duration: {{ $track->duration }}, previewSeconds: 0, canPlay: true })"

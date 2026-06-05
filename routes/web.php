@@ -107,6 +107,7 @@ Route::get('/api/track/{track}/stats', function (\App\Models\Track $track) {
         'like_count'    => $track->like_count ?? 0,
         'repost_count'  => $track->repost_count ?? 0,
         'comment_count' => $track->comments()->approved()->count(),
+        'duration'      => $track->duration ?? 0,
         'user_liked'    => $userLiked,
         'user_reposted' => $userReposted,
     ]);
