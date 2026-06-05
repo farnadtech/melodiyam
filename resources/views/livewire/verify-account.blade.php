@@ -42,29 +42,34 @@
 
             @if(!$phoneVerified)
             <div class="space-y-3">
-                <input type="text" wire:model="phone" placeholder="09120000000" class="input-field w-full text-sm" dir="ltr">
-                @error('phone') <p class="text-xs text-rose-500">{{ $message }}</p> @enderror
-
                 @if(!$phoneCodeSent)
-                <button wire:click="sendPhoneCode" wire:loading.attr="disabled" class="btn-primary w-full py-2.5 rounded-xl text-sm font-medium">
-                    <span wire:loading.remove wire:target="sendPhoneCode">ارسال کد تایید</span>
-                    <span wire:loading wire:target="sendPhoneCode">در حال ارسال...</span>
-                </button>
-                @else
-                <div class="flex gap-2">
-                    <input type="text" wire:model="phoneCode" placeholder="کد ۶ رقمی" class="input-field flex-1 text-center text-lg tracking-widest" maxlength="6" dir="ltr">
-                    <button wire:click="verifyPhone" wire:loading.attr="disabled" class="btn-primary px-6 rounded-xl text-sm font-medium">
-                        <span wire:loading.remove wire:target="verifyPhone">تایید</span>
-                        <span wire:loading wire:target="verifyPhone">...</span>
-                    </button>
-                </div>
-                @error('phoneCode') <p class="text-xs text-rose-500">{{ $message }}</p> @enderror
+                <form wire:submit.prevent="sendPhoneCode" class="space-y-3">
+                    <input type="text" wire:model="phone" placeholder="09120000000" class="input-field w-full text-sm" dir="ltr">
+                    @error('phone') <p class="text-xs text-rose-500">{{ $message }}</p> @enderror
 
-                <div class="flex items-center justify-between text-xs">
-                    <button wire:click="sendPhoneCode" class="text-primary-500 hover:underline disabled:opacity-50" {{ $phoneCountdown > 0 ? 'disabled' : '' }}>
-                        ارسال مجدد {{ $phoneCountdown > 0 ? "({$phoneCountdown}ث)" : '' }}
+                    <button type="submit" wire:loading.attr="disabled" class="btn-primary w-full py-2.5 rounded-xl text-sm font-medium">
+                        <span wire:loading.remove wire:target="sendPhoneCode">ارسال کد تایید</span>
+                        <span wire:loading wire:target="sendPhoneCode">در حال ارسال...</span>
                     </button>
-                </div>
+                </form>
+                @else
+                <form wire:submit.prevent="verifyPhone" class="space-y-3">
+                    <div class="flex gap-2">
+                        <input type="text" wire:model="phoneCode" placeholder="کد ۶ رقمی" class="input-field flex-1 text-center text-lg tracking-widest" maxlength="6" dir="ltr">
+                        <button type="submit" wire:loading.attr="disabled" class="btn-primary px-6 rounded-xl text-sm font-medium">
+                            <span wire:loading.remove wire:target="verifyPhone">تایید</span>
+                            <span wire:loading wire:target="verifyPhone">...</span>
+                        </button>
+                    </div>
+                    @error('phoneCode') <p class="text-xs text-rose-500">{{ $message }}</p> @enderror
+
+                    <div class="flex items-center justify-between text-xs">
+                        <button type="button" wire:click="sendPhoneCode" class="text-primary-500 hover:underline disabled:opacity-50" {{ $phoneCountdown > 0 ? 'disabled' : '' }}>
+                            ارسال مجدد {{ $phoneCountdown > 0 ? "({$phoneCountdown}ث)" : '' }}
+                        </button>
+                        <button type="button" wire:click="$set('phoneCodeSent', false)" class="text-surface-500 hover:text-surface-700">تغییر شماره</button>
+                    </div>
+                </form>
                 @endif
             </div>
             @endif

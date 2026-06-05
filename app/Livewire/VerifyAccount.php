@@ -37,7 +37,10 @@ class VerifyAccount extends Component
     public function mount(): void
     {
         $user = Auth::user();
-        if (!$user) return;
+        if (!$user) {
+            $this->redirectRoute('login');
+            return;
+        }
 
         $this->requireEmail = Setting::get('email_verification', '0') === '1';
         $this->requirePhone = Setting::get('phone_verification', '0') === '1';
@@ -52,6 +55,23 @@ class VerifyAccount extends Component
 
         // If everything is verified, redirect
         $this->checkComplete();
+    }
+
+    public function updated($propertyName)
+    {
+        if (in_array($propertyName, ['phone', 'phoneCode', 'emailCode'])) {
+            $this->$propertyName = $this->convertPersianToEnglish($this->$propertyName);
+        }
+    }
+
+    private function convertPersianToEnglish($string)
+    {
+        $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        $arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        $english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+        $string = str_replace($persian, $english, $string);
+        return str_replace($arabic, $english, $string);
     }
 
     public function sendPhoneCode(): void

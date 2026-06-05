@@ -77,6 +77,7 @@ class ManifestController extends Controller
             'start_url' => $basePath . '?source=pwa',
             'scope' => $basePath,
             'display' => $display,
+            'display_override' => ['standalone', 'fullscreen', 'minimal-ui'],
             'orientation' => 'portrait',
             'theme_color' => $themeColor,
             'background_color' => $bgColor,

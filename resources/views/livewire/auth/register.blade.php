@@ -33,7 +33,7 @@
 
     {{-- Email/Password Registration --}}
     @if($registerMethod === 'email')
-        <form wire:submit="registerWithEmail" class="space-y-5">
+        <form wire:submit.prevent="registerWithEmail" class="space-y-5">
             <div>
                 <label for="name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">نام</label>
                 <input
@@ -97,7 +97,7 @@
 
     {{-- Phone OTP Registration - Only show if auth_type allows it --}}
     @elseif($authType !== 'password' && !$codeSent)
-        <form wire:submit="sendCode" class="space-y-5">
+        <form wire:submit.prevent="sendCode" class="space-y-5">
             <div>
                 <label for="name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">نام</label>
                 <input
@@ -162,7 +162,7 @@
 
     {{-- OTP Verify --}}
     @else
-        <form wire:submit="registerWithPhone" class="space-y-5">
+        <form wire:submit.prevent="registerWithPhone" class="space-y-5">
             <div>
                 <label for="code" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">کد تأیید</label>
                 <p class="text-xs text-surface-500 mb-3">کد ۶ رقمی ارسال شده به {{ $phone }} را وارد کنید</p>

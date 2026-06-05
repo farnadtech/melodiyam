@@ -496,15 +496,17 @@ window.fetch = function() {
 
         var banner = document.createElement('div');
         banner.id = 'pwa-install-banner';
-        banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
+        banner.style.cssText = 'position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);width:calc(100% - 32px);max-width:400px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;flex-wrap:nowrap;';
 
-        banner.innerHTML = '<svg style="width:28px;height:28px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
-            + '<div style="flex:1;">'
-            + '<div style="color:#fff;font-size:13px;font-weight:600;">' + (document.querySelector('meta[name="apple-mobile-web-app-title"]')?.content || 'اپلیکیشن') + ' را نصب کنید</div>'
-            + '<div style="color:#94a3b8;font-size:11px;margin-top:2px;">دسترسی سریع از صفحه اصلی گوشی</div>'
+        banner.innerHTML = '<svg style="width:24px;height:24px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (document.querySelector('meta[name="apple-mobile-web-app-title"]')?.content || 'اپلیکیشن') + ' را نصب کنید</div>'
+            + '<div style="color:#94a3b8;font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">دسترسی سریع از صفحه اصلی گوشی</div>'
             + '</div>'
-            + '<button id="pwa-install-btn" style="padding:8px 16px;background:#0ea5e9;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">نصب</button>'
-            + '<button id="pwa-dismiss-btn" style="padding:4px;background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;line-height:1;">&times;</button>';
+            + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
+            + '<button id="pwa-install-btn" style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">نصب</button>'
+            + '<button id="pwa-dismiss-btn" style="padding:4px;background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;line-height:1;">&times;</button>'
+            + '</div>';
 
         document.body.appendChild(banner);
 
@@ -532,13 +534,13 @@ window.fetch = function() {
                 if (document.getElementById('pwa-install-banner')) return;
                 var banner = document.createElement('div');
                 banner.id = 'pwa-install-banner';
-                banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
-                banner.innerHTML = '<svg style="width:28px;height:28px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
-                    + '<div style="flex:1;">'
-                    + '<div style="color:#fff;font-size:13px;font-weight:600;">نصب اپلیکیشن روی آیفون</div>'
-                    + '<div style="color:#94a3b8;font-size:11px;margin-top:2px;">دکمه <strong style="color:#0ea5e9;">Share</strong> و سپس <strong style="color:#0ea5e9;">Add to Home Screen</strong> را بزنید</div>'
+                banner.style.cssText = 'position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);width:calc(100% - 32px);max-width:400px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;flex-wrap:nowrap;';
+                banner.innerHTML = '<svg style="width:24px;height:24px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
+                    + '<div style="flex:1;min-width:0;">'
+                    + '<div style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">نصب اپلیکیشن روی آیفون</div>'
+                    + '<div style="color:#94a3b8;font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">دکمه <strong style="color:#0ea5e9;">Share</strong> و سپس <strong style="color:#0ea5e9;">Add to Home</strong> را بزنید</div>'
                     + '</div>'
-                    + '<button id="pwa-dismiss-btn" style="padding:4px;background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;line-height:1;">&times;</button>';
+                    + '<button id="pwa-dismiss-btn" style="padding:4px;background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;line-height:1;">&times;</button>';
                 document.body.appendChild(banner);
                 document.getElementById('pwa-dismiss-btn').addEventListener('click', function() {
                     hideInstallBanner();
