@@ -1,0 +1,23 @@
+﻿{
+    "version":  "1.2.6",
+    "from_version":  "any",
+    "released_at":  "2026-06-06",
+    "mode":  "custom",
+    "files":  [
+                  "public/build/assets/app-BQuneRk5.js",
+                  "public/build/assets/app-DaosQzU3.css",
+                  "public/build/manifest.json",
+                  "resources/views/layouts/app.blade.php",
+                  "resources/views/livewire/feed.blade.php",
+                  "resources/views/partials/mobile-nav.blade.php",
+                  "resources/views/partials/player.blade.php",
+                  "resources/views/track/show.blade.php",
+                  "routes/web.php"
+              ],
+    "migrations":  [
+
+                   ],
+    "delete":  [
+
+               ]
+}

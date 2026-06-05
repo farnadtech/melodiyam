@@ -1,0 +1,9 @@
+# فایل‌های تغییر یافته برای deploy
+resources/views/layouts/app.blade.php
+resources/views/partials/mobile-nav.blade.php
+resources/views/track/show.blade.php
+resources/views/livewire/feed.blade.php
+routes/web.php
+public/build/manifest.json
+public/build/assets/app-BQuneRk5.js
+public/build/assets/app-BC2U1GnN.css

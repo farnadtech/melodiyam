@@ -90,12 +90,8 @@
             @include('partials.header')
 
             {{-- Main Content --}}
-            {{-- pb values: mobile no-player=40(nav)+safe, mobile+player=40(nav)+20(player)+safe, desktop no-player=16, desktop+player=36 --}}
-            <main class="flex-1 overflow-y-auto"
-                  :class="$store.player.currentTrack
-                      ? 'pb-56 md:pb-44'
-                      : 'pb-20 md:pb-6'"
-            >
+            {{-- Dynamic bottom padding based on player + mobile nav --}}
+            <main id="main-content" class="flex-1 overflow-y-auto">
                 {{-- Flash Messages --}}
                 <div x-data="{ 
                     show: false, 
@@ -168,6 +164,69 @@
 
     {{-- Mobile Navigation (z-90, below player) --}}
     @include('partials.mobile-nav')
+
+    {{-- Dynamic bottom padding script --}}
+    <script>
+    (function() {
+        function updatePadding() {
+            var main = document.getElementById('main-content');
+            if (!main) return;
+
+            var isMobile = window.innerWidth < 1024;
+            var hasPlayer = !!(window.Alpine
+                && typeof Alpine.store === 'function'
+                && Alpine.store('player')
+                && Alpine.store('player').currentTrack);
+
+            var navEl    = document.getElementById('mobile-bottom-nav');
+            var playerEl = document.getElementById('global-player-bar');
+
+            var navH    = (isMobile && navEl)    ? navEl.offsetHeight    : 0;
+            var playerH = playerEl               ? playerEl.offsetHeight : 0;
+
+            var safe = 0;
+            try {
+                var sv = getComputedStyle(document.documentElement).getPropertyValue('--sat');
+                if (sv) safe = parseInt(sv, 10) || 0;
+            } catch(e) {}
+
+            var pb;
+            if (isMobile) {
+                pb = navH + (hasPlayer ? playerH : 0) + safe;
+            } else {
+                pb = hasPlayer ? (playerH + 8) : 8;
+            }
+            main.style.paddingBottom = pb + 'px';
+        }
+
+        window.addEventListener('resize', updatePadding);
+        document.addEventListener('livewire:navigated', function() { setTimeout(updatePadding, 150); });
+        window.addEventListener('load', function() { setTimeout(updatePadding, 300); });
+
+        // Watch Alpine player store after Alpine is ready
+        document.addEventListener('alpine:initialized', function() {
+            updatePadding();
+            // Poll every 500ms for player state change (lightweight)
+            setInterval(updatePadding, 500);
+        });
+
+        // Also observe player bar size changes
+        if (typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(updatePadding);
+            function attachObserver() {
+                var el = document.getElementById('global-player-bar');
+                if (el) ro.observe(el);
+                var nav = document.getElementById('mobile-bottom-nav');
+                if (nav) ro.observe(nav);
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                attachObserver();
+                updatePadding();
+            });
+            document.addEventListener('livewire:navigated', attachObserver);
+        }
+    })();
+    </script>
 
     @livewireScripts
     @stack('scripts')

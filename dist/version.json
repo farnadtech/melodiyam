@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.2.2",
+    "version":  "1.2.6",
     "min_version":  "1.0.0",
-    "changelog":  "Update to version 1.2.2",
-    "released_at":  "2026-06-04",
-    "download_url":  "https://iranbooklet.ir/melodiyam/update-v1.2.2.zip",
-    "manifest_url":  "https://iranbooklet.ir/melodiyam/update-v1.2.2.manifest.json"
+    "changelog":  "Update to version 1.2.6",
+    "released_at":  "2026-06-06",
+    "download_url":  "https://iranbooklet.ir/melodiyam/update-v1.2.6.zip",
+    "manifest_url":  "https://iranbooklet.ir/melodiyam/update-v1.2.6.manifest.json"
 }
