@@ -10,7 +10,7 @@
         <h2 class="text-xl font-bold text-surface-900 dark:text-white mb-2">احراز هویت کامل شد!</h2>
         <p class="text-sm text-surface-500 mb-6">حساب شما با موفقیت تایید شد. در حال انتقال...</p>
     </div>
-    <script>setTimeout(function(){ window.location.href = '/'; }, 1500);</script>
+    <script>setTimeout(function(){ window.location.assign('/'); }, 1000);</script>
     @else
     <div class="space-y-6">
         <div class="text-center mb-6">
@@ -139,9 +139,11 @@
                         @this.emailCountdown--;
                     }, 1000);
                 });
-                Livewire.on('verification-complete', () => {
-                    setTimeout(() => { window.location.href = '/'; }, 1500);
-                });
+        Livewire.on('verification-complete', () => {
+            setTimeout(() => { 
+                window.location.assign('/'); 
+            }, 1000);
+        });
             });
         </script>
     </div>

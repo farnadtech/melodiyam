@@ -18,13 +18,14 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch — network only (no caching to avoid PWA issues)
+// Fetch — network only for navigation to avoid PWA issues, cache assets
 self.addEventListener('fetch', event => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    // Skip Livewire, API, admin, stream, and manifest requests
     const url = new URL(event.request.url);
+
+    // Skip Livewire, API, admin, stream, and manifest requests
     if (url.pathname.includes('/livewire') ||
         url.pathname.includes('/api/') ||
         url.pathname.includes('/admin') ||
@@ -34,10 +35,29 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Network-first with optional cache fallback
+    // For navigation requests (HTML pages), always go to network
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(() => {
+                return caches.match(OFFLINE_URL).then(cached => {
+                    return cached || new Response('Offline', {
+                        status: 503,
+                        statusText: 'Service Unavailable',
+                        headers: new Headers({ 'Content-Type': 'text/html' })
+                    });
+                });
+            })
+        );
+        return;
+    }
+
+    // For other assets (JS, CSS, Images), use cache-first or network-first
     event.respondWith(
-        fetch(event.request)
-            .then(response => {
+        caches.match(event.request).then(cachedResponse => {
+            if (cachedResponse) return cachedResponse;
+
+            return fetch(event.request).then(response => {
+                // Cache successful responses for assets
                 if (response.status === 200 && response.type === 'basic') {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => {
@@ -45,15 +65,9 @@ self.addEventListener('fetch', event => {
                     });
                 }
                 return response;
-            })
-            .catch(() => {
-                return caches.match(event.request).then(cached => {
-                    if (cached) return cached;
-                    if (event.request.mode === 'navigate') {
-                        return caches.match(OFFLINE_URL);
-                    }
-                    return new Response('', { status: 408 });
-                });
-            })
+            }).catch(() => {
+                return new Response('', { status: 408 });
+            });
+        })
     );
 });

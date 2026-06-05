@@ -24,7 +24,6 @@
         },
         
         install() {
-            if (this.isIOS) return; // iOS doesn't support programmatic prompt
             if (!this.deferredPrompt) return;
             
             this.deferredPrompt.prompt();
@@ -57,21 +56,17 @@
         
         <div class="flex-1 min-width-0">
             <h4 class="text-white text-sm font-bold truncate">
-                <template x-if="!isIOS">نصب اپلیکیشن {{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}</template>
-                <template x-if="isIOS">نصب روی آیفون</template>
+                <span x-text="isIOS ? 'نصب روی آیفون' : 'نصب اپلیکیشن ' + '{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}'"></span>
             </h4>
             <p class="text-surface-400 text-[10px] mt-0.5 truncate">
-                <template x-if="!isIOS">دسترسی سریع و آفلاین از صفحه اصلی</template>
-                <template x-if="isIOS">دکمه Share و سپس Add to Home را بزنید</template>
+                <span x-text="isIOS ? 'دکمه Share و سپس Add to Home را بزنید' : 'دسترسی سریع و آفلاین از صفحه اصلی'"></span>
             </p>
         </div>
         
         <div class="flex items-center gap-2 flex-shrink-0">
-            <template x-if="!isIOS">
-                <button @click="install" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors">
-                    نصب
-                </button>
-            </template>
+            <button x-show="!isIOS" @click="install" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                نصب
+            </button>
             <button @click="dismiss" class="text-surface-500 hover:text-surface-300 p-1 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
