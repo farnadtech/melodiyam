@@ -10,11 +10,27 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceVerification
 {
     /**
-     * Routes that unverified users CAN access.
+     * Route names that unverified users CAN access.
      */
-    protected array $except = [
+    protected array $exceptRoutes = [
         'verify-account',
         'logout',
+        'login',
+        'register',
+        'password.request',
+        'password.reset',
+    ];
+
+    /**
+     * Path prefixes that unverified users CAN access.
+     */
+    protected array $exceptPaths = [
+        'verify-account',
+        'livewire',
+        'login',
+        'register',
+        'forgot-password',
+        'reset-password',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -29,33 +45,34 @@ class EnforceVerification
         $requireEmail = Setting::get('email_verification', '0') === '1';
         $requirePhone = Setting::get('phone_verification', '0') === '1';
 
-        $needsEmailVerification = $requireEmail && !$user->email_verified_at && $user->email;
-        $needsPhoneVerification = $requirePhone && !$user->phone_verified_at && $user->phone;
-
-        // If user has no email but email verification is required, they need to provide one
-        $needsEmailSetup = $requireEmail && !$user->email;
-        // If user has no phone but phone verification is required, they need to provide one
-        $needsPhoneSetup = $requirePhone && !$user->phone;
-
-        $needsVerification = $needsEmailVerification || $needsPhoneVerification || $needsEmailSetup || $needsPhoneSetup;
-
-        if (!$needsVerification) {
+        // If neither is required, pass through
+        if (!$requireEmail && !$requirePhone) {
             return $next($request);
         }
 
-        // Allow access to verification page and logout
+        // Check what needs verification
+        $needsEmailVerification = $requireEmail && !$user->email_verified_at;
+        $needsPhoneVerification = $requirePhone && !$user->phone_verified_at;
+
+        if (!$needsEmailVerification && !$needsPhoneVerification) {
+            return $next($request);
+        }
+
+        // Allow access by route name
+        $routeName = $request->route()?->getName();
+        if ($routeName && in_array($routeName, $this->exceptRoutes)) {
+            return $next($request);
+        }
+
+        // Allow access by path prefix
         $path = ltrim($request->path(), '/');
-        foreach ($this->except as $except) {
-            if ($path === $except || str_starts_with($path, $except . '/')) {
+        foreach ($this->exceptPaths as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/') || str_starts_with($path, $prefix . '?')) {
                 return $next($request);
             }
         }
 
-        // Also allow Livewire asset requests
-        if ($request->is('livewire*')) {
-            return $next($request);
-        }
-
+        // Redirect to verification page
         return redirect()->route('verify-account');
     }
 }
