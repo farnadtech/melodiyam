@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Force manifest.json through Laravel (PWA manifest, not deployment manifest)
+    RewriteRule ^manifest\.json$ index.php [L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

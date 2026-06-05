@@ -105,8 +105,8 @@ class VerifyAccount extends Component
         try {
             $otp = OtpCode::generate($this->phone);
             NotificationDispatcher::dispatch('otp_code', ['code' => $otp->code], (object)['phone' => $this->phone]);
-        } catch (\Exception $e) {
-            \Log::error('OTP SMS failed: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('OTP SMS failed: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
             $this->addError('phone', 'خطا در ارسال کد تایید. لطفاً بعداً تلاش کنید.');
             return;
         }
@@ -120,15 +120,22 @@ class VerifyAccount extends Component
     {
         $this->validate(['phoneCode' => 'required|digits:6']);
 
-        if (!OtpCode::verify($this->phone, $this->phoneCode)) {
-            $this->addError('phoneCode', 'کد وارد شده نامعتبر است');
+        try {
+            if (!OtpCode::verify($this->phone, $this->phoneCode)) {
+                $this->addError('phoneCode', 'کد وارد شده نامعتبر است');
+                return;
+            }
+
+            Auth::user()->update([
+                'phone' => $this->phone,
+                'phone_verified_at' => now()
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Phone verify failed: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            $this->addError('phoneCode', 'خطا در تایید شماره. لطفاً دوباره تلاش کنید.');
             return;
         }
 
-        Auth::user()->update([
-            'phone' => $this->phone,
-            'phone_verified_at' => now()
-        ]);
         $this->phoneVerified = true;
         $this->checkComplete();
     }
@@ -155,8 +162,8 @@ class VerifyAccount extends Component
                 $message->to($this->email)
                     ->subject('کد تایید ایمیل - ' . config('app.name'));
             });
-        } catch (\Exception $e) {
-            \Log::error('OTP Email failed: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('OTP Email failed: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
             $this->addError('email', 'خطا در ارسال ایمیل. لطفاً بعداً تلاش کنید.');
             return;
         }
@@ -170,12 +177,19 @@ class VerifyAccount extends Component
     {
         $this->validate(['emailCode' => 'required|digits:6']);
 
-        if (!OtpCode::verify($this->email, $this->emailCode)) {
-            $this->addError('emailCode', 'کد وارد شده نامعتبر است');
+        try {
+            if (!OtpCode::verify($this->email, $this->emailCode)) {
+                $this->addError('emailCode', 'کد وارد شده نامعتبر است');
+                return;
+            }
+
+            Auth::user()->update(['email_verified_at' => now()]);
+        } catch (\Throwable $e) {
+            \Log::error('Email verify failed: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            $this->addError('emailCode', 'خطا در تایید ایمیل. لطفاً دوباره تلاش کنید.');
             return;
         }
 
-        Auth::user()->update(['email_verified_at' => now()]);
         $this->emailVerified = true;
         $this->checkComplete();
     }

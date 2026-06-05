@@ -11,8 +11,13 @@ class PwaDebugController extends Controller
     public function __invoke(Request $request)
     {
         $manifestUrl = route('pwa.manifest');
-        $manifestContent = @file_get_contents($manifestUrl);
-        $manifest = $manifestContent ? json_decode($manifestContent, true) : null;
+        $manifestFallbackUrl = route('pwa.manifest.fallback');
+        
+        // Call ManifestController directly instead of file_get_contents (avoids self-HTTP issues)
+        $manifestController = new \App\Http\Controllers\Web\ManifestController();
+        $manifestResponse = $manifestController();
+        $manifestContent = $manifestResponse->getContent();
+        $manifest = json_decode($manifestContent, true);
 
         $lines = [];
         $lines[] = '<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PWA Debug</title>';
@@ -31,10 +36,11 @@ class PwaDebugController extends Controller
 
         // 2. Manifest
         $lines[] = '<h2>2. Manifest</h2>';
-        $lines[] = '<p>URL: <a href="' . e($manifestUrl) . '" style="color:#0ea5e9">' . e($manifestUrl) . '</a></p>';
+        $lines[] = '<p>Primary URL: <a href="' . e($manifestUrl) . '" style="color:#0ea5e9">' . e($manifestUrl) . '</a></p>';
+        $lines[] = '<p>Fallback URL: <a href="' . e($manifestFallbackUrl) . '" style="color:#0ea5e9">' . e($manifestFallbackUrl) . '</a></p>';
 
         if ($manifest) {
-            $lines[] = '<p class="ok">OK: Manifest loaded</p>';
+            $lines[] = '<p class="ok">OK: ManifestController returned valid JSON</p>';
             $keys = ['name', 'short_name', 'display', 'start_url', 'scope', 'theme_color', 'background_color', 'id', 'display_override'];
             foreach ($keys as $k) {
                 $val = $manifest[$k] ?? 'MISSING';
@@ -133,7 +139,38 @@ class PwaDebugController extends Controller
         $lines[] = '<p>request scheme: <strong>' . e($request->getScheme()) . '</strong></p>';
         $lines[] = '<p>request host: <strong>' . e($request->getHost()) . '</strong></p>';
 
-        $lines[] = '<br><br><p style="color:#64748b">End of diagnostics</p>';
+        $lines[] = '<br><br><p style="color:#64748b">End of server diagnostics</p>';
+        
+        // Client-side manifest test (JavaScript) - test both URLs
+        $lines[] = '<h2>8. Browser Manifest Test (JavaScript)</h2>';
+        $lines[] = '<div id="browser-manifest-test" style="color:#f59e0b">Testing...</div>';
+        $lines[] = '<h3 style="margin-top:12px">Test /manifest.json (fallback):</h3>';
+        $lines[] = '<div id="browser-manifest-fallback-test" style="color:#f59e0b">Testing...</div>';
+        $lines[] = '<script>';
+        $lines[] = 'function testManifest(url, elId) {';
+        $lines[] = '  fetch(url, {credentials: "omit"})';
+        $lines[] = '    .then(function(r) { return r.text(); })';
+        $lines[] = '    .then(function(text) {';
+        $lines[] = '      var el = document.getElementById(elId);';
+        $lines[] = '      try {';
+        $lines[] = '        var j = JSON.parse(text);';
+        $lines[] = '        if (j.name && j.icons) {';
+        $lines[] = '          el.innerHTML = \'<p style="color:#10b981">OK: Valid PWA manifest (name: \' + j.name + \', icons: \' + j.icons.length + \')</p>\';';
+        $lines[] = '        } else {';
+        $lines[] = '          el.innerHTML = \'<p style="color:#ef4444">FAIL: JSON but NOT a valid manifest!</p><pre style="background:#1e293b;padding:8px;border-radius:4px;font-size:11px;direction:ltr">\' + text.substring(0,300) + \'</pre>\';';
+        $lines[] = '        }';
+        $lines[] = '      } catch(e) {';
+        $lines[] = '        el.innerHTML = \'<p style="color:#ef4444">FAIL: Response is not JSON!</p><pre style="background:#1e293b;padding:8px;border-radius:4px;font-size:11px;direction:ltr">\' + text.substring(0,300) + \'</pre>\';';
+        $lines[] = '      }';
+        $lines[] = '    })';
+        $lines[] = '    .catch(function(e) {';
+        $lines[] = '      document.getElementById(elId).innerHTML = \'<p style="color:#ef4444">FAIL: \' + e.message + \'</p>\';';
+        $lines[] = '    });';
+        $lines[] = '}';
+        $lines[] = 'testManifest("/pwa-manifest.json", "browser-manifest-test");';
+        $lines[] = 'testManifest("/manifest.json", "browser-manifest-fallback-test");';
+        $lines[] = '</script>';
+        
         $lines[] = '</body></html>';
 
         return response(implode("\n", $lines));

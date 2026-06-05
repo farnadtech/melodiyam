@@ -20,6 +20,7 @@ class EnforceVerification
         'password.request',
         'password.reset',
         'pwa.manifest',
+        'pwa.manifest.fallback',
         'pwa.debug',
     ];
 
@@ -34,6 +35,7 @@ class EnforceVerification
         'forgot-password',
         'reset-password',
         'manifest.json',
+        'pwa-manifest.json',
         'sw.js',
     ];
 

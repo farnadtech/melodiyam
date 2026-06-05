@@ -27,8 +27,9 @@ use App\Livewire\Auth\ResetPassword;
 
 // ── Public Routes ──
 
-// PWA manifest
-Route::get('/manifest.json', \App\Http\Controllers\Web\ManifestController::class)->name('pwa.manifest');
+// PWA manifest (primary route + fallback for deployment manifest collision)
+Route::get('/pwa-manifest.json', \App\Http\Controllers\Web\ManifestController::class)->name('pwa.manifest');
+Route::get('/manifest.json', \App\Http\Controllers\Web\ManifestController::class)->name('pwa.manifest.fallback');
 
 // PWA debug page
 Route::get('/pwa-debug', \App\Http\Controllers\Web\PwaDebugController::class)->name('pwa.debug');
