@@ -48,6 +48,12 @@ class EnforceVerification
             return $next($request);
         }
 
+        // ALWAYS allow Livewire AJAX requests through (prevents JSON parse errors)
+        // Livewire sends X-Livewire header on all update requests
+        if ($request->hasHeader('X-Livewire') || $request->is('livewire/*')) {
+            return $next($request);
+        }
+
         $requireEmail = Setting::get('email_verification', '0') === '1';
         $requirePhone = Setting::get('phone_verification', '0') === '1';
 
