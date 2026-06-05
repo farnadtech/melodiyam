@@ -489,6 +489,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/become-artist', [\App\Http\Controllers\Web\ArtistApplicationController::class, 'show'])->name('artist-application.show');
     Route::post('/become-artist', [\App\Http\Controllers\Web\ArtistApplicationController::class, 'store'])->name('artist-application.store');
 
+    // Track duration update (auto-fix for missing durations)
+    Route::post('/api/tracks/{track}/update-duration', function (\App\Models\Track $track) {
+        $validated = request()->validate(['duration' => 'required|integer|min:1']);
+        if (!$track->duration) {
+            $track->update(['duration' => $validated['duration']]);
+        }
+        return response()->json(['success' => true]);
+    })->name('tracks.update-duration');
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');

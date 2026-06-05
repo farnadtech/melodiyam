@@ -49,6 +49,22 @@ function registerAlpineStuff(Alpine) {
 
             this.audio.addEventListener('loadedmetadata', () => {
                 this.duration = this.audio.duration;
+                
+                // If track duration is 0 or missing in DB, update it now that we have it from the browser
+                if (this.currentTrack && !this.currentTrack.duration && this.duration > 0) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                    if (csrf) {
+                        fetch('/api/tracks/' + this.currentTrack.id + '/update-duration', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrf
+                            },
+                            body: JSON.stringify({ duration: Math.round(this.duration) })
+                        }).catch(() => {});
+                    }
+                }
             });
 
             this.audio.addEventListener('durationchange', () => {

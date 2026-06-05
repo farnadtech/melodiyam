@@ -70,8 +70,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/pwa-icon-180.png') }}">
     @endif
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
-    <meta name="livewire-navigate-cache" content="off">
     @endif
+    <meta name="livewire-navigate-cache" content="off">
 </head>
 <body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden">
 
