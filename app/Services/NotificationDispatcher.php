@@ -39,7 +39,7 @@ class NotificationDispatcher
 
         foreach ($recipients as $user) {
             // 1. Database Notification
-            if ($setting->via_database && isset($user->id)) {
+            if ($setting->via_database && isset($user->id) && method_exists($user, 'notify')) {
                 $message = self::formatMessage($setting->database_template ?: ($setting->sms_template ?: $setting->event_label), $params);
                 $user->notify(new SystemNotification($eventKey, $message, $params));
             }

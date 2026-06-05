@@ -16,14 +16,25 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     <script>
-        // PWA early event capture
+        // PWA early event capture & Service Worker registration
         window._pwaDeferredPrompt = null;
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             window._pwaDeferredPrompt = e;
-            // Dispatch custom event so app.js can show the banner if it's already loaded
             window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
         });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                const swPath = '{{ url("/sw.js") }}';
+                const scope = '{{ parse_url(url("/"), PHP_URL_PATH) ?: "/" }}';
+                navigator.serviceWorker.register(swPath, { scope: scope }).then(function(reg) {
+                    reg.update();
+                }).catch(function(err) {
+                    console.error('SW registration failed:', err);
+                });
+            });
+        }
 
         // Fix for iOS PWA opening links in Safari
         (function(document,navigator,standalone) {
@@ -83,6 +94,9 @@
     @livewireStyles
 </head>
 <body class="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center p-4">
+
+    {{-- PWA Install Banner --}}
+    @include('partials.pwa-banner')
 
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
