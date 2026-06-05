@@ -20,6 +20,10 @@ class ManifestController extends Controller
         $bgColor = Setting::get('pwa_bg_color', '#020617');
         $display = Setting::get('pwa_display', 'standalone');
 
+        // Get base path for scope and start_url
+        $basePath = parse_url(config('app.url'), PHP_URL_PATH) ?: '/';
+        $basePath = rtrim($basePath, '/') . '/';
+
         $icons = [];
         foreach ([192, 512] as $size) {
             $path = Setting::get("pwa_icon_{$size}");
@@ -70,16 +74,15 @@ class ManifestController extends Controller
             'name' => $name,
             'short_name' => $shortName,
             'description' => Setting::get('site_description', ''),
-            'start_url' => '/?source=pwa',
-            'scope' => '/',
+            'start_url' => $basePath . '?source=pwa',
+            'scope' => $basePath,
             'display' => $display,
-            'display_override' => ['standalone', 'minimal-ui', 'browser'],
             'orientation' => 'portrait',
             'theme_color' => $themeColor,
             'background_color' => $bgColor,
             'dir' => 'rtl',
             'lang' => 'fa',
-            'id' => '/',
+            'id' => $basePath,
             'categories' => ['music', 'entertainment'],
             'icons' => $icons,
         ], 200, [

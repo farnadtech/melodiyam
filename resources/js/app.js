@@ -459,21 +459,17 @@ window.fetch = function() {
 
     // Service Worker registration
     if ('serviceWorker' in navigator) {
-        if (isIOS) {
-            // On iOS: unregister any existing SW to avoid interfering with standalone mode
-            // iOS Safari supports SW since 16.4 but it can break home screen shortcuts
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (var i = 0; i < registrations.length; i++) {
-                    registrations[i].unregister();
-                }
-            }).catch(function() {});
-        } else {
-            // On Android/Desktop: register normally
-            navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
-                // Force update check to get new SW version
-                reg.update();
-            }).catch(function() {});
-        }
+        // Register service worker for all platforms
+        const baseUrl = document.querySelector('meta[name="base-url"]')?.content || window.location.origin;
+        const swPath = baseUrl.replace(/\/$/, '') + '/sw.js';
+        const scope = new URL(baseUrl).pathname;
+        
+        navigator.serviceWorker.register(swPath, { scope: scope }).then(function(reg) {
+            // Force update check to get new SW version
+            reg.update();
+        }).catch(function(err) {
+            console.error('SW registration failed:', err);
+        });
     }
 
     // Capture beforeinstallprompt event (Android/Chrome only)

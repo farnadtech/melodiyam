@@ -12,10 +12,12 @@
     @livewireStyles
 
     <link rel="icon" href="{{ asset('images/favicon.ico') }}">
+    <meta name="base-url" content="{{ url('/') }}">
     {{-- PWA --}}
     @if(\App\Models\Setting::get('pwa_enabled', '1'))
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
     <meta name="format-detection" content="telephone=no">

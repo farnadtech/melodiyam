@@ -1,5 +1,5 @@
 const CACHE_NAME = 'melodiyam-v2';
-const OFFLINE_URL = '/';
+const OFFLINE_URL = './';
 
 // Install — skip waiting, activate immediately
 self.addEventListener('install', event => {
@@ -25,11 +25,11 @@ self.addEventListener('fetch', event => {
 
     // Skip Livewire, API, admin, stream, and manifest requests
     const url = new URL(event.request.url);
-    if (url.pathname.startsWith('/livewire') ||
-        url.pathname.startsWith('/api') ||
-        url.pathname.startsWith('/admin') ||
-        url.pathname.startsWith('/stream') ||
-        url.pathname === '/manifest.json' ||
+    if (url.pathname.includes('/livewire') ||
+        url.pathname.includes('/api/') ||
+        url.pathname.includes('/admin') ||
+        url.pathname.includes('/stream/') ||
+        url.pathname.includes('manifest.json') ||
         url.searchParams.has('_wire')) {
         return;
     }
