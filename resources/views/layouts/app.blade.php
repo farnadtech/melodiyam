@@ -22,6 +22,8 @@
     @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
     @if($_appleIcon)
     <link rel="apple-touch-icon" href="{{ asset('storage/' . $_appleIcon) }}">
+    @else
+    <link rel="apple-touch-icon" href="{{ asset('images/pwa-icon-180.png') }}">
     @endif
     @endif
 </head>

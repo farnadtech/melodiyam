@@ -511,9 +511,11 @@ window.fetch = function() {
     }
 
     // iOS Safari — show manual install hint
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-    if (isIOS && isSafari && !window.matchMedia('(display-mode: standalone)').matches) {
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSafariIOS = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    
+    if (isSafariIOS && !isStandalone) {
         if (!localStorage.getItem('pwa_dismissed')) {
             setTimeout(function() {
                 if (document.getElementById('pwa-install-banner')) return;

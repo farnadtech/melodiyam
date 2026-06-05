@@ -28,9 +28,20 @@ class ManifestController extends Controller
                     'src' => asset('storage/' . $path),
                     'sizes' => "{$size}x{$size}",
                     'type' => 'image/png',
-                    'purpose' => $size === 192 ? 'any maskable' : 'any',
+                    'purpose' => 'any',
                 ];
             }
+        }
+
+        // Add maskable variant for 512
+        $path512 = Setting::get('pwa_icon_512');
+        if ($path512) {
+            $icons[] = [
+                'src' => asset('storage/' . $path512),
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable',
+            ];
         }
 
         // Fallback icon if none uploaded
@@ -39,11 +50,19 @@ class ManifestController extends Controller
                 'src' => asset('images/pwa-icon-192.png'),
                 'sizes' => '192x192',
                 'type' => 'image/png',
+                'purpose' => 'any',
             ];
             $icons[] = [
                 'src' => asset('images/pwa-icon-512.png'),
                 'sizes' => '512x512',
                 'type' => 'image/png',
+                'purpose' => 'any',
+            ];
+            $icons[] = [
+                'src' => asset('images/pwa-icon-512.png'),
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable',
             ];
         }
 
@@ -54,11 +73,14 @@ class ManifestController extends Controller
             'start_url' => '/',
             'scope' => '/',
             'display' => $display,
+            'display_override' => ['standalone', 'minimal-ui', 'browser'],
             'orientation' => 'portrait',
             'theme_color' => $themeColor,
             'background_color' => $bgColor,
             'dir' => 'rtl',
             'lang' => 'fa',
+            'id' => '/',
+            'categories' => ['music', 'entertainment'],
             'icons' => $icons,
         ], 200, [
             'Content-Type' => 'application/manifest+json',
