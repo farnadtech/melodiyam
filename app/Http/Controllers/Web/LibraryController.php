@@ -160,7 +160,9 @@ class LibraryController extends Controller
     public function discover(): View
     {
         $user = auth()->user();
-        $data = app(RecommendationService::class)->getRecommendations($user);
+        $service = app(RecommendationService::class);
+        $data = $service->getRecommendations($user);
+        $data['smartPlaylists'] = $service->getSmartPlaylists($user);
 
         return view('discover', $data);
     }

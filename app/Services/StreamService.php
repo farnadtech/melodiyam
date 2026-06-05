@@ -26,6 +26,7 @@ class StreamService
 
         // Invalidate discover recommendations when user listens to new music
         Cache::forget("discover.rec.{$user->id}");
+        Cache::forget("smart_playlists.{$user->id}");
 
         // Increment play count only for significant plays (>30s or >50% of track)
         $minDuration = min(30, $track->duration * 0.5);

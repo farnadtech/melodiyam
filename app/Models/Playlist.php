@@ -18,6 +18,7 @@ class Playlist extends Model
         'user_id', 'title', 'slug', 'description', 'cover_image',
         'visibility', 'is_system', 'is_featured', 'is_sponsored',
         'followers_count', 'tracks_count', 'total_duration',
+        'is_auto_generated', 'template_key',
     ];
 
     protected $appends = ['cover_url'];
@@ -28,6 +29,7 @@ class Playlist extends Model
             'is_system' => 'boolean',
             'is_featured' => 'boolean',
             'is_sponsored' => 'boolean',
+            'is_auto_generated' => 'boolean',
             'followers_count' => 'integer',
             'tracks_count' => 'integer',
             'total_duration' => 'integer',

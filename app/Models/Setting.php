@@ -38,6 +38,7 @@ class Setting extends Model
             'max_upload_size_mb' => '100',
             'featured_tracks_count' => '10',
             'home_new_releases' => '12',
+            'smart_playlist_templates' => '[]',
             
             // Payment
             'premium_enabled' => '1',

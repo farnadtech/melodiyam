@@ -1,5 +1,5 @@
 <x-layouts.app title="پیشنهاد ویژه">
-    <div class="p-4 lg:p-8 space-y-10">
+    <div class="p-4 lg:p-8 pb-28 lg:pb-12 space-y-10">
 
         {{-- Header --}}
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -111,6 +111,37 @@
                     <p class="font-medium text-surface-900 dark:text-white text-sm truncate">{{ $playlist->title }}</p>
                     <p class="text-xs text-surface-500 truncate mt-0.5">{{ $playlist->user->name ?? '' }}</p>
                     <p class="text-xs text-surface-400 mt-0.5">{{ $playlist->tracks_count ?? 0 }} آهنگ</p>
+                </a>
+                @endforeach
+            </div>
+        </section>
+        @endif
+
+        {{-- Smart Playlists (Auto-generated for user) --}}
+        @if(isset($smartPlaylists) && $smartPlaylists->isNotEmpty())
+        <section>
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                <h2 class="text-lg font-bold text-surface-900 dark:text-white">پلی‌لیست‌های هوشمند شما</h2>
+                <span class="text-xs text-surface-400 mr-2">هر هفته بروزرسانی می‌شود</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                @foreach($smartPlaylists as $playlist)
+                <a href="{{ route('playlist.show', $playlist) }}" wire:navigate
+                   class="glass-card rounded-2xl p-4 hover:scale-105 transition-transform group cursor-pointer block relative overflow-hidden">
+                    <div class="absolute top-2 right-2 bg-purple-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full z-20">هوشمند</div>
+                    <div class="aspect-square rounded-xl overflow-hidden mb-3 bg-gradient-to-br from-purple-500/30 to-pink-500/20 dark:from-purple-500/20 dark:to-pink-500/10 relative flex items-center justify-center">
+                        @if($playlist->cover_image)
+                        <img src="{{ asset('storage/' . $playlist->cover_image) }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+                        @else
+                        <svg class="w-14 h-14 text-purple-400/50" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        @endif
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                    <p class="font-bold text-surface-900 dark:text-white text-sm truncate">{{ $playlist->title }}</p>
+                    <p class="text-xs text-surface-400 mt-1">{{ $playlist->tracks_count ?? 0 }} آهنگ • ساخته شده برای شما</p>
                 </a>
                 @endforeach
             </div>

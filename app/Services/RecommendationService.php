@@ -7,6 +7,7 @@ use App\Models\Artist;
 use App\Models\Follow;
 use App\Models\Like;
 use App\Models\Playlist;
+use App\Models\Setting;
 use App\Models\Stream;
 use App\Models\Track;
 use App\Models\User;
@@ -448,6 +449,211 @@ class RecommendationService
             ->orderByDesc('followers_count')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Get or generate smart playlists for a user based on admin-configured templates.
+     * Playlists are cached per user for 7 days, then regenerated.
+     */
+    public function getSmartPlaylists(User $user): \Illuminate\Support\Collection
+    {
+        $cacheKey = "smart_playlists.{$user->id}";
+        $cacheTtl = 7 * 24 * 60 * 60; // 7 days
+
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($user) {
+            return $this->generateSmartPlaylists($user);
+        });
+    }
+
+    /**
+     * Get the smart playlist templates from settings.
+     */
+    public static function getTemplates(): array
+    {
+        return Cache::remember('smart_playlist_templates', 60 * 60, function () {
+            $raw = Setting::get('smart_playlist_templates', '[]');
+            if (is_string($raw)) {
+                $raw = json_decode($raw, true) ?? [];
+            }
+            return array_filter($raw, fn($t) => !empty($t['enabled']));
+        });
+    }
+
+    /**
+     * Generate smart playlists for a user based on enabled templates.
+     */
+    protected function generateSmartPlaylists(User $user): \Illuminate\Support\Collection
+    {
+        $templates = self::getTemplates();
+        if (empty($templates)) {
+            return collect();
+        }
+
+        $profile = $this->buildTasteProfile($user);
+        $playlists = collect();
+
+        foreach ($templates as $template) {
+            $key = $template['key'];
+            $trackCount = (int) ($template['track_count'] ?? 20);
+
+            // Find existing auto-generated playlist for this template
+            $playlist = Playlist::where('user_id', $user->id)
+                ->where('template_key', $key)
+                ->where('is_auto_generated', true)
+                ->first();
+
+            // Generate tracks based on strategy
+            $trackIds = $this->generatePlaylistTracks($user, $profile, $template['strategy'] ?? 'top_genre_mix', $trackCount);
+
+            if (empty($trackIds)) {
+                continue; // Skip empty playlists
+            }
+
+            if (!$playlist) {
+                $playlist = Playlist::create([
+                    'user_id' => $user->id,
+                    'title' => $template['name'],
+                    'description' => 'پلی\u200cلیست هوشمند شخصی\u200cسازی\u200cشده برای شما',
+                    'cover_image' => $template['cover_image'] ?? null,
+                    'visibility' => 'private',
+                    'is_auto_generated' => true,
+                    'template_key' => $key,
+                    'tracks_count' => count($trackIds),
+                ]);
+            } else {
+                // Update existing playlist
+                $playlist->update([
+                    'tracks_count' => count($trackIds),
+                ]);
+            }
+
+            // Sync tracks (replace all)
+            $playlist->tracks()->sync($trackIds);
+
+            $playlists->push($playlist->load('user')->loadCount('tracks'));
+        }
+
+        return $playlists;
+    }
+
+    /**
+     * Generate track IDs for a playlist based on the given strategy.
+     */
+    protected function generatePlaylistTracks(User $user, array $profile, string $strategy, int $limit): array
+    {
+        $listenedIds = $profile['listened_track_ids'] ?? [];
+        $topGenres = array_keys($profile['genres'] ?? []);
+        $topArtists = array_keys($profile['artists'] ?? []);
+        $topMoods = array_keys($profile['moods'] ?? []);
+
+        $query = Track::published();
+
+        switch ($strategy) {
+            case 'top_genre_mix':
+                // Mix of tracks from user's top genres, excluding already listened
+                if (empty($topGenres)) {
+                    $query->orderByDesc('play_count');
+                } else {
+                    $query->where(function ($q) use ($topGenres) {
+                        $q->whereIn('genre_id', $topGenres)
+                          ->orWhereHas('genres', fn($gq) => $gq->whereIn('genres.id', $topGenres));
+                    });
+                }
+                break;
+
+            case 'recent_favorites':
+                // Tracks similar to what user recently liked
+                $likedIds = Like::where('user_id', $user->id)
+                    ->where('likeable_type', Track::class)
+                    ->orderByDesc('created_at')
+                    ->limit(50)
+                    ->pluck('likeable_id')
+                    ->toArray();
+
+                if (!empty($likedIds)) {
+                    // Get genres/artists from liked tracks
+                    $likedTracks = Track::whereIn('id', $likedIds)->get();
+                    $genreIds = $likedTracks->pluck('genre_id')->filter()->unique()->take(5)->toArray();
+                    $artistIds = $likedTracks->pluck('artist_id')->filter()->unique()->take(10)->toArray();
+
+                    $query->where(function ($q) use ($genreIds, $artistIds) {
+                        if (!empty($genreIds)) {
+                            $q->whereIn('genre_id', $genreIds);
+                        }
+                        if (!empty($artistIds)) {
+                            $q->orWhereIn('artist_id', $artistIds);
+                        }
+                    });
+                }
+                break;
+
+            case 'trending_in_genres':
+                // Most popular tracks in user's preferred genres
+                if (!empty($topGenres)) {
+                    $query->where(function ($q) use ($topGenres) {
+                        $q->whereIn('genre_id', $topGenres)
+                          ->orWhereHas('genres', fn($gq) => $gq->whereIn('genres.id', $topGenres));
+                    });
+                }
+                $query->orderByDesc('play_count');
+                break;
+
+            case 'mood_based':
+                // Tracks matching user's preferred moods
+                if (!empty($topMoods)) {
+                    $query->whereIn('mood', $topMoods);
+                } elseif (!empty($topGenres)) {
+                    $query->whereIn('genre_id', $topGenres);
+                }
+                break;
+
+            case 'artist_exploration':
+                // Tracks from artists similar to followed/top artists, but new to user
+                if (!empty($topArtists)) {
+                    // Get genres of top artists' tracks
+                    $artistGenreIds = Track::whereIn('artist_id', $topArtists)
+                        ->whereNotNull('genre_id')
+                        ->pluck('genre_id')
+                        ->unique()
+                        ->take(5)
+                        ->toArray();
+
+                    if (!empty($artistGenreIds)) {
+                        // Find tracks in same genres but from different artists
+                        $query->whereIn('genre_id', $artistGenreIds)
+                              ->whereNotIn('artist_id', $topArtists);
+                    }
+                }
+                break;
+
+            case 'forgotten_gems':
+                // Less popular tracks in user's genres that they haven't heard
+                if (!empty($topGenres)) {
+                    $query->where(function ($q) use ($topGenres) {
+                        $q->whereIn('genre_id', $topGenres)
+                          ->orWhereHas('genres', fn($gq) => $gq->whereIn('genres.id', $topGenres));
+                    });
+                }
+                $query->where('play_count', '<', 100)
+                      ->orderBy('play_count');
+                break;
+
+            default:
+                $query->orderByDesc('play_count');
+        }
+
+        // Always exclude already listened tracks and ensure published
+        $query->whereNotIn('id', $listenedIds);
+
+        return $query->limit($limit)->pluck('id')->toArray();
+    }
+
+    /**
+     * Invalidate cached smart playlists for a user.
+     */
+    public static function invalidateSmartPlaylists(User $user): void
+    {
+        Cache::forget("smart_playlists.{$user->id}");
     }
 
     /**

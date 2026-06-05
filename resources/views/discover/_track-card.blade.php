@@ -71,10 +71,6 @@
         </button>
     </div>
 
-    @if($reason)
-    <span class="inline-block bg-primary-500/10 text-primary-500 text-[10px] font-medium px-2 py-0.5 rounded-full mb-1.5 max-w-full truncate">{{ $reason }}</span>
-    @endif
-
     <a href="{{ $trackUrl }}" wire:navigate class="block">
         <div class="flex items-center gap-1.5">
             <p class="font-medium text-surface-900 dark:text-white text-sm truncate hover:text-primary-500 transition-colors">{{ $track->title }}</p>
