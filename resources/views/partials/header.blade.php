@@ -1,4 +1,4 @@
-<header id="app-header" class="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 backdrop-blur-xl border-b relative" style="background-color: var(--header-bg, rgba(255,255,255,0.8)); border-color: var(--header-border, #e2e8f0)50;">
+<header id="app-header" class="flex-shrink-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3 backdrop-blur-xl border-b relative" style="background-color: var(--header-bg, rgba(255,255,255,0.8)); border-color: var(--header-border, #e2e8f0)50; transform: translateZ(0);">
 
     {{-- Demo Mode Badge (centered in header) --}}
     @auth

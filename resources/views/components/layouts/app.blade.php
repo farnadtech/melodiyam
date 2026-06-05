@@ -222,13 +222,13 @@
 
     </div>
 
-    {{-- Global Player (persisted across wire:navigate) --}}
+    {{-- Mobile Navigation (always at screen bottom on mobile) --}}
+    @include('partials.mobile-nav')
+
+    {{-- Global Player (persisted across wire:navigate, sits above nav on mobile) --}}
     @persist('player')
     @include('partials.player')
     @endpersist
-
-    {{-- Mobile Navigation --}}
-    @include('partials.mobile-nav')
 
     {{-- Layout Manager: dynamic padding when player is open --}}
     <script>
@@ -252,6 +252,7 @@
                 hasPlayer = !!(window.Alpine && Alpine.store && Alpine.store('player') && Alpine.store('player').currentTrack);
             } catch(e) {}
 
+            var playerWrap = document.getElementById('global-player-wrapper');
             var navHeight = (isMobile && nav) ? (nav.offsetHeight || 60) : 0;
             var playerHeight = (playerBar && hasPlayer) ? (playerBar.offsetHeight || 74) : 0;
 
@@ -262,12 +263,15 @@
             } catch(e) {}
 
             if (isMobile) {
-                if (nav) {
-                    nav.style.transform = hasPlayer ? 'translateY(-' + playerHeight + 'px)' : 'translateY(0)';
+                if (nav) nav.style.transform = 'translateY(0)';
+                var navOffset = navHeight + safeArea;
+                if (playerWrap) {
+                    playerWrap.style.bottom = hasPlayer ? (navOffset + 'px') : '0px';
                 }
                 main.style.paddingBottom = (navHeight + playerHeight + safeArea + 12) + 'px';
             } else {
                 if (nav) nav.style.transform = 'translateY(0)';
+                if (playerWrap) playerWrap.style.bottom = '0px';
                 main.style.paddingBottom = (hasPlayer ? (playerHeight + 24) : 24) + 'px';
             }
 
@@ -298,6 +302,12 @@
             setTimeout(startLayoutManager, 100);
         });
         document.addEventListener('alpine:initialized', startLayoutManager);
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) setTimeout(startLayoutManager, 50);
+        });
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') updateLayout();
+        });
 
         if (typeof ResizeObserver !== 'undefined') {
             var ro = new ResizeObserver(updateLayout);

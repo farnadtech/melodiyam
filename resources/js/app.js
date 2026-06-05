@@ -1,9 +1,46 @@
 import './bootstrap';
+import { escapeHtml, isSafeUrl, sanitizeTrack, getCsrfToken } from './security';
+import { registerWaveform } from './waveform';
+import { registerTrackPage } from './track-page';
 
-// ── Register Alpine plugins & stores ──
-// Livewire v4 owns Alpine, so we hook into its lifecycle.
+const AUDIO_SINGLETON_KEY = '__melodiyamPlayerAudio';
+let _alpineRegistered = false;
+let _dragScrollRegistered = false;
+
+function getPlayerAudio() {
+    if (!window[AUDIO_SINGLETON_KEY]) {
+        window[AUDIO_SINGLETON_KEY] = new Audio();
+        window[AUDIO_SINGLETON_KEY].setAttribute('data-melodiyam-player', '1');
+    }
+    return window[AUDIO_SINGLETON_KEY];
+}
+
+function stopAllOtherAudio(except) {
+    document.querySelectorAll('audio').forEach(el => {
+        if (el === except) return;
+        if (!el.paused) {
+            el.pause();
+            try { el.currentTime = 0; } catch { /* ignore */ }
+        }
+    });
+}
+
+function ensureSinglePlayerDom() {
+    const bars = document.querySelectorAll('#global-player-bar');
+    if (bars.length <= 1) return;
+    for (let i = 1; i < bars.length; i++) {
+        const wrapper = bars[i].closest('#global-player-wrapper');
+        if (wrapper) wrapper.remove();
+    }
+}
+
 function registerAlpineStuff(Alpine) {
-    // ── Global Music Player Store ──
+    if (_alpineRegistered) return;
+    _alpineRegistered = true;
+
+    registerWaveform(Alpine);
+    registerTrackPage(Alpine);
+
     Alpine.store('player', {
         isPlaying: false,
         currentTrack: null,
@@ -19,12 +56,15 @@ function registerAlpineStuff(Alpine) {
         isMiniPlayer: true,
         audio: null,
         previewLimitReached: false,
+        _bound: false,
 
         init() {
-            this.audio = new Audio();
+            this.audio = getPlayerAudio();
             this.audio.volume = this.volume / 100;
 
-            // Load quality preference
+            if (this._bound) return;
+            this._bound = true;
+
             this.quality = localStorage.getItem('playback_quality') || 'auto';
             window.addEventListener('quality-changed', (e) => {
                 this.quality = e.detail;
@@ -33,7 +73,6 @@ function registerAlpineStuff(Alpine) {
             this.audio.addEventListener('timeupdate', () => {
                 this.currentTime = this.audio.currentTime;
 
-                // Preview limit check
                 const t = this.currentTrack;
                 if (t && t.previewSeconds > 0 && !t.canPlay && this.audio.currentTime >= t.previewSeconds) {
                     this.audio.pause();
@@ -49,20 +88,22 @@ function registerAlpineStuff(Alpine) {
 
             this.audio.addEventListener('loadedmetadata', () => {
                 this.duration = this.audio.duration;
-                
-                // If track duration is 0 or missing in DB, update it now that we have it from the browser
+
                 if (this.currentTrack && this.duration > 0) {
                     const trackId = String(this.currentTrack.id);
                     if (!trackId.startsWith('episode-')) {
                         const stored = this.currentTrack.duration;
                         if (!stored || stored <= 0) {
-                            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                            const url = '/api/track/' + trackId + '/fix-duration';
-                            const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-                            if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+                            const csrf = getCsrfToken();
+                            if (!csrf) return;
+                            const url = '/api/track/' + encodeURIComponent(trackId) + '/fix-duration';
                             fetch(url, {
                                 method: 'POST',
-                                headers,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrf,
+                                },
                                 body: JSON.stringify({ duration: Math.round(this.duration) })
                             }).catch(() => {});
                         }
@@ -78,12 +119,10 @@ function registerAlpineStuff(Alpine) {
                 this.handleTrackEnd();
             });
 
-            // Record stream when user navigates away or refreshes
             window.addEventListener('beforeunload', () => {
                 this.recordStream(false);
             });
 
-            // Periodic recording every 30 seconds for long sessions
             setInterval(() => {
                 if (this.isPlaying && this.currentTrack) {
                     this.recordStream(false);
@@ -92,52 +131,60 @@ function registerAlpineStuff(Alpine) {
         },
 
         play(track = null) {
-            // اگر تبلیغ داره پخش میشه، آهنگ جدید رو نگه دار تا بعد از تبلیغ پخش بشه
             if (window._adCurrentlyPlaying) {
-                if (track) window._adPendingTrack = track;
+                if (track) window._adPendingTrack = sanitizeTrack(track);
                 return;
             }
 
             if (track) {
-                // If premium-only with no preview, show upgrade modal immediately
-                if (track.isPremium && !(track.previewSeconds > 0)) {
-                    this.showPremiumModal(track);
+                const safe = sanitizeTrack(track);
+                if (!safe || !safe.url) return;
+
+                if (safe.isPremium && !(safe.previewSeconds > 0)) {
+                    this.showPremiumModal(safe);
                     return;
                 }
 
                 const prevId = this.currentTrack?.id;
-                const isTrackChange = prevId && prevId !== track.id;
+                const isTrackChange = !prevId || String(prevId) !== String(safe.id);
 
-                this.currentTrack = track;
+                if (isTrackChange) {
+                    stopAllOtherAudio(this.audio);
+                    if (this.audio) {
+                        this.audio.pause();
+                        this.audio.currentTime = 0;
+                    }
+                }
+
+                this.currentTrack = safe;
                 this.previewLimitReached = false;
 
-                // Immediately set duration from track data so it shows before metadata loads
-                if (track.duration && track.duration > 0) {
-                    this.duration = track.duration;
+                if (safe.duration && safe.duration > 0) {
+                    this.duration = safe.duration;
                 } else {
                     this.duration = 0;
                 }
 
                 if (this.audio) {
-                    let streamUrl = track.url;
-                    // Append quality param if it's a local stream and quality is set
+                    let streamUrl = safe.url;
                     if (streamUrl.includes('/stream/track/')) {
                         const q = localStorage.getItem('playback_quality') || 'auto';
                         if (q !== 'auto') {
-                            streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'quality=' + q;
+                            streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'quality=' + encodeURIComponent(q);
                         }
                     }
                     this.audio.src = streamUrl;
                     this.audio.load();
                 }
 
-                // اگر track عوض شد، از ad hook چک کن
                 if (isTrackChange && window._adCheckHook) {
-                    const shouldBlock = window._adCheckHook(track);
-                    if (shouldBlock) return; // ad شروع شد، پخش نکن
+                    const shouldBlock = window._adCheckHook(safe);
+                    if (shouldBlock) return;
                 }
             }
+
             if (this.audio && this.audio.src) {
+                stopAllOtherAudio(this.audio);
                 this.audio.play().catch(() => {});
             }
             this.isPlaying = true;
@@ -151,30 +198,58 @@ function registerAlpineStuff(Alpine) {
             const hasDiscount = track.discountPrice && track.discountPrice !== track.price;
             const price = hasDiscount ? track.discountPrice : track.price;
             const originalPrice = hasDiscount ? track.price : null;
-            const purchaseUrl = track.purchaseUrl || '#';
+            const purchaseUrl = track.purchaseUrl && isSafeUrl(track.purchaseUrl) ? track.purchaseUrl : '#';
+            const title = escapeHtml(track.title);
 
             const modal = document.createElement('div');
             modal.id = 'preview-purchase-modal';
             modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);direction:rtl;';
-            modal.innerHTML = `
-                <div style="background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);">
-                    <div style="width:64px;height:64px;border-radius:50%;background:${primary}26;border:2px solid ${primary}55;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                        <svg width="28" height="28" fill="none" stroke="${primary}" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </div>
-                    <h3 style="color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;">پیش‌نمایش به پایان رسید</h3>
-                    <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;">برای شنیدن کامل «${track.title}» آهنگ را خریداری کنید</p>
-                    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px;">
-                        ${originalPrice ? `<span style="color:#64748b;text-decoration:line-through;font-size:13px;">${originalPrice.toLocaleString()}</span>` : ''}
-                        <span style="color:${primary};font-size:22px;font-weight:800;">${price.toLocaleString()} ت</span>
-                    </div>
-                    <div style="display:flex;gap:10px;justify-content:center;">
-                        <button onclick="document.getElementById('preview-purchase-modal').remove()" style="padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;">بستن</button>
-                        <a href="${purchaseUrl}" style="padding:10px 24px;border-radius:10px;background:${primary};color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            خرید آهنگ
-                        </a>
-                    </div>
-                </div>`;
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);';
+
+            const heading = document.createElement('h3');
+            heading.style.cssText = 'color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;';
+            heading.textContent = 'پیش‌نمایش به پایان رسید';
+
+            const desc = document.createElement('p');
+            desc.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:20px;';
+            desc.textContent = 'برای شنیدن کامل «' + (track.title || '') + '» آهنگ را خریداری کنید';
+
+            const priceWrap = document.createElement('div');
+            priceWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px;';
+            if (originalPrice) {
+                const orig = document.createElement('span');
+                orig.style.cssText = 'color:#64748b;text-decoration:line-through;font-size:13px;';
+                orig.textContent = Number(originalPrice).toLocaleString();
+                priceWrap.appendChild(orig);
+            }
+            const priceEl = document.createElement('span');
+            priceEl.style.cssText = 'color:' + primary + ';font-size:22px;font-weight:800;';
+            priceEl.textContent = Number(price).toLocaleString() + ' ت';
+            priceWrap.appendChild(priceEl);
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.style.cssText = 'padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;';
+            closeBtn.textContent = 'بستن';
+            closeBtn.addEventListener('click', () => modal.remove());
+
+            const buyLink = document.createElement('a');
+            buyLink.href = purchaseUrl;
+            buyLink.style.cssText = 'padding:10px 24px;border-radius:10px;background:' + primary + ';color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;';
+            buyLink.textContent = 'خرید آهنگ';
+
+            actions.appendChild(closeBtn);
+            actions.appendChild(buyLink);
+            card.appendChild(heading);
+            card.appendChild(desc);
+            card.appendChild(priceWrap);
+            card.appendChild(actions);
+            modal.appendChild(card);
             document.body.appendChild(modal);
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
         },
@@ -182,26 +257,45 @@ function registerAlpineStuff(Alpine) {
         showPremiumModal(track) {
             const old = document.getElementById('preview-premium-modal');
             if (old) old.remove();
+
             const primary = getComputedStyle(document.documentElement).getPropertyValue('--admin-primary').trim() || '#0ea5e9';
-            const purchaseUrl = track.purchaseUrl || '/premium';
+            const purchaseUrl = track.purchaseUrl && isSafeUrl(track.purchaseUrl) ? track.purchaseUrl : '/premium';
+
             const modal = document.createElement('div');
             modal.id = 'preview-premium-modal';
             modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);direction:rtl;';
-            modal.innerHTML = `
-                <div style="background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid ${primary}44;">
-                    <div style="width:64px;height:64px;border-radius:50%;background:${primary}26;border:2px solid ${primary}66;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                        <svg width="28" height="28" fill="${primary}" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    </div>
-                    <h3 style="color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;">پیش‌نمایش به پایان رسید</h3>
-                    <p style="color:#94a3b8;font-size:13px;margin-bottom:24px;">برای شنیدن کامل «${track.title}» اشتراک پریمیوم تهیه کنید</p>
-                    <div style="display:flex;gap:10px;justify-content:center;">
-                        <button onclick="document.getElementById('preview-premium-modal').remove()" style="padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;">بستن</button>
-                        <a href="${purchaseUrl}" style="padding:10px 24px;border-radius:10px;background:${primary};color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                            ارتقا به پریمیوم
-                        </a>
-                    </div>
-                </div>`;
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid ' + primary + '44;';
+
+            const heading = document.createElement('h3');
+            heading.style.cssText = 'color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;';
+            heading.textContent = 'پیش‌نمایش به پایان رسید';
+
+            const desc = document.createElement('p');
+            desc.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:24px;';
+            desc.textContent = 'برای شنیدن کامل «' + (track.title || '') + '» اشتراک پریمیوم تهیه کنید';
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.style.cssText = 'padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;';
+            closeBtn.textContent = 'بستن';
+            closeBtn.addEventListener('click', () => modal.remove());
+
+            const upgradeLink = document.createElement('a');
+            upgradeLink.href = purchaseUrl;
+            upgradeLink.style.cssText = 'padding:10px 24px;border-radius:10px;background:' + primary + ';color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;';
+            upgradeLink.textContent = 'ارتقا به پریمیوم';
+
+            actions.appendChild(closeBtn);
+            actions.appendChild(upgradeLink);
+            card.appendChild(heading);
+            card.appendChild(desc);
+            card.appendChild(actions);
+            modal.appendChild(card);
             document.body.appendChild(modal);
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
         },
@@ -209,21 +303,16 @@ function registerAlpineStuff(Alpine) {
         recordStream(completed = false) {
             if (!this.currentTrack) return;
             const listened = Math.floor(this.currentTime);
-            // Only record if listened at least 3 seconds
             if (listened < 3) return;
 
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            // Only record for authenticated users (csrf token exists)
+            const csrf = getCsrfToken();
             if (!csrf) return;
-
-            console.log('Recording stream:', this.currentTrack.id, 'listened:', listened, 'completed:', completed);
 
             const payload = {
                 duration_listened: listened,
                 completed: completed
             };
 
-            // Handle both tracks and podcast episodes
             const idStr = String(this.currentTrack.id);
             if (idStr.startsWith('episode-')) {
                 payload.episode_id = idStr.replace('episode-', '');
@@ -272,9 +361,10 @@ function registerAlpineStuff(Alpine) {
         },
 
         setVolume(vol) {
-            this.volume = vol;
-            if (this.audio) this.audio.volume = vol / 100;
-            this.isMuted = vol === 0;
+            const safe = Math.max(0, Math.min(100, Number(vol) || 0));
+            this.volume = safe;
+            if (this.audio) this.audio.volume = safe / 100;
+            this.isMuted = safe === 0;
         },
 
         toggleMute() {
@@ -291,7 +381,6 @@ function registerAlpineStuff(Alpine) {
                 this.queueIndex = (this.queueIndex + 1) % this.queue.length;
             }
             const track = this.queue[this.queueIndex];
-            // If ad is playing, set pending track
             if (window._adCurrentlyPlaying) {
                 window._adPendingTrack = track;
                 return;
@@ -308,7 +397,6 @@ function registerAlpineStuff(Alpine) {
             if (this.queue.length === 0) return;
             this.queueIndex = (this.queueIndex - 1 + this.queue.length) % this.queue.length;
             const track = this.queue[this.queueIndex];
-            // If ad is playing, set pending track
             if (window._adCurrentlyPlaying) {
                 window._adPendingTrack = track;
                 return;
@@ -346,13 +434,16 @@ function registerAlpineStuff(Alpine) {
         },
 
         addToQueue(track) {
-            this.queue.push(track);
+            const safe = sanitizeTrack(track);
+            if (safe) this.queue.push(safe);
         },
 
         playQueue(tracks, startIndex = 0) {
-            this.queue = tracks;
-            this.queueIndex = startIndex;
-            this.play(tracks[startIndex]);
+            this.queue = (Array.isArray(tracks) ? tracks : [])
+                .map(sanitizeTrack)
+                .filter(Boolean);
+            this.queueIndex = Math.max(0, Math.min(startIndex, this.queue.length - 1));
+            if (this.queue.length) this.play(this.queue[this.queueIndex]);
         },
 
         get progress() {
@@ -374,7 +465,6 @@ function registerAlpineStuff(Alpine) {
         }
     });
 
-    // ── Theme Store ──
     Alpine.store('theme', {
         dark: (() => {
             const stored = localStorage.getItem('theme_dark');
@@ -382,7 +472,6 @@ function registerAlpineStuff(Alpine) {
         })(),
 
         init() {
-            // Ensure DOM matches stored preference on every page load/navigate
             document.documentElement.classList.toggle('dark', this.dark);
         },
 
@@ -392,14 +481,17 @@ function registerAlpineStuff(Alpine) {
             document.documentElement.classList.toggle('dark', this.dark);
         }
     });
-    // ── Global Events ──
+
     window.addEventListener('play-track', (e) => {
-        Alpine.store('player').play(e.detail);
+        const track = sanitizeTrack(e.detail);
+        if (track) Alpine.store('player').play(track);
     });
 }
 
-// ── Drag-to-scroll directive ──
 function registerDragScroll(Alpine) {
+    if (_dragScrollRegistered) return;
+    _dragScrollRegistered = true;
+
     Alpine.directive('drag-scroll', (el) => {
         let isDown = false;
         let startX;
@@ -432,45 +524,86 @@ function registerDragScroll(Alpine) {
     });
 }
 
-// Try multiple hooks to ensure stores get registered regardless of load order
-document.addEventListener('alpine:init', () => {
-    if (window.Alpine) {
-        registerAlpineStuff(window.Alpine);
-        registerDragScroll(window.Alpine);
-    }
-});
-
-// Fallback: if Alpine already started before our module loaded
-if (window.Alpine) {
-    registerAlpineStuff(window.Alpine);
-    registerDragScroll(window.Alpine);
+function bootAlpine(Alpine) {
+    registerAlpineStuff(Alpine);
+    registerDragScroll(Alpine);
 }
 
-// Re-sync theme after Livewire page navigations
+document.addEventListener('alpine:init', () => {
+    if (window.Alpine) bootAlpine(window.Alpine);
+});
+
+if (window.Alpine) {
+    bootAlpine(window.Alpine);
+}
+
+function fixMobileLayout() {
+    const header = document.getElementById('app-header');
+    if (header) {
+        header.style.transform = 'translateZ(0)';
+        void header.offsetHeight;
+    }
+}
+
 document.addEventListener('livewire:navigated', () => {
     const dark = localStorage.getItem('theme_dark');
     const isDark = dark === null ? true : dark === 'true';
     document.documentElement.classList.toggle('dark', isDark);
+    ensureSinglePlayerDom();
+    fixMobileLayout();
+
+    if (window.Alpine) {
+        document.querySelectorAll('[x-data^="waveform"]').forEach(el => {
+            if (el._x_dataStack && el._x_dataStack.length > 0) return;
+            Alpine.initTree(el);
+        });
+    }
 });
 
-// Demo mode: toast helper & interceptors
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+        fixMobileLayout();
+        const dark = localStorage.getItem('theme_dark');
+        const isDark = dark === null ? true : dark === 'true';
+        document.documentElement.classList.toggle('dark', isDark);
+    }
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        fixMobileLayout();
+    }
+});
+
 window.showDemoToast = function(msg) {
+    const safeMsg = String(msg || 'شما در حالت نمایشی (دمو) هستید و امکان ایجاد تغییرات را ندارید.').slice(0, 500);
     window.dispatchEvent(new CustomEvent('flash-message', {
-        detail: {
-            message: msg || 'شما در حالت نمایشی (دمو) هستید و امکان ایجاد تغییرات را ندارید.',
-            type: 'error'
-        }
+        detail: { message: safeMsg, type: 'error' }
     }));
 };
 
-// Listen for Livewire dispatch 'demo-blocked' event (returned as 200 with dispatches effect)
 window.addEventListener('demo-blocked', function(e) {
     window.showDemoToast(e.detail?.message || e.detail?.params?.message);
 });
 
-// Intercept non-Livewire fetch requests that return 403 (e.g. regular form POSTs)
-var _origFetch = window.fetch;
-window.fetch = function() {
+const _origFetch = window.fetch;
+window.fetch = function(input, init) {
+    let url = input;
+    if (typeof input === 'string') {
+        if (input.startsWith('//')) return Promise.reject(new Error('Blocked URL'));
+    } else if (input instanceof Request) {
+        url = input.url;
+    }
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        try {
+            const parsed = new URL(url, window.location.origin);
+            if (parsed.origin !== window.location.origin) {
+                return _origFetch.apply(this, arguments);
+            }
+        } catch {
+            return Promise.reject(new Error('Invalid URL'));
+        }
+    }
     return _origFetch.apply(this, arguments).then(function(response) {
         if (response.status === 403 && response.headers.get('X-Demo-Blocked') === '1') {
             window.showDemoToast();
@@ -478,5 +611,3 @@ window.fetch = function() {
         return response;
     });
 };
-
-// ── PWA: Handled in Blade layouts for better reliability ──

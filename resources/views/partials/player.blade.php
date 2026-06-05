@@ -49,9 +49,14 @@
             window._adPendingTrack = null;
 
             const playerStore = Alpine.store('player');
-            // پاز کن آهنگ اصلی
-            if (playerStore.audio) { playerStore.audio.pause(); }
+            if (playerStore.audio) {
+                playerStore.audio.pause();
+                playerStore.audio.currentTime = 0;
+            }
             playerStore.isPlaying = false;
+            document.querySelectorAll('audio').forEach(el => {
+                if (el !== playerStore.audio && !el.paused) el.pause();
+            });
             this.adPlaying = true;
             this.adTitle = this.adConfig.title ?? 'تبلیغ';
             this.adRemaining = this.adConfig.duration ?? 15;
@@ -141,15 +146,15 @@
 
 {{-- Global Music Player --}}
 <div
-    wire:persist="global-music-player"
+    id="global-player-wrapper"
     x-data="{ showQueue: false }"
     x-cloak
     x-show="$store.player.currentTrack"
     x-transition:enter="transition ease-out duration-300"
     x-transition:enter-start="translate-y-full"
     x-transition:enter-end="translate-y-0"
-    class="fixed bottom-0 inset-x-0 z-[100]"
-    style="padding-bottom: env(safe-area-inset-bottom, 0px)"
+    class="fixed inset-x-0 z-[95] lg:z-[100] lg:bottom-0"
+    style="bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); transition: bottom 0.3s ease"
 >
     <div id="global-player-bar" class="backdrop-blur-2xl border-t px-3 lg:px-4 py-2 lg:py-3 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
 
