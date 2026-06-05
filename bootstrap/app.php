@@ -13,11 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\DisableBrowserCache::class,
             \App\Http\Middleware\DemoModeGuard::class,
             \App\Http\Middleware\EnforceVerification::class,
         ]);
         $middleware->api(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\DemoModeGuard::class,
         ]);
     })

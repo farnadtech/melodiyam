@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -81,6 +82,13 @@ class Login extends Component
 
     public function loginWithPassword()
     {
+        $throttleKey = 'login-attempt:' . $this->identifier . '|' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('identifier', "تعداد دفعات تلاش بیش از حد مجاز است. لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate([
             'identifier' => 'required',
             'password' => 'required|min:6',
@@ -88,17 +96,26 @@ class Login extends Component
 
         $fieldType = filter_var($this->identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
-        if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password], true)) {
+        if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password, 'is_active' => true], true)) {
+            RateLimiter::clear($throttleKey);
             return redirect()->intended('/');
         }
 
-        $this->addError('identifier', 'اطلاعات ورود (ایمیل/شماره یا رمز عبور) اشتباه است');
+        RateLimiter::hit($throttleKey, 60);
+        $this->addError('identifier', 'اطلاعات ورود (ایمیل/شماره یا رمز عبور) اشتباه است یا حساب کاربری شما غیرفعال شده است');
     }
 
     // ── Phone OTP Login ──
 
     public function sendCode()
     {
+        $throttleKey = 'otp-send:' . $this->phone . '|' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('phone', "لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate(['phone' => 'required|regex:/^09[0-9]{9}$/']);
 
         // Check if OTP is enabled in Notification Settings
@@ -110,11 +127,12 @@ class Login extends Component
 
         $otp = OtpCode::generate($this->phone);
 
-        // Send SMS via NotificationDispatcher (to handle patterns and drivers automatically)
+        // Send SMS via NotificationDispatcher
         \App\Services\NotificationDispatcher::dispatch('otp_code', [
             'code' => $otp->code,
         ], (object)['phone' => $this->phone]);
 
+        RateLimiter::hit($throttleKey, 120);
         $this->codeSent = true;
         $this->countdown = 120;
 
@@ -123,15 +141,25 @@ class Login extends Component
 
     public function verify()
     {
+        $throttleKey = 'otp-verify:' . $this->phone . '|' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('code', "تعداد دفعات تلاش بیش از حد مجاز است. لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate([
             'phone' => 'required|regex:/^09[0-9]{9}$/',
             'code' => 'required|digits:6',
         ]);
 
         if (!OtpCode::verify($this->phone, $this->code)) {
+            RateLimiter::hit($throttleKey, 60);
             $this->addError('code', 'کد وارد شده نامعتبر است');
             return;
         }
+
+        RateLimiter::clear($throttleKey);
 
         $user = User::firstOrCreate(
             ['phone' => $this->phone],

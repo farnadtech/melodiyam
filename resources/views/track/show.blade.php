@@ -422,7 +422,7 @@
         @else
         <section
             wire:key="waveform-full-{{ $track->id }}"
-            x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, @json($comments->whereNotNull('timestamp_at')->map(fn($c) => ['id' => $c->id, 'body' => $c->body, 'user' => $c->user->name ?? 'کاربر', 'at' => $c->timestamp_at, 'likes' => $c->likes_count ?? 0])->values()))"
+            x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, @json($waveformComments))"
             x-init="init()"
             data-php-duration="{{ $track->duration }}"
             data-preview-sec="{{ $previewSec ?? 0 }}"

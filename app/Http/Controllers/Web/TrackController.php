@@ -121,10 +121,18 @@ class TrackController extends Controller
                 ->exists();
         }
 
+        $waveformComments = $comments->whereNotNull('timestamp_at')->map(fn($c) => [
+            'id' => $c->id,
+            'body' => $c->body,
+            'user' => $c->user->name ?? 'کاربر',
+            'at' => $c->timestamp_at,
+            'likes' => $c->likes_count ?? 0
+        ])->values();
+
         return view('track.show', compact(
             'track', 'relatedTracks', 'comments', 'userLikedTrack', 'userRepostedTrack', 'canPlay',
             'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount',
-            'isPremiumOnly', 'premiumPreviewSec', 'canDownload'
+            'isPremiumOnly', 'premiumPreviewSec', 'canDownload', 'waveformComments'
         ));
     }
 

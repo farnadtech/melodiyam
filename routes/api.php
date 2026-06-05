@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
 
     // Public API
     Route::get('/tracks', [\App\Http\Controllers\Api\TrackController::class, 'index']);
@@ -13,8 +13,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/search', [\App\Http\Controllers\Api\SearchController::class, 'index']);
 
     // Auth
-    Route::post('/auth/send-code', [\App\Http\Controllers\Api\AuthController::class, 'sendCode']);
-    Route::post('/auth/verify', [\App\Http\Controllers\Api\AuthController::class, 'verify']);
+    Route::post('/auth/send-code', [\App\Http\Controllers\Api\AuthController::class, 'sendCode'])->middleware('throttle:3,1');
+    Route::post('/auth/verify', [\App\Http\Controllers\Api\AuthController::class, 'verify'])->middleware('throttle:10,1');
 
     // Authenticated routes
     Route::middleware('auth:sanctum')->group(function () {

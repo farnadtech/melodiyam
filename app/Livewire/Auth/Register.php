@@ -6,6 +6,8 @@ use App\Models\OtpCode;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -108,6 +110,13 @@ class Register extends Component
 
     public function registerWithEmail()
     {
+        $throttleKey = 'register-attempt:' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('email', "تعداد دفعات تلاش بیش از حد مجاز است. لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate();
 
         $user = User::create([
@@ -118,6 +127,7 @@ class Register extends Component
         ]);
 
         Auth::login($user, true);
+        RateLimiter::clear($throttleKey);
 
         return redirect()->intended('/');
     }
@@ -126,6 +136,13 @@ class Register extends Component
 
     public function sendCode()
     {
+        $throttleKey = 'otp-send:' . $this->phone . '|' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('phone', "لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
@@ -148,15 +165,24 @@ class Register extends Component
             'code' => $otp->code,
         ], (object)['phone' => $this->phone]);
 
+        RateLimiter::hit($throttleKey, 120);
         $this->codeSent = true;
         $this->dispatch('start-countdown');
     }
 
     public function registerWithPhone()
     {
+        $throttleKey = 'otp-verify:' . $this->phone . '|' . request()->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            $this->addError('code', "تعداد دفعات تلاش بیش از حد مجاز است. لطفاً $seconds ثانیه صبر کنید.");
+            return;
+        }
+
         $this->validate();
 
         if (!OtpCode::verify($this->phone, $this->code)) {
+            RateLimiter::hit($throttleKey, 60);
             $this->addError('code', 'کد وارد شده نامعتبر است');
             return;
         }
@@ -170,6 +196,7 @@ class Register extends Component
         ]);
 
         Auth::login($user, true);
+        RateLimiter::clear($throttleKey);
 
         return redirect()->intended('/');
     }
