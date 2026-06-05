@@ -1,19 +1,12 @@
-const CACHE_NAME = 'melodiyam-v1';
+const CACHE_NAME = 'melodiyam-v2';
 const OFFLINE_URL = '/';
 
-const PRECACHE_ASSETS = [
-    '/',
-];
-
-// Install — precache shell
+// Install — skip waiting, activate immediately
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
-    );
     self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — clean old caches, claim all clients
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -25,25 +18,27 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — network only (no caching to avoid PWA issues)
 self.addEventListener('fetch', event => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    // Skip Livewire, API, and admin requests
+    // Skip Livewire, API, admin, stream, and manifest requests
     const url = new URL(event.request.url);
     if (url.pathname.startsWith('/livewire') ||
         url.pathname.startsWith('/api') ||
         url.pathname.startsWith('/admin') ||
+        url.pathname.startsWith('/stream') ||
+        url.pathname === '/manifest.json' ||
         url.searchParams.has('_wire')) {
         return;
     }
 
+    // Network-first with optional cache fallback
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                // Cache successful GET responses
-                if (response.status === 200) {
+                if (response.status === 200 && response.type === 'basic') {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, clone);
@@ -52,10 +47,8 @@ self.addEventListener('fetch', event => {
                 return response;
             })
             .catch(() => {
-                // Offline — serve from cache
                 return caches.match(event.request).then(cached => {
                     if (cached) return cached;
-                    // For navigation, return offline page
                     if (event.request.mode === 'navigate') {
                         return caches.match(OFFLINE_URL);
                     }

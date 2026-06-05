@@ -92,17 +92,19 @@
     <link rel="icon" href="{{ $siteFavicon ?? asset('images/favicon.ico') }}">
     {{-- PWA --}}
     @if(\App\Models\Setting::get('pwa_enabled', '1'))
-    <link rel="manifest" href="{{ route('pwa.manifest') }}">
-    <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     @php $_appleIcon = \App\Models\Setting::get('pwa_icon_180'); @endphp
     @if($_appleIcon)
-    <link rel="apple-touch-icon" href="{{ asset('storage/' . $_appleIcon) }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('storage/' . $_appleIcon) }}">
     @else
-    <link rel="apple-touch-icon" href="{{ asset('images/pwa-icon-180.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/pwa-icon-180.png') }}">
     @endif
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
     @endif
     @livewireStyles
     @if(!empty($googleAnalytics))
@@ -156,7 +158,7 @@
             @endauth
 
             {{-- Main Content --}}
-            <main class="flex-1 overflow-y-auto pb-24">
+            <main class="flex-1 overflow-y-auto pb-32 md:pb-6">
                 {{ $slot }}
             </main>
 

@@ -454,12 +454,29 @@ window.fetch = function() {
 
 // ── PWA: Service Worker & Install Prompt ──
 (function() {
-    // Register service worker
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // Service Worker registration
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(function() {});
+        if (isIOS) {
+            // On iOS: unregister any existing SW to avoid interfering with standalone mode
+            // iOS Safari supports SW since 16.4 but it can break home screen shortcuts
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var i = 0; i < registrations.length; i++) {
+                    registrations[i].unregister();
+                }
+            }).catch(function() {});
+        } else {
+            // On Android/Desktop: register normally
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+                // Force update check to get new SW version
+                reg.update();
+            }).catch(function() {});
+        }
     }
 
-    // Capture beforeinstallprompt event
+    // Capture beforeinstallprompt event (Android/Chrome only)
     var deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
@@ -483,7 +500,7 @@ window.fetch = function() {
 
         var banner = document.createElement('div');
         banner.id = 'pwa-install-banner';
-        banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
+        banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
 
         banner.innerHTML = '<svg style="width:28px;height:28px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
             + '<div style="flex:1;">'
@@ -510,18 +527,16 @@ window.fetch = function() {
         if (el) el.remove();
     }
 
-    // iOS Safari — show manual install hint
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // iOS Safari — show manual install hint (only when NOT standalone)
     var isSafariIOS = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
-    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    
+
     if (isSafariIOS && !isStandalone) {
         if (!localStorage.getItem('pwa_dismissed')) {
             setTimeout(function() {
                 if (document.getElementById('pwa-install-banner')) return;
                 var banner = document.createElement('div');
                 banner.id = 'pwa-install-banner';
-                banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
+                banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);max-width:90vw;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;';
                 banner.innerHTML = '<svg style="width:28px;height:28px;flex-shrink:0;color:#0ea5e9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
                     + '<div style="flex:1;">'
                     + '<div style="color:#fff;font-size:13px;font-weight:600;">نصب اپلیکیشن روی آیفون</div>'

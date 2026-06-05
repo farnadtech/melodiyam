@@ -70,7 +70,7 @@ class ManifestController extends Controller
             'name' => $name,
             'short_name' => $shortName,
             'description' => Setting::get('site_description', ''),
-            'start_url' => '/',
+            'start_url' => '/?source=pwa',
             'scope' => '/',
             'display' => $display,
             'display_override' => ['standalone', 'minimal-ui', 'browser'],
@@ -84,7 +84,8 @@ class ManifestController extends Controller
             'icons' => $icons,
         ], 200, [
             'Content-Type' => 'application/manifest+json',
-            'Cache-Control' => 'no-cache',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Access-Control-Allow-Origin' => '*',
         ]);
     }
 }
