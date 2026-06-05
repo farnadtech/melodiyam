@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Playlist;
 use App\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -113,7 +114,7 @@ class SmartPlaylistSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
         $templates = $data['templates'] ?? [];
-
+    
         // Ensure unique keys
         $keys = array_column($templates, 'key');
         if (count($keys) !== count(array_unique($keys))) {
@@ -124,16 +125,36 @@ class SmartPlaylistSettings extends Page implements HasForms
                 ->send();
             return;
         }
-
+    
         Setting::set('smart_playlist_templates', json_encode($templates));
         Cache::forget('smart_playlist_templates');
-
-        // Invalidate all user smart playlist caches
-        Cache::forget('smart_playlists_all');
-
+    
         Notification::make()
             ->success()
-            ->title('تنظیمات پلی‌لیست‌های هوشمند ذخیره شد')
+            ->title("تنظیمات پلی\xE2\x80\x8Cلیست\xE2\x80\x8Cهای هوشمند ذخیره شد")
+            ->send();
+    }
+    
+    /**
+     * Refresh all recommendations for all users.
+     * Deletes auto-generated playlists and invalidates all caches.
+     */
+    public function refreshAll(): void
+    {
+        // Bump the global cache version to invalidate all per-user caches
+        $newVersion = now()->timestamp;
+        Setting::set('rec_cache_version', $newVersion);
+        Cache::forget('smart_playlist_templates');
+    
+        // Delete all auto-generated playlists (they'll be recreated on next visit)
+        Playlist::where('is_auto_generated', true)->delete();
+    
+        // Clear Laravel's tag-based caches for all users
+        // Since we use versioned keys, just bumping version is enough
+        Notification::make()
+            ->success()
+            ->title('تمام پیشنهادها بروزرسانی شدند')
+            ->body("پلی\xE2\x80\x8Cلیست\xE2\x80\x8Cهای هوشمند حذف شدند و در بازدید بعدی کاربران دوباره ساخته می\xE2\x80\x8Cشوند.")
             ->send();
     }
 
@@ -145,6 +166,16 @@ class SmartPlaylistSettings extends Page implements HasForms
                 ->icon('heroicon-o-check')
                 ->color('primary')
                 ->action('save'),
+
+            Action::make('refreshAll')
+                ->label('بروزرسانی تمام پیشنهادها')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('بروزرسانی تمام پیشنهادها')
+                ->modalDescription("تمام پلی\xE2\x80\x8Cلیست\xE2\x80\x8Cهای هوشمند حذف و کش پیشنهادها برای همه کاربران پاک می\xE2\x80\x8Cشود. پیشنهادها در بازدید بعدی کاربران دوباره ساخته می\xE2\x80\x8Cشوند.")
+                ->modalSubmitActionLabel('بله، بروزرسانی کن')
+                ->action('refreshAll'),
         ];
     }
 }

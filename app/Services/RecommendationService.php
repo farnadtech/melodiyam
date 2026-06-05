@@ -17,11 +17,21 @@ use Illuminate\Support\Facades\DB;
 class RecommendationService
 {
     /**
+     * Get the global cache version for recommendations.
+     * When admin refreshes all, this version bumps and invalidates all caches.
+     */
+    protected function cacheVersion(): string
+    {
+        return (string) Setting::get('rec_cache_version', '1');
+    }
+
+    /**
      * Main entry point — returns cached personalized recommendations.
      */
     public function getRecommendations(User $user, int $trackLimit = 20, int $albumLimit = 12, int $playlistLimit = 8): array
     {
-        $cacheKey = "discover.rec.{$user->id}";
+        $version = $this->cacheVersion();
+        $cacheKey = "discover.rec.v{$version}.{$user->id}";
         $cacheTtl = 7 * 24 * 60 * 60; // 7 days
 
         return Cache::remember($cacheKey, $cacheTtl, function () use ($user, $trackLimit, $albumLimit, $playlistLimit) {
@@ -457,7 +467,8 @@ class RecommendationService
      */
     public function getSmartPlaylists(User $user): \Illuminate\Support\Collection
     {
-        $cacheKey = "smart_playlists.{$user->id}";
+        $version = $this->cacheVersion();
+        $cacheKey = "smart_playlists.v{$version}.{$user->id}";
         $cacheTtl = 7 * 24 * 60 * 60; // 7 days
 
         return Cache::remember($cacheKey, $cacheTtl, function () use ($user) {
@@ -653,7 +664,8 @@ class RecommendationService
      */
     public static function invalidateSmartPlaylists(User $user): void
     {
-        Cache::forget("smart_playlists.{$user->id}");
+        $version = (string) Setting::get('rec_cache_version', '1');
+        Cache::forget("smart_playlists.v{$version}.{$user->id}");
     }
 
     /**
@@ -661,6 +673,7 @@ class RecommendationService
      */
     public static function invalidateCache(User $user): void
     {
-        Cache::forget("discover.rec.{$user->id}");
+        $version = (string) Setting::get('rec_cache_version', '1');
+        Cache::forget("discover.rec.v{$version}.{$user->id}");
     }
 }

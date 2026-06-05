@@ -61,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Pages\Reports::class,
                 \App\Filament\Pages\ArtistApplicationSettings::class,
                 \App\Filament\Pages\NotificationSettings::class,
+                \App\Filament\Pages\SmartPlaylistSettings::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

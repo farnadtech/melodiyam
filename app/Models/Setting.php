@@ -39,6 +39,7 @@ class Setting extends Model
             'featured_tracks_count' => '10',
             'home_new_releases' => '12',
             'smart_playlist_templates' => '[]',
+            'rec_cache_version' => '1',
             
             // Payment
             'premium_enabled' => '1',
