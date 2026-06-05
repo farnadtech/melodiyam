@@ -70,6 +70,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/pwa-icon-180.png') }}">
     @endif
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="livewire-navigate-cache" content="off">
     @endif
 </head>
 <body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden">
@@ -89,7 +90,7 @@
             @include('partials.header')
 
             {{-- Main Content --}}
-            <main class="flex-1 overflow-y-auto pb-32 md:pb-6">
+            <main class="flex-1 overflow-y-auto pb-40 md:pb-32">
                 {{-- Flash Messages --}}
                 <div x-data="{ 
                     show: false, 
