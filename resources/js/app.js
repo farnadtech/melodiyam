@@ -107,6 +107,14 @@ function registerAlpineStuff(Alpine) {
 
                 this.currentTrack = track;
                 this.previewLimitReached = false;
+
+                // Immediately set duration from track data so it shows before metadata loads
+                if (track.duration && track.duration > 0) {
+                    this.duration = track.duration;
+                } else {
+                    this.duration = 0;
+                }
+
                 if (this.audio) {
                     let streamUrl = track.url;
                     // Append quality param if it's a local stream and quality is set

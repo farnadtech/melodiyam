@@ -55,9 +55,37 @@
                     <span>·</span>
                     <span>{{ $track->formattedDuration() }}</span>
                     <span>·</span>
-                    <span>{{ number_format($track->play_count) }} پخش</span>
+                    <span x-text="playCount.toLocaleString() + ' پخش'">{{ number_format($track->play_count) }} پخش</span>
                 </div>
-                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start" x-data="{ liked: {{ $userLikedTrack ? 'true' : 'false' }}, likeCount: {{ $track->like_count ?? 0 }}, reposted: {{ $userRepostedTrack ? 'true' : 'false' }}, repostCount: {{ $track->repost_count ?? 0 }}, shareOpen: false, plOpen: false, toast: '', toastType: 'success' }" x-init="$watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) })">
+                <div class="flex items-center flex-wrap gap-3 mt-5 justify-center md:justify-start"
+                    x-data="{
+                        liked: {{ $userLikedTrack ? 'true' : 'false' }},
+                        likeCount: {{ $track->like_count ?? 0 }},
+                        reposted: {{ $userRepostedTrack ? 'true' : 'false' }},
+                        repostCount: {{ $track->repost_count ?? 0 }},
+                        playCount: {{ $track->play_count ?? 0 }},
+                        shareOpen: false,
+                        plOpen: false,
+                        toast: '',
+                        toastType: 'success',
+                        async refreshStats() {
+                            try {
+                                const r = await fetch('/api/track/{{ $track->id }}/stats');
+                                const d = await r.json();
+                                this.playCount    = d.play_count;
+                                this.likeCount    = d.like_count;
+                                this.repostCount  = d.repost_count;
+                                this.liked        = d.user_liked;
+                                this.reposted     = d.user_reposted;
+                            } catch(e) {}
+                        }
+                    }"
+                    x-init="
+                        $watch('toast', v => { if(v) setTimeout(() => toast = '', 3000) });
+                        refreshStats();
+                        document.addEventListener('livewire:navigated', () => refreshStats());
+                    "
+                >
                     {{-- Toast notification --}}
                     <div x-show="toast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none" x-cloak>
                         <div class="px-5 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur" :class="toastType === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-amber-500/90 text-white'" x-text="toast"></div>

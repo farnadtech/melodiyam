@@ -86,6 +86,31 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');
+
+// Live stats endpoint — returns fresh play/like/comment counts for a track (no auth needed)
+Route::get('/api/track/{track}/stats', function (\App\Models\Track $track) {
+    $user = auth()->user();
+    $userLiked = false;
+    $userReposted = false;
+    if ($user) {
+        $userLiked = \App\Models\Like::where('user_id', $user->id)
+            ->where('likeable_type', \App\Models\Track::class)
+            ->where('likeable_id', $track->id)
+            ->exists();
+        $userReposted = \App\Models\Repost::where('user_id', $user->id)
+            ->where('repostable_type', \App\Models\Track::class)
+            ->where('repostable_id', $track->id)
+            ->exists();
+    }
+    return response()->json([
+        'play_count'    => $track->play_count ?? 0,
+        'like_count'    => $track->like_count ?? 0,
+        'repost_count'  => $track->repost_count ?? 0,
+        'comment_count' => $track->comments()->approved()->count(),
+        'user_liked'    => $userLiked,
+        'user_reposted' => $userReposted,
+    ]);
+})->name('api.track.stats');
 Route::get('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'create'])->middleware(['auth'])->name('track.create');
 Route::post('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'store'])->middleware(['auth'])->name('track.store');
 Route::get('/track/{track}/download', [TrackController::class, 'download'])->name('track.download');
