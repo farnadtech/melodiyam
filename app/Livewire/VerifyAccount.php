@@ -102,8 +102,14 @@ class VerifyAccount extends Component
             }
         }
 
-        $otp = OtpCode::generate($this->phone);
-        NotificationDispatcher::dispatch('otp_code', ['code' => $otp->code], (object)['phone' => $this->phone]);
+        try {
+            $otp = OtpCode::generate($this->phone);
+            NotificationDispatcher::dispatch('otp_code', ['code' => $otp->code], (object)['phone' => $this->phone]);
+        } catch (\Exception $e) {
+            \Log::error('OTP SMS failed: ' . $e->getMessage());
+            $this->addError('phone', 'خطا در ارسال کد تایید. لطفاً بعداً تلاش کنید.');
+            return;
+        }
 
         $this->phoneCodeSent = true;
         $this->phoneCountdown = 120;
@@ -141,15 +147,16 @@ class VerifyAccount extends Component
             $user->update(['email' => $this->email]);
         }
 
-        // Generate OTP for email
-        $otp = OtpCode::generate($this->email);
-        
         try {
+            // Generate OTP for email
+            $otp = OtpCode::generate($this->email);
+            
             Mail::raw("کد تایید ایمیل شما: {$otp->code}", function ($message) {
                 $message->to($this->email)
                     ->subject('کد تایید ایمیل - ' . config('app.name'));
             });
         } catch (\Exception $e) {
+            \Log::error('OTP Email failed: ' . $e->getMessage());
             $this->addError('email', 'خطا در ارسال ایمیل. لطفاً بعداً تلاش کنید.');
             return;
         }
