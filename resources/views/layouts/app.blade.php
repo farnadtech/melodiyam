@@ -22,9 +22,19 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="{{ \App\Models\Setting::get('pwa_short_name', config('app.name')) }}">
     <meta name="msapplication-TileColor" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
+    <meta name="msapplication-navbutton-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="{{ \App\Models\Setting::get('pwa_theme_color', '#0ea5e9') }}">
     <script>
+        // PWA early event capture
+        window._pwaDeferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window._pwaDeferredPrompt = e;
+            // Dispatch custom event so app.js can show the banner if it's already loaded
+            window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+        });
+
         // Fix for iOS PWA opening links in Safari
         (function(document,navigator,standalone) {
             if ((standalone in navigator) && navigator[standalone]) {

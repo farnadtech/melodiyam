@@ -76,7 +76,15 @@ class VerifyAccount extends Component
 
     public function sendPhoneCode(): void
     {
-        $this->validate(['phone' => 'required|regex:/^09[0-9]{9}$/']);
+        $this->validate(['phone' => 'required|min:10|max:15']);
+        
+        // Normalize phone number (ensure it starts with 09)
+        $phone = $this->phone;
+        if (str_starts_with($phone, '+98')) $phone = '0' . substr($phone, 3);
+        if (str_starts_with($phone, '98')) $phone = '0' . substr($phone, 2);
+        if (strlen($phone) === 10) $phone = '0' . $phone;
+        
+        $this->phone = $phone;
 
         $otpSetting = \App\Models\NotificationSetting::where('event_key', 'otp_code')->first();
         if (!$otpSetting || !$otpSetting->via_sms) {
@@ -84,15 +92,14 @@ class VerifyAccount extends Component
             return;
         }
 
-        // Update user phone if changed
+        // Don't update user phone yet, just check if it's already used by someone else
         $user = Auth::user();
         if ($user->phone !== $this->phone) {
             $exists = User::where('phone', $this->phone)->where('id', '!=', $user->id)->exists();
             if ($exists) {
-                $this->addError('phone', 'این شماره قبلاً ثبت شده است.');
+                $this->addError('phone', 'این شماره قبلاً توسط کاربر دیگری ثبت شده است.');
                 return;
             }
-            $user->update(['phone' => $this->phone]);
         }
 
         $otp = OtpCode::generate($this->phone);
@@ -112,7 +119,10 @@ class VerifyAccount extends Component
             return;
         }
 
-        Auth::user()->update(['phone_verified_at' => now()]);
+        Auth::user()->update([
+            'phone' => $this->phone,
+            'phone_verified_at' => now()
+        ]);
         $this->phoneVerified = true;
         $this->checkComplete();
     }

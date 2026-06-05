@@ -44,7 +44,7 @@
             <div class="space-y-3">
                 @if(!$phoneCodeSent)
                 <form wire:submit.prevent="sendPhoneCode" class="space-y-3">
-                    <input type="text" wire:model="phone" placeholder="09120000000" class="input-field w-full text-sm" dir="ltr">
+                    <input type="tel" wire:model="phone" placeholder="09120000000" class="input-field w-full text-sm" dir="ltr">
                     @error('phone') <p class="text-xs text-rose-500">{{ $message }}</p> @enderror
 
                     <button type="submit" wire:loading.attr="disabled" class="btn-primary w-full py-2.5 rounded-xl text-sm font-medium">
