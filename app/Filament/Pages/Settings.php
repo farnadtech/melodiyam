@@ -346,6 +346,40 @@ class Settings extends Page implements HasForms
                         Section::make('کدهای رهگیری')->schema([
                             Textarea::make('google_analytics')->label('کد Google Analytics (یا تگ‌های دیگر در Head)')->rows(5),
                         ]),
+                        Section::make('پاکسازی کش سیستم')
+                            ->description('با کلیک بر روی دکمه زیر، تمام کش‌های سیستم (روت‌ها، ویوها و تنظیمات) پاکسازی می‌شوند. این کار باعث می‌شود تغییرات جدید برای همه کاربران اعمال شود.')
+                            ->schema([
+                                SchemaActions::make([
+                                    Action::make('clear_cache')
+                                        ->label('پاکسازی کل کش سایت')
+                                        ->icon('heroicon-m-trash')
+                                        ->color('warning')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('پاکسازی کش سیستم')
+                                        ->modalDescription('آیا مطمئن هستید؟ این کار باعث می‌شود تمام حافظه موقت سیستم پاک شود و ممکن است در لحظات اول کمی سرعت سایت کاهش یابد.')
+                                        ->modalSubmitActionLabel('بله، پاکسازی کن')
+                                        ->action(function () {
+                                            try {
+                                                \Illuminate\Support\Facades\Artisan::call('cache:clear');
+                                                \Illuminate\Support\Facades\Artisan::call('route:clear');
+                                                \Illuminate\Support\Facades\Artisan::call('config:clear');
+                                                \Illuminate\Support\Facades\Artisan::call('view:clear');
+                                                \Illuminate\Support\Facades\Artisan::call('filament:clear-cached-components');
+                                                
+                                                Notification::make()
+                                                    ->title('کش سیستم با موفقیت پاکسازی شد 🧹')
+                                                    ->success()
+                                                    ->send();
+                                            } catch (\Exception $e) {
+                                                Notification::make()
+                                                    ->title('خطا در پاکسازی کش')
+                                                    ->body($e->getMessage())
+                                                    ->danger()
+                                                    ->send();
+                                            }
+                                        }),
+                                ]),
+                            ]),
                     ]),
 
                     // ── Tab 7: Email / Notifications ──
