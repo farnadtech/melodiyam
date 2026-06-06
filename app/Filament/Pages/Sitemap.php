@@ -2,14 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Placeholder;
-use Filament\Schemas\Components\Actions as SchemaActions;
 
 class Sitemap extends Page
 {
@@ -19,15 +14,23 @@ class Sitemap extends Page
     protected static ?string $navigationLabel = 'سئو و نقشه سایت';
     protected static ?int $navigationSort = 2;
 
-    protected static string $view = 'filament.pages.sitemap';
+    protected string $view = 'filament.pages.sitemap';
 
     public function generateSitemap(): void
     {
-        Artisan::call('sitemap:generate');
-        
-        Notification::make()
-            ->title('نقشه سایت با موفقیت تولید شد ✅')
-            ->success()
-            ->send();
+        try {
+            Artisan::call('sitemap:generate');
+            
+            Notification::make()
+                ->title('نقشه سایت با موفقیت تولید شد ✅')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('خطا در تولید نقشه سایت ❌')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }
