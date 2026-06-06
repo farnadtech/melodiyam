@@ -6,7 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -57,13 +57,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
-                \App\Filament\Pages\Settings::class,
-                \App\Filament\Pages\NotificationSettings::class,
-                \App\Filament\Pages\ArtistApplicationSettings::class,
-                \App\Filament\Pages\Reports::class,
-                \App\Filament\Pages\SystemUpdate::class,
-                \App\Filament\Pages\SmartPlaylistSettings::class,
-                \App\Filament\Pages\Sitemap::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

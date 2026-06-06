@@ -33,4 +33,26 @@ class Sitemap extends Page
                 ->send();
         }
     }
+
+    public function clearSystemCache(): void
+    {
+        try {
+            Artisan::call('filament:optimize-clear');
+            Artisan::call('cache:clear');
+            Artisan::call('view:clear');
+            Artisan::call('route:clear');
+            Artisan::call('config:clear');
+            
+            Notification::make()
+                ->title('کش سیستم با موفقیت پاکسازی شد 🧹')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('خطا در پاکسازی کش ❌')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
 }

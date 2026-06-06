@@ -18,6 +18,16 @@
                 </x-filament::button>
             </div>
 
+            <div class="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <x-heroicon-o-sparkles class="w-5 h-5 text-orange-600" />
+                    <span class="text-sm text-gray-700 dark:text-gray-300">اگر تغییرات جدید را در سایت یا پنل نمی‌بینید، کش سیستم را پاک کنید:</span>
+                </div>
+                <x-filament::button wire:click="clearSystemCache" color="warning" icon="heroicon-m-trash">
+                    پاکسازی کش سیستم
+                </x-filament::button>
+            </div>
+
             <div class="mt-6 text-sm text-gray-500 dark:text-gray-400">
                 <p>💡 <strong>راهنما:</strong> این فایل هر ۲۴ ساعت به صورت خودکار به‌روزرسانی می‌شود. شما می‌توانید این لینک را در کنسول جستجوی گوگل (Google Search Console) ثبت کنید تا تمام صفحات سایت شما به سرعت شناسایی و ایندکس شوند.</p>
             </div>
