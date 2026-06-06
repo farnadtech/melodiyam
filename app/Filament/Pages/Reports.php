@@ -17,12 +17,9 @@ class Reports extends Page
     protected static ?string $slug = 'analytics-reports';
     protected static ?int $navigationSort = 4;
 
-    public string $period = '30';
+    protected string $view = 'filament.pages.reports';
 
-    public function getView(): string
-    {
-        return 'filament.pages.reports';
-    }
+    public string $period = '30';
 
     public function getStats(): array
     {

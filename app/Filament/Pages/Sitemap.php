@@ -12,7 +12,7 @@ class Sitemap extends Page
     protected static string | \UnitEnum | null $navigationGroup = 'تنظیمات سیستم';
     protected static ?string $title = 'سئو و نقشه سایت';
     protected static ?string $navigationLabel = 'سئو و نقشه سایت';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 10; // Put it at the end of the group
 
     protected string $view = 'filament.pages.sitemap';
 
