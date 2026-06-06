@@ -116,7 +116,20 @@ Route::get('/track/{track}/download', [TrackController::class, 'download'])->nam
 // System Rescue Route (Run this once on server to clear all caches)
 Route::get('/rescue-server', function() {
     try {
-        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        // Clear application cache
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        // Clear route cache
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        // Clear config cache
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        // Clear view cache
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        
+        // Filament specific clear (avoiding filament:optimize-clear which might trigger icons error)
+        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+            \Illuminate\Support\Facades\Artisan::call('filament:clear-cached-components');
+        }
+
         return "✅ تمام کش‌های سیستم با موفقیت پاکسازی شد. اکنون پنل مدیریت را چک کنید.";
     } catch (\Exception $e) {
         return "❌ خطا در پاکسازی کش: " . $e->getMessage();

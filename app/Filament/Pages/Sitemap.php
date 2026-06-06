@@ -14,7 +14,10 @@ class Sitemap extends Page
     protected static ?string $navigationLabel = 'سئو و نقشه سایت';
     protected static ?int $navigationSort = 10; // Put it at the end of the group
 
-    protected static string $view = 'filament.pages.sitemap';
+    public function getView(): string
+    {
+        return 'filament.pages.sitemap';
+    }
 
     public function generateSitemap(): void
     {
@@ -37,11 +40,11 @@ class Sitemap extends Page
     public function clearSystemCache(): void
     {
         try {
-            Artisan::call('filament:optimize-clear');
             Artisan::call('cache:clear');
             Artisan::call('view:clear');
             Artisan::call('route:clear');
             Artisan::call('config:clear');
+            Artisan::call('filament:clear-cached-components');
             
             Notification::make()
                 ->title('کش سیستم با موفقیت پاکسازی شد 🧹')
