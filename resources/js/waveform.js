@@ -18,11 +18,48 @@ export function registerWaveform(Alpine) {
         activeComment: null,
         lastCheckedSecond: -1,
         openMarker: null,
+        openMarkerLabel: '',
         isWaveDrawn: false,
         _trackId: trackId,
         _audioUrl: audioUrl,
 
         async init() {
+            this.updateMarkers();
+            this.$watch('openMarker', () => this.updateMarkerLabel());
+            
+            const phpDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
+            if (phpDuration > 0) this.duration = phpDuration;
+
+            if (this.peaks && this.peaks.length > 0) {
+                // Pre-generated
+                this.$nextTick(() => this.drawWaveFromContext());
+            } else {
+                // Server-side generation failed or not available (shell_exec disabled)
+                // We MUST generate on client-side
+                if (isSafeUrl(this._audioUrl)) {
+                    console.log(`[Waveform] Attempting client-side generation for ${this._audioUrl}`);
+                    this.generatePeaks(this._audioUrl).then(() => {
+                        if (!this.peaks || this.peaks.length === 0) {
+                            console.warn('[Waveform] Client-side generation produced no peaks, using fake peaks.');
+                            this.generateFakePeaks();
+                        }
+                        this.drawWaveFromContext();
+                    }).catch((err) => {
+                        console.error('[Waveform] Client-side generation failed:', err);
+                        this.generateFakePeaks();
+                        this.drawWaveFromContext();
+                    });
+                } else {
+                    console.warn('[Waveform] URL not safe for client-side generation, using fake peaks.');
+                    this.generateFakePeaks();
+                    this.drawWaveFromContext();
+                }
+            }
+
+            this.tick();
+        },
+
+        updateMarkers() {
             const groups = {};
             (this.timedComments || []).forEach(tc => {
                 if (!groups[tc.at]) groups[tc.at] = [];
@@ -46,32 +83,21 @@ export function registerWaveform(Alpine) {
                 }
             }
             this.groupedMarkers = merged;
-            const phpDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
-            if (phpDuration > 0) this.duration = phpDuration;
+            this.updateMarkerLabel();
+        },
 
-            if (this.peaks && this.peaks.length > 0) {
-                // Pre-generated
-                this.$nextTick(() => this.drawWaveFromContext());
-            } else {
-                // Server-side generation failed or not available (shell_exec disabled)
-                // We MUST generate on client-side
-                if (isSafeUrl(this._audioUrl)) {
-                    this.generatePeaks(this._audioUrl).then(() => {
-                        if (!this.peaks || this.peaks.length === 0) {
-                            this.generateFakePeaks();
-                        }
-                        this.drawWaveFromContext();
-                    }).catch(() => {
-                        this.generateFakePeaks();
-                        this.drawWaveFromContext();
-                    });
-                } else {
-                    this.generateFakePeaks();
-                    this.drawWaveFromContext();
-                }
+        updateMarkerLabel() {
+            if (this.openMarker === null) {
+                this.openMarkerLabel = '';
+                return;
             }
-
-            this.tick();
+            const m = (this.groupedMarkers || []).find(g => g.at === this.openMarker);
+            if (!m || !m.seconds || m.seconds.length <= 1) {
+                this.openMarkerLabel = this.formatTime(this.openMarker);
+                return;
+            }
+            const sorted = [...m.seconds].sort((a, b) => a - b);
+            this.openMarkerLabel = this.formatTime(sorted[0]) + ' - ' + this.formatTime(sorted[sorted.length - 1]);
         },
 
         generateFakePeaks() {
@@ -272,14 +298,6 @@ export function registerWaveform(Alpine) {
                 store.audio.currentTime = targetTime;
             }
             this.lastCheckedSecond = -1;
-        },
-
-        get openMarkerLabel() {
-            if (this.openMarker === null) return '';
-            const m = this.groupedMarkers.find(g => g.at === this.openMarker);
-            if (!m || !m.seconds || m.seconds.length <= 1) return this.formatTime(this.openMarker);
-            const sorted = [...m.seconds].sort((a, b) => a - b);
-            return this.formatTime(sorted[0]) + ' - ' + this.formatTime(sorted[sorted.length - 1]);
         },
 
         formatTime(s) {

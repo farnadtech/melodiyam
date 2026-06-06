@@ -442,7 +442,7 @@
                     <canvas x-ref="waveProgress" class="absolute inset-0 w-full h-full"></canvas>
 
                     {{-- Timed comment markers (grouped by second) --}}
-                    <template x-for="marker in groupedMarkers" :key="marker.at">
+                    <template x-for="marker in (groupedMarkers || [])" :key="marker.at">
                         <div class="absolute bottom-0 pointer-events-auto" :style="`right: ${(marker.at / (duration || 1)) * 100}%`"
                             @click.stop="openMarker = openMarker === marker.at ? null : marker.at">
                             <div class="w-5 h-5 -mb-1 rounded-full border-2 border-white dark:border-surface-800 flex items-center justify-center cursor-pointer shadow-sm translate-x-1/2 relative transition-transform hover:scale-110"
@@ -475,7 +475,7 @@
                         </button>
                     </div>
                     <div class="max-h-48 overflow-y-auto p-3 space-y-2.5">
-                        <template x-for="marker in groupedMarkers" :key="'panel-'+marker.at">
+                        <template x-for="marker in (groupedMarkers || [])" :key="'panel-'+marker.at">
                             <template x-if="marker.at === openMarker">
                                 <div>
                                     <template x-for="item in marker.items" :key="item.id">

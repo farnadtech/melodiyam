@@ -97,29 +97,15 @@ Route::post('/api/track/{track}/fix-duration', function (\App\Models\Track $trac
     return response()->json(['ok' => true]);
 });
 
-// Live stats endpoint — returns fresh play/like/comment counts for a track (no auth needed)
-Route::get('/api/track/{track}/stats', function (\App\Models\Track $track) {
-    $user = auth()->user();
-    $userLiked = false;
-    $userReposted = false;
-    if ($user) {
-        $userLiked = \App\Models\Like::where('user_id', $user->id)
-            ->where('likeable_type', \App\Models\Track::class)
-            ->where('likeable_id', $track->id)
-            ->exists();
-        $userReposted = \App\Models\Repost::where('user_id', $user->id)
-            ->where('repostable_type', \App\Models\Track::class)
-            ->where('repostable_id', $track->id)
-            ->exists();
-    }
+// Track stats endpoint (uses ID for internal consistency)
+Route::get('/api/track/{id}/stats', function ($id) {
+    $track = \App\Models\Track::find($id);
+    if (!$track) return response()->json(['error' => 'Track not found'], 404);
+    
     return response()->json([
-        'play_count'    => $track->play_count ?? 0,
-        'like_count'    => $track->like_count ?? 0,
-        'repost_count'  => $track->repost_count ?? 0,
-        'comment_count' => $track->comments()->approved()->count(),
-        'duration'      => $track->duration ?? 0,
-        'user_liked'    => $userLiked,
-        'user_reposted' => $userReposted,
+        'play_count' => $track->play_count,
+        'like_count' => $track->like_count,
+        'comment_count' => $track->comments()->count(),
     ]);
 })->name('api.track.stats');
 Route::get('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'create'])->middleware(['auth'])->name('track.create');
