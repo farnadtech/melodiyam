@@ -91,7 +91,11 @@ export function registerWaveform(Alpine) {
                 this.openMarkerLabel = '';
                 return;
             }
-            const m = (this.groupedMarkers || []).find(g => g.at === this.openMarker);
+            if (!this.groupedMarkers) {
+                this.openMarkerLabel = this.formatTime(this.openMarker);
+                return;
+            }
+            const m = this.groupedMarkers.find(g => g.at === this.openMarker);
             if (!m || !m.seconds || m.seconds.length <= 1) {
                 this.openMarkerLabel = this.formatTime(this.openMarker);
                 return;
@@ -176,13 +180,21 @@ export function registerWaveform(Alpine) {
                 const x = rect.width - (i * (barW + gap)) - barW;
                 const h = Math.max(2, peak * (mid - 2));
                 ctx.fillStyle = fillTop;
-                ctx.beginPath();
-                ctx.roundRect(x, mid - h, barW, h, barW / 2);
-                ctx.fill();
-                ctx.fillStyle = fillBottom;
-                ctx.beginPath();
-                ctx.roundRect(x, mid + 1, barW, h * 0.6, barW / 2);
-                ctx.fill();
+                
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(x, mid - h, barW, h, barW / 2);
+                    ctx.fill();
+                    ctx.fillStyle = fillBottom;
+                    ctx.beginPath();
+                    ctx.roundRect(x, mid + 1, barW, h * 0.6, barW / 2);
+                    ctx.fill();
+                } else {
+                    // Fallback for older browsers
+                    ctx.fillRect(x, mid - h, barW, h);
+                    ctx.fillStyle = fillBottom;
+                    ctx.fillRect(x, mid + 1, barW, h * 0.6);
+                }
             });
         },
 
@@ -208,13 +220,20 @@ export function registerWaveform(Alpine) {
                 const x = rect.width - (i * (barW + gap)) - barW;
                 const h = Math.max(2, this.peaks[i] * (mid - 2));
                 ctx.fillStyle = primary;
-                ctx.beginPath();
-                ctx.roundRect(x, mid - h, barW, h, barW / 2);
-                ctx.fill();
-                ctx.fillStyle = primary + '99';
-                ctx.beginPath();
-                ctx.roundRect(x, mid + 1, barW, h * 0.6, barW / 2);
-                ctx.fill();
+                
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(x, mid - h, barW, h, barW / 2);
+                    ctx.fill();
+                    ctx.fillStyle = primary + '99';
+                    ctx.beginPath();
+                    ctx.roundRect(x, mid + 1, barW, h * 0.6, barW / 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, mid - h, barW, h);
+                    ctx.fillStyle = primary + '99';
+                    ctx.fillRect(x, mid + 1, barW, h * 0.6);
+                }
             }
         },
 

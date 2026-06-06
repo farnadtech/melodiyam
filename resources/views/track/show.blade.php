@@ -382,8 +382,7 @@
         {{-- Has preview — show waveform but player will cut off --}}
         <section
             wire:key="waveform-preview-{{ $track->id }}"
-            x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, [], @js($track->waveform))"
-            x-init="init()"
+            x-data="waveform(@js($track->getStreamUrl()), @js($track->id), [], @js($track->waveform))"
             data-php-duration="{{ $track->duration }}"
             data-preview-sec="{{ $previewSec }}"
             data-can-play="false"
@@ -422,8 +421,7 @@
         @else
         <section
             wire:key="waveform-full-{{ $track->id }}"
-            x-data="waveform('{{ $track->getStreamUrl() }}', {{ $track->id }}, @json($waveformComments), @js($track->waveform))"
-            x-init="init()"
+            x-data="waveform(@js($track->getStreamUrl()), @js($track->id), @js($waveformComments), @js($track->waveform))"
             data-php-duration="{{ $track->duration }}"
             data-preview-sec="{{ $previewSec ?? 0 }}"
             data-can-play="{{ $canPlay ? 'true' : 'false' }}"
