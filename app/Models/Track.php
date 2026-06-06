@@ -54,6 +54,31 @@ class Track extends Model
         ];
     }
 
+    protected static function booted()
+    {
+        static::saving(function ($track) {
+            // Generate waveform and duration if file changed
+            if ($track->isDirty('file_path_320') || $track->isDirty('file_url')) {
+                $path = null;
+                if ($track->file_path_320) {
+                    $path = \Illuminate\Support\Facades\Storage::disk('public')->path($track->file_path_320);
+                } elseif ($track->file_url) {
+                    $path = $track->file_url;
+                }
+
+                if ($path) {
+                    if ($track->duration <= 0 || $track->isDirty('file_path_320') || $track->isDirty('file_url')) {
+                        $track->duration = \App\Helpers\AudioHelper::getDuration($path);
+                    }
+                    
+                    if (!$track->waveform || $track->isDirty('file_path_320') || $track->isDirty('file_url')) {
+                        $track->waveform = \App\Helpers\AudioHelper::generateWaveform($path);
+                    }
+                }
+            }
+        });
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

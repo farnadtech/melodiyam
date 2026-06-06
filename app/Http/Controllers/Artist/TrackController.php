@@ -111,11 +111,6 @@ class TrackController extends Controller
         $path320 = $request->file('file_320')->store('tracks/320', 'public');
         $path128 = $request->hasFile('file_128') ? $request->file('file_128')->store('tracks/128', 'public') : null;
 
-        // Get duration and waveform from file
-        $fullPath = Storage::disk('public')->path($path320);
-        $duration = \App\Helpers\AudioHelper::getDuration($fullPath);
-        $waveform = \App\Helpers\AudioHelper::generateWaveform($fullPath);
-
         $coverPath = null;
         if ($request->hasFile('cover_image')) {
             $coverPath = $request->file('cover_image')->store('covers/tracks', 'public');
@@ -143,8 +138,6 @@ class TrackController extends Controller
             'file_path_128'   => $path128,
             'file_path'       => $path320,
             'cover_image'     => $coverPath,
-            'duration'        => $duration,
-            'waveform'        => $waveform,
             'lyrics'          => $request->lyrics,
             'is_explicit'     => $request->boolean('is_explicit'),
             'is_downloadable' => true, // Content is technically downloadable, plan controls access
@@ -252,11 +245,6 @@ class TrackController extends Controller
             $path320 = $request->file('file_320')->store('tracks/320', 'public');
             $data['file_path_320'] = $path320;
             $data['file_path'] = $path320;
-            
-            // Re-generate duration and waveform
-            $fullPath = Storage::disk('public')->path($path320);
-            $data['duration'] = \App\Helpers\AudioHelper::getDuration($fullPath);
-            $data['waveform'] = \App\Helpers\AudioHelper::generateWaveform($fullPath);
         }
 
         if ($request->hasFile('file_128')) {

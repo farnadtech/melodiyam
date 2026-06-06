@@ -21,6 +21,30 @@ class PodcastEpisode extends Model
         'is_explicit', 'is_premium_only', 'is_downloadable', 'play_count', 'like_count',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($episode) {
+            if ($episode->isDirty('file_path') || $episode->isDirty('file_url')) {
+                $path = null;
+                if ($episode->file_path) {
+                    $path = \Illuminate\Support\Facades\Storage::disk('public')->path($episode->file_path);
+                } elseif ($episode->file_url) {
+                    $path = $episode->file_url;
+                }
+
+                if ($path) {
+                    if ($episode->duration <= 0 || $episode->isDirty('file_path') || $episode->isDirty('file_url')) {
+                        $episode->duration = \App\Helpers\AudioHelper::getDuration($path);
+                    }
+                    
+                    if (!$episode->waveform || $episode->isDirty('file_path') || $episode->isDirty('file_url')) {
+                        $episode->waveform = \App\Helpers\AudioHelper::generateWaveform($path);
+                    }
+                }
+            }
+        });
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

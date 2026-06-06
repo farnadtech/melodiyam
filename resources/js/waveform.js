@@ -46,12 +46,20 @@ export function registerWaveform(Alpine) {
                 }
             }
             this.groupedMarkers = merged;
+            const phpDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
+            if (phpDuration > 0) this.duration = phpDuration;
 
             if (this.peaks && this.peaks.length > 0) {
                 // Pre-generated
                 this.$nextTick(() => this.drawWaveFromContext());
             } else if (isSafeUrl(this._audioUrl)) {
-                await this.generatePeaks(this._audioUrl);
+                // Fallback to client-side generation
+                this.generatePeaks(this._audioUrl).then(() => {
+                    if (!this.peaks || this.peaks.length === 0) {
+                        this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
+                        this.drawWaveFromContext();
+                    }
+                });
             } else {
                 this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
                 this.$nextTick(() => this.drawWaveFromContext());

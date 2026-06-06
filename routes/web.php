@@ -126,7 +126,31 @@ Route::get('/upload/track', [\App\Http\Controllers\Web\UserTrackController::clas
 Route::post('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'store'])->middleware(['auth'])->name('track.store');
 Route::get('/track/{track}/download', [TrackController::class, 'download'])->name('track.download');
 
-// Audio stream with byte-range support for seeking
+// FFmpeg & System Diagnostic Route
+Route::get('/test-ffmpeg', function() {
+    $ffmpeg = env('FFMPEG_PATH', 'ffmpeg');
+    $ffprobe = env('FFPROBE_PATH', 'ffprobe');
+    
+    $results = [
+        'ffmpeg_command' => "{$ffmpeg} -version",
+        'ffprobe_command' => "{$ffprobe} -version",
+        'env_ffmpeg_path' => env('FFMPEG_PATH'),
+        'env_ffprobe_path' => env('FFPROBE_PATH'),
+        'php_user' => get_current_user(),
+        'os' => PHP_OS,
+        'shell_exec_enabled' => function_exists('shell_exec'),
+        'temp_dir' => sys_get_temp_dir(),
+        'is_temp_writable' => is_writable(sys_get_temp_dir()),
+    ];
+
+    if ($results['shell_exec_enabled']) {
+        $results['ffmpeg_output'] = shell_exec("{$ffmpeg} -version 2>&1");
+        $results['ffprobe_output'] = shell_exec("{$ffprobe} -version 2>&1");
+    }
+
+    return response()->json($results);
+});
+
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     // Check premium-only access first
     if ($track->is_premium_only) {

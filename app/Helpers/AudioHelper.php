@@ -15,25 +15,34 @@ class AudioHelper
      */
     public static function getDuration(string $path): int
     {
-        if (!file_exists($path)) {
+        if (empty($path)) {
+            return 0;
+        }
+
+        $isUrl = str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
+
+        if (!$isUrl && !file_exists($path)) {
             return 0;
         }
 
         // Method 1: Try FFprobe (Best accuracy)
         try {
-            $command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($path);
+            $ffprobe = env('FFPROBE_PATH', 'ffprobe');
+            $command = "{$ffprobe} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($path);
             $output = shell_exec($command);
             
             if ($output !== null && is_numeric(trim($output))) {
                 return (int) round((float) trim($output));
+            } else {
+                Log::warning("FFprobe failed to get duration. Output: " . ($output ?: 'empty'));
             }
         } catch (\Throwable $e) {
-            // FFprobe not available or failed
+            Log::error("FFprobe error: " . $e->getMessage());
         }
 
+        if ($isUrl) return 0; // Fallback only works for local files
+
         // Method 2: Internal Fallback (Pure PHP)
-        // This is a simplified MP3 duration detector based on bitrate and file size.
-        // It's not 100% accurate for VBR files but works without server dependencies.
         try {
             return self::estimateMp3Duration($path);
         } catch (\Throwable $e) {
@@ -52,19 +61,45 @@ class AudioHelper
      */
     public static function generateWaveform(string $path, int $samples = 200): array
     {
-        if (!file_exists($path)) {
+        if (empty($path)) {
+            return [];
+        }
+
+        $isUrl = str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
+
+        if (!$isUrl && !file_exists($path)) {
+            Log::warning("Waveform source file not found: {$path}");
             return [];
         }
 
         try {
+            if (!function_exists('shell_exec')) {
+                Log::error("Waveform generation failed: shell_exec is disabled.");
+                return [];
+            }
+
             $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wave_' . uniqid() . '.raw';
             
+            // On Windows, ffmpeg might need the full path if not in PATH. 
+            $ffmpeg = env('FFMPEG_PATH', 'ffmpeg');
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && $ffmpeg === 'ffmpeg') {
+                // Check common XAMPP path if not in system PATH
+                if (file_exists('C:\xampp\mysql\bin\ffmpeg.exe')) { // Just an example, usually ffmpeg isn't in XAMPP by default
+                    // $ffmpeg = 'C:\xampp\mysql\bin\ffmpeg.exe';
+                }
+            }
+
             // Extract raw 8-bit PCM, mono, 1000Hz sample rate
-            // This is fast and gives us enough data to compute peaks
-            $command = "ffmpeg -v error -i " . escapeshellarg($path) . " -f s8 -ac 1 -ar 1000 -y " . escapeshellarg($tempFile);
-            shell_exec($command);
+            $command = "{$ffmpeg} -v error -i " . escapeshellarg($path) . " -f s8 -ac 1 -ar 1000 -y " . escapeshellarg($tempFile) . " 2>&1";
+            Log::info("Generating waveform with command: " . $command);
+            $output = shell_exec($command);
+
+            if (!empty($output)) {
+                Log::error("FFmpeg output: " . $output);
+            }
 
             if (!file_exists($tempFile) || filesize($tempFile) === 0) {
+                if (file_exists($tempFile)) @unlink($tempFile);
                 return [];
             }
 
