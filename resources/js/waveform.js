@@ -22,6 +22,7 @@ export function registerWaveform(Alpine) {
         isWaveDrawn: false,
         _trackId: trackId,
         _audioUrl: audioUrl,
+        _resizeObserver: null,
 
         async init() {
             this.updateMarkers();
@@ -29,6 +30,16 @@ export function registerWaveform(Alpine) {
             
             const phpDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
             if (phpDuration > 0) this.duration = phpDuration;
+
+            // Handle window resize on desktop
+            if (window.ResizeObserver) {
+                this._resizeObserver = new ResizeObserver(() => {
+                    this.isWaveDrawn = false; // Force redraw on resize
+                });
+                if (this.$refs.waveContainer) {
+                    this._resizeObserver.observe(this.$refs.waveContainer);
+                }
+            }
 
             if (this.peaks && this.peaks.length > 0) {
                 // Pre-generated
@@ -142,7 +153,7 @@ export function registerWaveform(Alpine) {
                 }
                 const max = Math.max(...peaks);
                 this.peaks = peaks.map(p => p / max);
-                this.drawWaveFromContext();
+                this.isWaveDrawn = false; // Trigger redraw
                 this.duration = audio.duration;
                 this.positionPreviewMarker(audio.duration);
             } catch {
@@ -161,26 +172,40 @@ export function registerWaveform(Alpine) {
             marker.classList.remove('hidden');
         },
 
+        getDrawingMetrics(rect) {
+            const barCount = this.peaks.length;
+            const barW = Math.max(1, Math.floor(rect.width / barCount) - 1);
+            const totalBarW = barW * barCount;
+            const gap = (rect.width - totalBarW) / (barCount - 1);
+            return { barW, gap, barCount };
+        },
+
         drawWave(canvas, fillTop, fillBottom) {
             if (!canvas || !canvas.parentElement || !this.peaks || this.peaks.length === 0) return;
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Avoid zero-width/height issues
+            if (rect.width <= 0 || rect.height <= 0) return;
+
             canvas.width = rect.width * dpr;
             canvas.height = rect.height * dpr;
             canvas.style.width = rect.width + 'px';
             canvas.style.height = rect.height + 'px';
+            
             const ctx = canvas.getContext('2d');
             ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, rect.width, rect.height);
-            this.isWaveDrawn = true;
-            const barW = Math.max(2, (rect.width / this.peaks.length) - 1);
-            const gap = (rect.width - barW * this.peaks.length) / (this.peaks.length - 1);
+            
+            const { barW, gap, barCount } = this.getDrawingMetrics(rect);
             const mid = rect.height / 2;
+            
             this.peaks.forEach((peak, i) => {
+                // RTL drawing logic
                 const x = rect.width - (i * (barW + gap)) - barW;
                 const h = Math.max(2, peak * (mid - 2));
-                ctx.fillStyle = fillTop;
                 
+                ctx.fillStyle = fillTop;
                 if (ctx.roundRect) {
                     ctx.beginPath();
                     ctx.roundRect(x, mid - h, barW, h, barW / 2);
@@ -190,12 +215,12 @@ export function registerWaveform(Alpine) {
                     ctx.roundRect(x, mid + 1, barW, h * 0.6, barW / 2);
                     ctx.fill();
                 } else {
-                    // Fallback for older browsers
                     ctx.fillRect(x, mid - h, barW, h);
                     ctx.fillStyle = fillBottom;
                     ctx.fillRect(x, mid + 1, barW, h * 0.6);
                 }
             });
+            this.isWaveDrawn = true;
         },
 
         drawProgress() {
@@ -203,24 +228,30 @@ export function registerWaveform(Alpine) {
             if (!canvas || !canvas.parentElement || !this.peaks || this.peaks.length === 0) return;
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.parentElement.getBoundingClientRect();
+            
+            if (rect.width <= 0 || rect.height <= 0) return;
+
             canvas.width = rect.width * dpr;
             canvas.height = rect.height * dpr;
             canvas.style.width = rect.width + 'px';
             canvas.style.height = rect.height + 'px';
+            
             const ctx = canvas.getContext('2d');
             ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, rect.width, rect.height);
-            const barW = Math.max(2, (rect.width / this.peaks.length) - 1);
-            const gap = (rect.width - barW * this.peaks.length) / (this.peaks.length - 1);
+            
+            const { barW, gap, barCount } = this.getDrawingMetrics(rect);
             const mid = rect.height / 2;
             const pct = this.progress / 100;
-            const playedBars = Math.floor(this.peaks.length * pct);
+            const playedBars = Math.floor(barCount * pct);
+            
             const primary = getComputedStyle(document.documentElement).getPropertyValue('--admin-primary').trim() || '#0ea5e9';
+            
             for (let i = 0; i < playedBars; i++) {
                 const x = rect.width - (i * (barW + gap)) - barW;
                 const h = Math.max(2, this.peaks[i] * (mid - 2));
-                ctx.fillStyle = primary;
                 
+                ctx.fillStyle = primary;
                 if (ctx.roundRect) {
                     ctx.beginPath();
                     ctx.roundRect(x, mid - h, barW, h, barW / 2);
@@ -271,6 +302,12 @@ export function registerWaveform(Alpine) {
                 if (this.animFrame) cancelAnimationFrame(this.animFrame);
                 return;
             }
+            
+            // Redraw background wave if marked as dirty (e.g., after resize)
+            if (!this.isWaveDrawn && this.peaks && this.peaks.length > 0) {
+                this.drawWaveFromContext();
+            }
+
             const phpDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
             const store = Alpine.store('player');
             this.isThisTrack = store.currentTrack && store.currentTrack.id === this._trackId;
@@ -287,17 +324,16 @@ export function registerWaveform(Alpine) {
                 this.drawProgress();
             }
             this.animFrame = requestAnimationFrame(() => this.tick());
-
-            if (!this.isWaveDrawn && this.peaks && this.peaks.length > 0) {
-                this.drawWaveFromContext();
-            }
         },
 
         seek(event) {
             const rect = this.$refs.waveContainer.getBoundingClientRect();
-            const pct = (rect.right - event.clientX) / rect.width;
+            // Use offsetX if available for more precision, or calculate relative to rect
+            const clickX = event.clientX;
+            const pct = (rect.right - clickX) / rect.width;
             const clampedPct = Math.max(0, Math.min(1, pct));
-            const trackDuration = parseInt(this.$el.dataset.phpDuration || '0', 10);
+            
+            const trackDuration = this.duration || parseInt(this.$el.dataset.phpDuration || '0', 10);
             const previewSec = parseInt(this.$el.dataset.previewSec || '0', 10);
             const canPlay = this.$el.dataset.canPlay === 'true';
             const targetTime = clampedPct * (trackDuration || 0);
@@ -311,7 +347,7 @@ export function registerWaveform(Alpine) {
                     store.play(trackData);
                     setTimeout(() => {
                         if (store.audio) store.audio.currentTime = targetTime;
-                    }, 300);
+                    }, 400); // Slightly longer delay for desktop
                 }
             } else if (store.audio) {
                 store.audio.currentTime = targetTime;
@@ -328,6 +364,7 @@ export function registerWaveform(Alpine) {
 
         destroy() {
             if (this.animFrame) cancelAnimationFrame(this.animFrame);
+            if (this._resizeObserver) this._resizeObserver.disconnect();
         }
     }));
 }
