@@ -46,12 +46,14 @@ if (Test-Path $envPath) {
         }
         $passArg = if ($dbPass) { "-p$dbPass" } else { "" }
         $portArg = if ($dbPort) { "--port=$dbPort" } else { "--port=3306" }
-        $schema = Invoke-Expression "& `"$mysqldump`" -h $dbHost $portArg -u $dbUser $passArg --no-data --routines --single-transaction $dbName" 2>$null
-        if ($schema) {
+        $schema = & "$mysqldump" -h $dbHost --port=$dbPort -u $dbUser $(if($dbPass){"-p$dbPass"}) --no-data --routines --single-transaction $dbName 2>&1
+        if ($LASTEXITCODE -eq 0 -and $schema) {
             $schema | Out-File -FilePath $schemaPath -Encoding utf8
             Write-Host "  Schema exported." -ForegroundColor Green
         } else {
+            $errMsg = ($schema | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | Select-Object -First 1)
             Write-Host "  mysqldump failed, using existing schema.sql" -ForegroundColor DarkYellow
+            if ($errMsg) { Write-Host "  Error: $errMsg" -ForegroundColor DarkRed }
         }
     }
 } else {
