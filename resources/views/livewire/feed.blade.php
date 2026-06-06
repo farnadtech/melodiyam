@@ -1,15 +1,15 @@
 <div class="w-full max-w-4xl mx-auto py-8 px-4">
     <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-black text-white">
+        <h1 class="text-3xl font-black text-surface-900 dark:text-white">
             {{ $title === 'Stream' ? 'فید موسیقی' : $title }}
         </h1>
-        <div class="flex items-center bg-gray-900/50 p-1 rounded-xl border border-gray-800">
+        <div class="flex items-center bg-surface-100 dark:bg-gray-900/50 p-1 rounded-xl border border-surface-200 dark:border-gray-800">
             <button wire:click="setFilter('all')" 
-                    class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 {{ $filter === 'all' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:text-gray-200' }}">
+                    class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 {{ $filter === 'all' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'text-surface-500 dark:text-gray-400 hover:text-surface-900 dark:hover:text-gray-200' }}">
                 همه فعالیت‌ها
             </button>
             <button wire:click="setFilter('tracks')" 
-                    class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 {{ $filter === 'tracks' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'text-gray-400 hover:text-gray-200' }}">
+                    class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 {{ $filter === 'tracks' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'text-surface-500 dark:text-gray-400 hover:text-surface-900 dark:hover:text-gray-200' }}">
                 فقط آهنگ‌ها
             </button>
         </div>
@@ -22,20 +22,20 @@
                 <div class="flex items-center gap-4 mb-4 text-sm">
                     <div class="relative flex-shrink-0">
                         <img src="{{ $activity->user->getAvatarUrl() }}" 
-                             class="w-10 h-10 rounded-full object-cover border border-gray-700">
+                             class="w-10 h-10 rounded-full object-cover border border-surface-200 dark:border-gray-700">
                         @if($activity->user->artist)
-                            <div class="absolute -bottom-1 -right-1 bg-primary-500 rounded-full p-0.5 border border-black">
+                            <div class="absolute -bottom-1 -right-1 bg-primary-500 rounded-full p-0.5 border border-white dark:border-black">
                                 <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
                             </div>
                         @endif
                     </div>
                     <div class="flex flex-col min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-gray-200 font-bold hover:text-white cursor-pointer transition">
+                            <span class="text-surface-900 dark:text-gray-200 font-bold hover:text-primary-500 dark:hover:text-white cursor-pointer transition">
                                 {{-- اگه هنرمنده اسم هنرمندیشو نشون بده --}}
                                 {{ $activity->user->artist?->display_name ?? $activity->user->name }}
                             </span>
-                            <span class="text-gray-500">
+                            <span class="text-surface-500 dark:text-gray-500">
                                 @if($activity->type === 'reposted')
                                     این را بازنشر کرد
                                 @elseif($activity->type === 'track_published')
@@ -51,7 +51,7 @@
                                 @endif
                             </span>
                         </div>
-                        <span class="text-gray-600 text-[10px]">{{ $activity->created_at->diffForHumans() }}</span>
+                        <span class="text-surface-400 dark:text-gray-600 text-[10px]">{{ $activity->created_at->diffForHumans() }}</span>
                     </div>
                 </div>
 
@@ -97,7 +97,7 @@
                                 : route('purchase', ['type' => 'track', 'id' => $subject->id]),
                         ];
                     @endphp
-                    <div class="flex flex-col md:flex-row bg-gradient-to-br from-gray-900 to-black p-4 md:p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition shadow-2xl relative overflow-hidden group/card">
+                    <div class="flex flex-col md:flex-row bg-surface-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-black p-4 md:p-5 rounded-xl border border-surface-200 dark:border-gray-800 hover:border-primary-500/30 dark:hover:border-gray-700 transition shadow-sm dark:shadow-2xl relative overflow-hidden group/card">
                         <div class="w-full md:w-44 h-48 md:h-44 flex-shrink-0 relative group/cover z-10 mb-4 md:mb-0">
                             <img src="{{ $subject->getCoverUrl() }}" 
                                  class="w-full h-full object-cover rounded shadow-2xl">
@@ -123,11 +123,11 @@
                         <div class="flex-1 md:mr-6 flex flex-col z-10 min-w-0">
                             <div class="flex justify-between items-start mb-2">
                                 <div class="min-w-0">
-                                    <h3 class="text-white text-xl md:text-2xl font-black leading-tight truncate">
+                                    <h3 class="text-surface-900 dark:text-white text-xl md:text-2xl font-black leading-tight truncate">
                                         <a href="{{ route('track.show', $subject->slug) }}" wire:navigate class="hover:text-primary-400 transition">{{ $subject->title }}</a>
                                     </h3>
                                     <div class="flex items-center gap-2 mt-0.5">
-                                        <p class="text-gray-400 font-medium truncate">{{ $subject->artist?->display_name ?? ($subject->artist_name ?? ($subject->user?->name ?? 'کاربر ناشناس')) }}</p>
+                                        <p class="text-surface-500 dark:text-gray-400 font-medium truncate">{{ $subject->artist?->display_name ?? ($subject->artist_name ?? ($subject->user?->name ?? 'کاربر ناشناس')) }}</p>
                                         @if($isPremiumOnly)
                                             <span class="whitespace-nowrap text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 leading-none">پریمیوم</span>
                                         @elseif($isPaid && !$hasPlanPaidAccess)
@@ -136,7 +136,7 @@
                                     </div>
                                 </div>
                                 @if($subject->genre)
-                                    <span class="text-[10px] px-2.5 py-1 bg-gray-800/80 text-gray-400 rounded-full border border-gray-700 uppercase tracking-tighter whitespace-nowrap">#{{ $subject->genre->name_fa }}</span>
+                                    <span class="text-[10px] px-2.5 py-1 bg-surface-100 dark:bg-gray-800/80 text-surface-500 dark:text-gray-400 rounded-full border border-surface-200 dark:border-gray-700 uppercase tracking-tighter whitespace-nowrap">#{{ $subject->genre->name_fa }}</span>
                                 @endif
                             </div>
 
@@ -151,17 +151,17 @@
                             <div class="flex flex-wrap items-center justify-between gap-4 mt-auto">
                                 <div class="flex items-center gap-2">
                                     <button wire:click="toggleLike('track', {{ $subject->id }})" 
-                                            class="px-3 md:px-4 py-1.5 bg-gray-800/50 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded border border-gray-700/50 transition flex items-center gap-1.5 group/btn {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' : '' }}">
+                                            class="px-3 md:px-4 py-1.5 bg-surface-100 dark:bg-gray-800/50 hover:bg-surface-200 dark:hover:bg-gray-700 text-surface-600 dark:text-gray-300 text-xs font-bold rounded border border-surface-200 dark:border-gray-700/50 transition flex items-center gap-1.5 group/btn {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500 border-rose-500/30 bg-rose-500/5' : '' }}">
                                         <svg class="w-4 h-4 {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'fill-current' : 'group-hover/btn:text-rose-500' }} transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                         <span class="hidden sm:inline">پسندیدن</span>
                                     </button>
                                     <button wire:click="toggleRepost('track', {{ $subject->id }})"
-                                            class="px-3 md:px-4 py-1.5 bg-gray-800/50 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded border border-gray-700/50 transition flex items-center gap-1.5 group/btn {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500 border-primary-500/30 bg-primary-500/5' : '' }}">
+                                            class="px-3 md:px-4 py-1.5 bg-surface-100 dark:bg-gray-800/50 hover:bg-surface-200 dark:hover:bg-gray-700 text-surface-600 dark:text-gray-300 text-xs font-bold rounded border border-surface-200 dark:border-gray-700/50 transition flex items-center gap-1.5 group/btn {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500 border-primary-500/30 bg-primary-500/5' : '' }}">
                                         <svg class="w-4 h-4 {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'group-hover/btn:text-primary-500' }} transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                         <span class="hidden sm:inline">بازنشر</span>
                                     </button>
                                 </div>
-                                <div class="flex items-center gap-3 md:gap-4 text-gray-500 text-[10px] md:text-[11px] font-medium">
+                                <div class="flex items-center gap-3 md:gap-4 text-surface-400 dark:text-gray-500 text-[10px] md:text-[11px] font-medium">
                                     <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path></svg>{{ number_format($subject->play_count) }}</span>
                                     <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>{{ number_format($subject->like_count) }}</span>
                                     <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path></svg>{{ number_format($subject->comment_count) }}</span>
@@ -170,7 +170,7 @@
                         </div>
                     </div>
                 @elseif($subject instanceof \App\Models\Album)
-                    <div class="flex flex-col md:flex-row bg-gradient-to-br from-gray-900 to-black p-5 md:p-6 rounded-xl border border-gray-800 hover:border-gray-700 transition shadow-xl relative overflow-hidden group/card">
+                    <div class="flex flex-col md:flex-row bg-surface-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-black p-5 md:p-6 rounded-xl border border-surface-200 dark:border-gray-800 hover:border-primary-500/30 dark:hover:border-gray-700 transition shadow-sm dark:shadow-xl relative overflow-hidden group/card">
                         <div class="w-full md:w-40 h-48 md:h-40 flex-shrink-0 relative group/cover z-10 mb-4 md:mb-0">
                             <img src="{{ $subject->getCoverUrl() }}" 
                                  class="w-full h-full object-cover rounded shadow-2xl">
@@ -182,22 +182,22 @@
                         </div>
                         <div class="flex-1 md:mr-8 flex flex-col justify-center z-10 min-w-0">
                                 <span class="text-[10px] font-black text-primary-500 uppercase tracking-[0.2em] mb-1">آلبوم</span>
-                                <h3 class="text-white text-2xl md:text-3xl font-black leading-tight truncate">
+                                <h3 class="text-surface-900 dark:text-white text-2xl md:text-3xl font-black leading-tight truncate">
                                 <a href="{{ route('album.show', $subject->slug) }}" wire:navigate class="hover:text-primary-400 transition">{{ $subject->title }}</a>
                             </h3>
-                            <p class="text-gray-400 text-base md:text-lg mt-1 truncate">{{ $subject->artist->display_name }}</p>
-                            <div class="mt-4 md:mt-6 flex items-center justify-between text-gray-500 text-xs font-bold">
+                            <p class="text-surface-500 dark:text-gray-400 text-base md:text-lg mt-1 truncate">{{ $subject->artist->display_name }}</p>
+                            <div class="mt-4 md:mt-6 flex items-center justify-between text-surface-400 dark:text-gray-500 text-xs font-bold">
                                 <div class="flex items-center gap-3 md:gap-4">
                                     <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>{{ $subject->tracks()->count() }} آهنگ</span>
                                     <span>@if($subject->release_date) @jalali($subject->release_date, 'Y') @endif</span>
                                 </div>
                                 <div class="flex items-center gap-1 md:gap-2">
                                     <button wire:click="toggleLike('album', {{ $subject->id }})" 
-                                            class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-gray-600' }}">
+                                            class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-surface-400 dark:text-gray-600' }}">
                                         <svg class="w-5 h-5 {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'fill-current' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                     </button>
                                     <button wire:click="toggleRepost('album', {{ $subject->id }})" 
-                                            class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-gray-600' }}">
+                                            class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-surface-400 dark:text-gray-600' }}">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                     </button>
                                 </div>
@@ -205,7 +205,7 @@
                         </div>
                     </div>
                 @elseif($subject instanceof \App\Models\Podcast)
-                        <div class="flex flex-col md:flex-row bg-gradient-to-br from-gray-900 to-black p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition shadow-xl relative overflow-hidden group/card">
+                        <div class="flex flex-col md:flex-row bg-surface-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-black p-5 rounded-xl border border-surface-200 dark:border-gray-800 hover:border-primary-500/30 dark:hover:border-gray-700 transition shadow-sm dark:shadow-xl relative overflow-hidden group/card">
                             <div class="w-full md:w-40 h-48 md:h-40 flex-shrink-0 relative group/cover z-10 mb-4 md:mb-0">
                             <img src="{{ $subject->getCoverUrl() }}" 
                                  class="w-full h-full object-cover rounded shadow-2xl">
@@ -219,18 +219,18 @@
                                 <div class="flex justify-between items-start">
                                     <div class="min-w-0">
                                         <span class="text-[10px] font-black text-primary-500 uppercase tracking-[0.2em] mb-1">پادکست</span>
-                                        <h3 class="text-white text-2xl font-black leading-tight truncate">
+                                        <h3 class="text-surface-900 dark:text-white text-2xl font-black leading-tight truncate">
                                             <a href="{{ route('podcast.show', $subject->slug) }}" wire:navigate class="hover:text-primary-400 transition">{{ $subject->title }}</a>
                                         </h3>
-                                        <p class="text-gray-400 mt-1 truncate">{{ $subject->artist?->display_name ?? $subject->user?->name }}</p>
+                                        <p class="text-surface-500 dark:text-gray-400 mt-1 truncate">{{ $subject->artist?->display_name ?? $subject->user?->name }}</p>
                                     </div>
                                     <div class="flex items-center gap-1">
                                         <button wire:click="toggleLike('podcast', {{ $subject->id }})" 
-                                                class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-gray-600' }}">
+                                                class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-surface-400 dark:text-gray-600' }}">
                                             <svg class="w-6 h-6 {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'fill-current' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                         </button>
                                         <button wire:click="toggleRepost('podcast', {{ $subject->id }})" 
-                                                class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-gray-600' }}">
+                                                class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-surface-400 dark:text-gray-600' }}">
                                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                         </button>
                                     </div>
@@ -238,7 +238,7 @@
                             </div>
                         </div>
                     @elseif($subject instanceof \App\Models\PodcastEpisode)
-                        <div class="flex flex-col md:flex-row bg-gradient-to-br from-gray-900 to-black p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition shadow-xl relative overflow-hidden group/card">
+                        <div class="flex flex-col md:flex-row bg-surface-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-black p-5 rounded-xl border border-surface-200 dark:border-gray-800 hover:border-primary-500/30 dark:hover:border-gray-700 transition shadow-sm dark:shadow-xl relative overflow-hidden group/card">
                             <div class="w-full md:w-32 h-40 md:h-32 flex-shrink-0 relative group/cover z-10 mb-4 md:mb-0">
                             <img src="{{ $subject->getCoverUrl() }}" 
                                  class="w-full h-full object-cover rounded shadow-2xl">
@@ -252,18 +252,18 @@
                                 <div class="flex justify-between items-start">
                                     <div class="min-w-0">
                                         <span class="text-[10px] font-black text-primary-500 uppercase tracking-[0.2em] mb-1">پادکست</span>
-                                        <h3 class="text-white text-xl font-bold leading-tight truncate">
+                                        <h3 class="text-surface-900 dark:text-white text-xl font-bold leading-tight truncate">
                                             <a href="{{ route('podcast.show', $subject->podcast->slug) }}" wire:navigate class="hover:text-primary-400 transition">{{ $subject->title }}</a>
                                         </h3>
-                                        <p class="text-gray-400 text-sm mt-1 truncate">{{ $subject->podcast->title }}</p>
+                                        <p class="text-surface-500 dark:text-gray-400 text-sm mt-1 truncate">{{ $subject->podcast->title }}</p>
                                     </div>
                                     <div class="flex items-center gap-1">
                                         <button wire:click="toggleLike('episode', {{ $subject->id }})" 
-                                                class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-gray-600' }}">
+                                                class="p-2 hover:bg-rose-500/10 rounded-full transition {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'text-rose-500' : 'text-surface-400 dark:text-gray-600' }}">
                                             <svg class="w-5 h-5 {{ auth()->user() && $subject->likes()->where('user_id', auth()->id())->exists() ? 'fill-current' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                         </button>
                                         <button wire:click="toggleRepost('episode', {{ $subject->id }})" 
-                                                class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-gray-600' }}">
+                                                class="p-2 hover:bg-primary-500/10 rounded-full transition {{ auth()->user() && $subject->reposts()->where('user_id', auth()->id())->exists() ? 'text-primary-500' : 'text-surface-400 dark:text-gray-600' }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                                         </button>
                                     </div>

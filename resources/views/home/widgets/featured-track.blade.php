@@ -27,11 +27,13 @@
     $tracksJson = $tracks->isEmpty() ? '[]' : $tracks->map(fn($t) => [
         'id'     => $t->id,
         'title'  => $t->title,
-        'artist' => $t->artist?->name ?? '',
+        'artist' => $t->artist?->display_name ?? $t->artist?->name ?? '',
         'album'  => $t->album?->title ?? '',
-        'cover'  => $t->cover_url ?? asset('images/default-cover.png'),
-        'url'    => $t->stream_url ?? '',
-        'duration' => gmdate('i:s', $t->duration ?? 0),
+        'cover'  => $t->getCoverUrl(),
+        'url'    => $t->getStreamUrl(),
+        'duration' => $t->formatted_duration,
+        'cover_page' => route('track.show', $t->slug),
+        'artist_url' => $t->artist ? route('artist.show', $t->artist->slug) : null,
     ])->values()->toJson();
 @endphp
 
@@ -67,7 +69,7 @@
     @mouseenter="stopAutoplay()"
     @mouseleave="startAutoplay()"
 >
-    <div class="relative overflow-hidden rounded-3xl" style="min-height: 320px;">
+    <div class="relative overflow-hidden rounded-3xl min-h-[420px] md:min-h-[320px]">
 
         {{-- Background blur cover --}}
         <template x-for="(track, i) in tracks" :key="i">
@@ -81,10 +83,10 @@
         </template>
 
         {{-- Main card content --}}
-        <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-6 lg:p-10">
+        <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-6 lg:p-10 h-full">
 
             {{-- Cover with slide animation --}}
-            <div class="relative w-48 h-48 flex-shrink-0">
+            <div class="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0">
                 <template x-for="(track, i) in tracks" :key="'cover-'+i">
                     <div
                         class="absolute inset-0 transition-all duration-350 ease-in-out"
@@ -94,7 +96,7 @@
                             'opacity-0 -translate-x-8 scale-95 pointer-events-none': i !== current && direction === 'prev'
                         }"
                     >
-                        <div class="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl ring-4 ring-white/20 bg-surface-100 dark:bg-surface-800">
+                        <div class="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl ring-4 ring-white/20 bg-surface-100 dark:bg-surface-800 cursor-pointer" @click="Livewire.navigate(track.cover_page)">
                             {{-- Blurred background for non-square images --}}
                             <img :src="track.cover" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
                             {{-- Main image showing fully --}}
@@ -107,7 +109,7 @@
             </div>
 
             {{-- Info with slide animation --}}
-            <div class="flex-1 text-white text-center md:text-right min-w-0 relative overflow-hidden" style="min-height: 140px;">
+            <div class="flex-1 text-white text-center md:text-right min-w-0 relative w-full h-[180px] md:h-auto md:min-h-[140px] overflow-hidden">
                 <template x-for="(track, i) in tracks" :key="'info-'+i">
                     <div
                         class="absolute inset-0 flex flex-col justify-center transition-all duration-350 ease-in-out"
@@ -117,15 +119,15 @@
                             'opacity-0 -translate-y-4 pointer-events-none': i !== current && direction === 'prev'
                         }"
                     >
-                        <p class="text-white/60 text-sm font-medium mb-1" x-text="track.artist"></p>
-                        <h3 class="text-2xl lg:text-3xl font-display font-extrabold leading-tight mb-2 drop-shadow-lg" x-text="track.title"></h3>
-                        <p class="text-white/50 text-sm mb-5" x-text="track.album ? '💿 ' + track.album : ''"></p>
+                        <p class="text-white/60 text-sm font-medium mb-1 truncate cursor-pointer hover:text-white transition-colors" @click="if(track.artist_url) Livewire.navigate(track.artist_url)" x-text="track.artist"></p>
+                        <h3 class="text-2xl lg:text-4xl font-display font-extrabold leading-tight mb-2 drop-shadow-lg truncate cursor-pointer hover:text-primary-400 transition-colors" @click="Livewire.navigate(track.cover_page)" x-text="track.title"></h3>
+                        <p class="text-white/50 text-sm mb-5 truncate" x-text="track.album ? '💿 ' + track.album : ''"></p>
 
                         @if($showPlay)
                         <div class="flex items-center gap-3 justify-center md:justify-start">
                             <button
                                 @click="$store.player.play(track)"
-                                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-surface-900 font-bold text-sm hover:bg-white/90 active:scale-95 transition-all shadow-lg"
+                                class="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-white text-surface-900 font-bold text-sm hover:bg-primary-500 hover:text-white active:scale-95 transition-all shadow-lg"
                             >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                 پخش

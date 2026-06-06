@@ -621,6 +621,26 @@ class Settings extends Page implements HasForms
                                     ->addActionLabel('+ افزودن لینک')
                                     ->collapsible(),
                             ]),
+
+                        Section::make('نمادهای اعتماد')
+                            ->description('تنظیمات نمادهای الکترونیک (اینماد، ساماندهی و ...)')
+                            ->schema([
+                                Toggle::make('trust_badges_enabled')
+                                    ->label('نمایش نمادهای اعتماد')
+                                    ->default(false),
+                                TextInput::make('trust_badges_title')
+                                    ->label('عنوان سکشن')
+                                    ->default('نمادهای اعتماد'),
+                                FileUpload::make('trust_badges_image')
+                                    ->label('تصویر نماد (تکی)')
+                                    ->image()
+                                    ->directory('settings')
+                                    ->disk('public'),
+                                Textarea::make('trust_badges_html')
+                                    ->label('کد HTML نمادها')
+                                    ->rows(4)
+                                    ->helperText('می‌توانید کدهای جاوااسکریپت یا تگ‌های img مربوط به اینماد، ساماندهی و ... را اینجا قرار دهید.'),
+                            ])->columns(2),
                     ]),
 
                     // ── Tab 11: Storage ──
