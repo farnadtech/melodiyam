@@ -32,16 +32,28 @@ class Register extends Component
 
     protected function rules()
     {
+        $nameRules = [
+            'required',
+            'min:2',
+            'max:50',
+            'unique:users,name',
+            function ($attribute, $value, $fail) {
+                if (\App\Models\Artist::where('display_name', $value)->exists()) {
+                    $fail('این نام قبلاً توسط یک هنرمند انتخاب شده است');
+                }
+            },
+        ];
+
         if ($this->registerMethod === 'email') {
             return [
-                'name' => 'required|min:2|max:50|unique:users,name',
+                'name' => $nameRules,
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:6|confirmed',
             ];
         }
 
         return [
-            'name' => 'required|min:2|max:50|unique:users,name',
+            'name' => $nameRules,
             'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
             'code' => 'required|digits:6',
         ];
@@ -149,7 +161,17 @@ class Register extends Component
         }
 
         $this->validate([
-            'name' => 'required|string|max:255|unique:users,name',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:users,name',
+                function ($attribute, $value, $fail) {
+                    if (\App\Models\Artist::where('display_name', $value)->exists()) {
+                        $fail('این نام قبلاً توسط یک هنرمند انتخاب شده است');
+                    }
+                },
+            ],
             'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
             'password' => 'required|min:8|confirmed',
         ], [

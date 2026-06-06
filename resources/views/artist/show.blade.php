@@ -83,16 +83,16 @@
 
             <div class="divide-y divide-surface-200 dark:divide-surface-800 rounded-2xl overflow-hidden">
                 @foreach($tracks as $i => $track)
-                <div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group" x-data>
-                    <span class="text-sm text-surface-400 w-6 text-center">{{ $i + 1 }}</span>
+                <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group" x-data>
+                    <span class="text-sm text-surface-400 w-4 sm:w-6 text-center">{{ $i + 1 }}</span>
                     <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                         <img src="{{ $track->getCoverUrl() }}" class="w-full h-full object-cover" alt="">
                     </div>
                     <div class="flex-1 min-w-0">
                         <a href="{{ route('track.show', $track) }}" wire:navigate class="text-sm font-medium text-surface-900 dark:text-surface-100 hover:text-primary-500 truncate block">{{ $track->title }}</a>
                     </div>
-                    <span class="text-xs text-surface-400" id="track-plays-{{ $track->id }}">{{ number_format($track->play_count) }} پخش</span>
-                    <span class="text-xs text-surface-400" id="track-duration-{{ $track->id }}">{{ $track->formattedDuration() }}</span>
+                    <span class="hidden sm:inline text-xs text-surface-400 whitespace-nowrap" id="track-plays-{{ $track->id }}">{{ number_format($track->play_count) }} پخش</span>
+                    <span class="text-xs text-surface-400 whitespace-nowrap" id="track-duration-{{ $track->id }}">{{ $track->formattedDuration() }}</span>
                     <button
                         @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($artist->display_name) }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track->slug ?? $track->id) }}', artist_url: '{{ route('artist.show', $artist->slug) }}', duration: {{ $track->duration }} })"
                         class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center transition-opacity"

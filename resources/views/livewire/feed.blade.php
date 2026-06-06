@@ -20,7 +20,7 @@
             <div class="activity-item group animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {{-- Header: User/Artist info --}}
                 <div class="flex items-center gap-4 mb-4 text-sm">
-                    <a href="{{ route('user.public_profile', $activity->user) }}" wire:navigate class="relative flex-shrink-0">
+                    <a href="{{ $activity->user->artist ? route('artist.show', $activity->user->artist->slug) : route('user.public_profile', $activity->user) }}" wire:navigate class="relative flex-shrink-0">
                         <img src="{{ $activity->user->getAvatarUrl() }}" 
                              class="w-10 h-10 rounded-full object-cover border border-surface-200 dark:border-gray-700 hover:ring-2 hover:ring-primary-500 transition">
                         @if($activity->user->artist)
@@ -31,7 +31,7 @@
                     </a>
                     <div class="flex flex-col min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <a href="{{ route('user.public_profile', $activity->user) }}" wire:navigate class="text-surface-900 dark:text-gray-200 font-bold hover:text-primary-500 dark:hover:text-white cursor-pointer transition">
+                            <a href="{{ $activity->user->artist ? route('artist.show', $activity->user->artist->slug) : route('user.public_profile', $activity->user) }}" wire:navigate class="text-surface-900 dark:text-gray-200 font-bold hover:text-primary-500 dark:hover:text-white cursor-pointer transition">
                                 {{-- اگه هنرمنده اسم هنرمندیشو نشون بده --}}
                                 {{ $activity->user->artist?->display_name ?? $activity->user->name }}
                             </a>

@@ -21,7 +21,21 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:users,name,' . $user->id,
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:users,name,' . $user->id,
+                function ($attribute, $value, $fail) use ($user) {
+                    $query = \App\Models\Artist::where('display_name', $value);
+                    if ($user->artist) {
+                        $query->where('id', '!=', $user->artist->id);
+                    }
+                    if ($query->exists()) {
+                        $fail('این نام قبلاً توسط یک هنرمند انتخاب شده است');
+                    }
+                },
+            ],
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20|unique:users,phone,' . $user->id,
             'bio' => 'nullable|string|max:500',
