@@ -69,7 +69,7 @@
     @mouseenter="stopAutoplay()"
     @mouseleave="startAutoplay()"
 >
-    <div class="relative overflow-hidden rounded-3xl min-h-[420px] md:min-h-[320px]">
+    <div class="relative overflow-hidden rounded-3xl min-h-[500px] md:min-h-[350px]">
 
         {{-- Background blur cover --}}
         <template x-for="(track, i) in tracks" :key="i">
@@ -83,10 +83,10 @@
         </template>
 
         {{-- Main card content --}}
-        <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-6 lg:p-10 h-full">
+        <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 p-8 md:p-10 h-full">
 
             {{-- Cover with slide animation --}}
-            <div class="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0">
+            <div class="relative w-56 h-56 md:w-64 md:h-64 flex-shrink-0">
                 <template x-for="(track, i) in tracks" :key="'cover-'+i">
                     <div
                         class="absolute inset-0 transition-all duration-350 ease-in-out"
@@ -97,42 +97,38 @@
                         }"
                     >
                         <div class="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl ring-4 ring-white/20 bg-surface-100 dark:bg-surface-800 cursor-pointer" @click="Livewire.navigate(track.cover_page)">
-                            {{-- Blurred background for non-square images --}}
                             <img :src="track.cover" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-110">
-                            {{-- Main image showing fully --}}
-                            <img :src="track.cover"
-                                 class="relative z-10 w-full h-full object-contain"
-                                 :alt="track.title">
+                            <img :src="track.cover" class="relative z-10 w-full h-full object-contain" :alt="track.title">
                         </div>
                     </div>
                 </template>
             </div>
 
-            {{-- Info with slide animation --}}
-            <div class="flex-1 text-white text-center md:text-right min-w-0 relative w-full h-[180px] md:h-auto md:min-h-[140px] overflow-hidden">
+            {{-- Info Section (Refactored to Grid for better mobile visibility) --}}
+            <div class="flex-1 w-full md:w-auto grid grid-cols-1 grid-rows-1">
                 <template x-for="(track, i) in tracks" :key="'info-'+i">
                     <div
-                        class="absolute inset-0 flex flex-col justify-center transition-all duration-350 ease-in-out"
+                        class="col-start-1 row-start-1 flex flex-col justify-center text-white text-center md:text-right transition-all duration-350 ease-in-out"
                         :class="{
-                            'opacity-100 translate-y-0': i === current,
-                            'opacity-0 translate-y-4 pointer-events-none': i !== current && direction === 'next',
-                            'opacity-0 -translate-y-4 pointer-events-none': i !== current && direction === 'prev'
+                            'opacity-100 translate-y-0 relative z-10': i === current,
+                            'opacity-0 translate-y-4 pointer-events-none absolute inset-0': i !== current && direction === 'next',
+                            'opacity-0 -translate-y-4 pointer-events-none absolute inset-0': i !== current && direction === 'prev'
                         }"
                     >
                         <p class="text-white/60 text-sm font-medium mb-1 truncate cursor-pointer hover:text-white transition-colors" @click="if(track.artist_url) Livewire.navigate(track.artist_url)" x-text="track.artist"></p>
-                        <h3 class="text-2xl lg:text-4xl font-display font-extrabold leading-tight mb-2 drop-shadow-lg truncate cursor-pointer hover:text-primary-400 transition-colors" @click="Livewire.navigate(track.cover_page)" x-text="track.title"></h3>
-                        <p class="text-white/50 text-sm mb-5 truncate" x-text="track.album ? '💿 ' + track.album : ''"></p>
+                        <h3 class="text-3xl md:text-4xl lg:text-5xl font-display font-extrabold leading-tight mb-2 drop-shadow-lg truncate cursor-pointer hover:text-primary-400 transition-colors" @click="Livewire.navigate(track.cover_page)" x-text="track.title"></h3>
+                        <p class="text-white/50 text-sm mb-6 truncate" x-text="track.album ? '💿 ' + track.album : ''"></p>
 
                         @if($showPlay)
-                        <div class="flex items-center gap-3 justify-center md:justify-start">
+                        <div class="flex items-center gap-4 justify-center md:justify-start">
                             <button
                                 @click="$store.player.play(track)"
-                                class="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-white text-surface-900 font-bold text-sm hover:bg-primary-500 hover:text-white active:scale-95 transition-all shadow-lg"
+                                class="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-white text-surface-900 font-bold text-base hover:bg-primary-500 hover:text-white active:scale-95 transition-all shadow-xl"
                             >
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                پخش
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                پخش آهنگ
                             </button>
-                            <span class="text-white/40 text-sm font-mono" x-text="track.duration"></span>
+                            <span class="text-white/40 text-sm font-mono bg-white/10 px-3 py-1 rounded-lg" x-text="track.duration"></span>
                         </div>
                         @endif
                     </div>
