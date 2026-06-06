@@ -129,10 +129,16 @@ class TrackController extends Controller
             'likes' => $c->likes_count ?? 0
         ])->values();
 
+        $title = $track->seo_title ?: $track->title;
+        $metaDescription = $track->seo_description ?: mb_substr(strip_tags($track->description), 0, 160);
+        $ogImage = $track->getCoverUrl();
+        $ogType = 'music.song';
+
         return view('track.show', compact(
             'track', 'relatedTracks', 'comments', 'userLikedTrack', 'userRepostedTrack', 'canPlay',
             'isPaidTrack', 'previewSec', 'buyUrl', 'sellPrice', 'sellDiscount',
-            'isPremiumOnly', 'premiumPreviewSec', 'canDownload', 'waveformComments'
+            'isPremiumOnly', 'premiumPreviewSec', 'canDownload', 'waveformComments',
+            'title', 'metaDescription', 'ogImage', 'ogType'
         ));
     }
 

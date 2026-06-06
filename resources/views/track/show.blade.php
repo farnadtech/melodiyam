@@ -499,6 +499,16 @@
 
         {{-- waveform registered in resources/js/app.js --}}
 
+        {{-- Description --}}
+        @if($track->description)
+        <section>
+            <h2 class="text-lg font-bold text-surface-900 dark:text-white mb-4">توضیحات</h2>
+            <div class="glass-card p-6 rounded-2xl">
+                <div class="text-surface-700 dark:text-surface-300 leading-relaxed whitespace-pre-line">{{ $track->description }}</div>
+            </div>
+        </section>
+        @endif
+
         {{-- Lyrics --}}
         @if($track->lyrics)
         <section>

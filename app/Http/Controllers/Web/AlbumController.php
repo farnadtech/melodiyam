@@ -66,9 +66,15 @@ class AlbumController extends Controller
                 ->exists();
         }
 
+        $title = $album->seo_title ?: $album->title;
+        $metaDescription = $album->seo_description ?: mb_substr(strip_tags($album->description), 0, 160);
+        $ogImage = $album->cover_url;
+        $ogType = 'music.album';
+
         return view('album.show', compact(
             'album', 'tracks', 'sort', 'hasPlanAccess',
-            'purchasedTrackIds', 'albumAlreadyBought', 'userLikedAlbum', 'userRepostedAlbum'
+            'purchasedTrackIds', 'albumAlreadyBought', 'userLikedAlbum', 'userRepostedAlbum',
+            'title', 'metaDescription', 'ogImage', 'ogType'
         ));
     }
 }

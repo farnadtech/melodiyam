@@ -9,8 +9,33 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="livewire-navigate-cache" content="off">
 
-    <title>{{ $title ?? config('app.name') }} - {{ config('app.name') }}</title>
-    <meta name="description" content="{{ $metaDescription ?? 'پلتفرم استریم موسیقی فارسی - گوش دادن به بهترین موسیقی‌ها' }}">
+    @php
+        $siteName = \App\Models\Setting::get('site_name', config('app.name'));
+        $defaultTitle = \App\Models\Setting::get('meta_title', $siteName);
+        $defaultDesc = \App\Models\Setting::get('meta_description', 'پلتفرم استریم موسیقی فارسی');
+        $currentTitle = isset($title) ? $title . ' - ' . $siteName : $defaultTitle;
+        $currentDesc = $metaDescription ?? $defaultDesc;
+    @endphp
+
+    <title>{{ $currentTitle }}</title>
+    <meta name="description" content="{{ $currentDesc }}">
+    <meta name="keywords" content="{{ $metaKeywords ?? \App\Models\Setting::get('meta_keywords', '') }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="{{ $currentTitle }}">
+    <meta property="og:description" content="{{ $currentDesc }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('images/og-image.jpg') }}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url()->current() }}">
+    <meta property="twitter:title" content="{{ $currentTitle }}">
+    <meta property="twitter:description" content="{{ $currentDesc }}">
+    <meta property="twitter:image" content="{{ $ogImage ?? asset('images/og-image.jpg') }}">
+
+    {!! \App\Models\Setting::get('google_analytics', '') !!}
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

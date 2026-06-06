@@ -50,9 +50,15 @@ class ArtistController extends Controller
 
         $albums = $artist->albums()
             ->published()
-            ->orderByDesc('release_date')
+            ->latest()
+            ->limit(10)
             ->get();
 
-        return view('artist.show', compact('artist', 'tracks', 'albums', 'sort'));
+        $title = $artist->display_name;
+        $metaDescription = mb_substr(strip_tags($artist->bio), 0, 160);
+        $ogImage = $artist->getAvatarUrl();
+        $ogType = 'profile';
+
+        return view('artist.show', compact('artist', 'tracks', 'albums', 'sort', 'title', 'metaDescription', 'ogImage', 'ogType'));
     }
 }

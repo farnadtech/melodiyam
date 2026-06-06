@@ -62,10 +62,16 @@ class PodcastController extends Controller
                 ->pluck('repostable_id')
                 ->toArray();
         }
+
+        $title = $podcast->title;
+        $metaDescription = mb_substr(strip_tags($podcast->description), 0, 160);
+        $ogImage = $podcast->cover_url;
+        $ogType = 'video.episode'; // Close enough for podcasts
         
         return view('podcast.show', compact(
             'podcast', 'episodes', 'sort', 'isPremiumUser', 'premiumPreviewSec', 
-            'isSubscribed', 'canDownload', 'userRepostedPodcast', 'userLikedPodcast', 'userRepostedEpisodes'
+            'isSubscribed', 'canDownload', 'userRepostedPodcast', 'userLikedPodcast', 'userRepostedEpisodes',
+            'title', 'metaDescription', 'ogImage', 'ogType'
         ));
     }
 
