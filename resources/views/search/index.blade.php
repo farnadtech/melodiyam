@@ -11,8 +11,9 @@
                 }
                 this.loading = true;
                 try {
-                    const resp = await fetch('/api/search?q=' + encodeURIComponent(this.q));
+                    const resp = await fetch('/api/v1/search?q=' + encodeURIComponent(this.q));
                     this.results = await resp.json();
+                    console.log('Search results:', this.results);
                 } catch (e) {
                     console.error('Search error:', e);
                 } finally {
