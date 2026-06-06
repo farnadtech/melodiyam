@@ -338,12 +338,14 @@ class Settings extends Page implements HasForms
 
                     // ── Tab 6: SEO ──
                     Tab::make('سئو')->icon('heroicon-o-magnifying-glass')->schema([
-                        Section::make()->schema([
-                            TextInput::make('meta_title')->label('عنوان متا'),
-                            Textarea::make('meta_description')->label('توضیحات متا')->rows(2),
-                            TextInput::make('meta_keywords')->label('کلمات کلیدی'),
-                            TextInput::make('google_analytics')->label('کد گوگل آنالیتیکس (G-XXXXX)'),
-                        ])->columns(2),
+                        Section::make('تنظیمات متا (Meta Tags)')->schema([
+                            TextInput::make('meta_title')->label('عنوان پیش‌فرض سئو (Meta Title)'),
+                            Textarea::make('meta_description')->label('توضیحات پیش‌فرض سئو (Meta Description)')->rows(3),
+                            TextInput::make('meta_keywords')->label('کلمات کلیدی (Keywords)')->placeholder('کلمات را با کاما جدا کنید'),
+                        ]),
+                        Section::make('کدهای رهگیری')->schema([
+                            Textarea::make('google_analytics')->label('کد Google Analytics (یا تگ‌های دیگر در Head)')->rows(5),
+                        ]),
                     ]),
 
                     // ── Tab 7: Email / Notifications ──
@@ -749,43 +751,6 @@ class Settings extends Page implements HasForms
                                 ])
                                 ->default('standalone'),
                         ])->columns(3),
-                    ]),
-
-                    // ── Tab 13: SEO & Sitemap ──
-                    Tab::make('سئو و نقشه سایت')->icon('heroicon-o-globe-alt')->schema([
-                        Section::make('تنظیمات متا (Meta Tags)')->schema([
-                            TextInput::make('meta_title')->label('عنوان پیش‌فرض سئو (Meta Title)'),
-                            Textarea::make('meta_description')->label('توضیحات پیش‌فرض سئو (Meta Description)')->rows(3),
-                            TextInput::make('meta_keywords')->label('کلمات کلیدی (Keywords)')->placeholder('کلمات را با کاما جدا کنید'),
-                        ]),
-
-                        Section::make('نقشه سایت (Sitemap)')->schema([
-                            Placeholder::make('sitemap_url')
-                                ->label('لینک نقشه سایت')
-                                ->content(fn () => new \Illuminate\Support\HtmlString('
-                                    <div class="flex items-center gap-3">
-                                        <a href="' . url('sitemap.xml') . '" target="_blank" class="text-primary-600 dark:text-primary-400 font-mono underline">' . url('sitemap.xml') . '</a>
-                                        <span class="text-xs text-gray-500">(این فایل هر روز به صورت خودکار به‌روزرسانی می‌شود)</span>
-                                    </div>
-                                ')),
-                            
-                            SchemaActions::make([
-                                Action::make('generate_sitemap')
-                                    ->label('تولید دستی نقشه سایت')
-                                    ->icon('heroicon-m-arrow-path')
-                                    ->action(function () {
-                                        \Illuminate\Support\Facades\Artisan::call('sitemap:generate');
-                                        Notification::make()
-                                            ->title('نقشه سایت با موفقیت تولید شد')
-                                            ->success()
-                                            ->send();
-                                    }),
-                            ]),
-                        ]),
-                        
-                        Section::make('کدهای رهگیری')->schema([
-                            Textarea::make('google_analytics')->label('کد Google Analytics (یا تگ‌های دیگر در Head)')->rows(5),
-                        ]),
                     ]),
 
                 ]),
