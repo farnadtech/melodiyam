@@ -559,6 +559,9 @@ document.addEventListener('livewire:navigated', () => {
     const isDark = dark === null ? true : dark === 'true';
     document.documentElement.classList.toggle('dark', isDark);
     
+    // Dispatch event to refresh notifications
+    window.dispatchEvent(new CustomEvent('refresh-notifications'));
+
     // Ensure audio singleton persists in DOM
     const audio = window[AUDIO_SINGLETON_KEY];
     if (audio && !document.body.contains(audio)) {
@@ -616,8 +619,20 @@ window.fetch = function(input, init) {
             if (parsed.origin !== window.location.origin) {
                 return _origFetch.apply(this, arguments);
             }
+
+            // Force no-cache for internal GET requests to prevent stale data in SPA navigation
+            if (!init || !init.method || init.method.toUpperCase() === 'GET') {
+                if (!init) init = {};
+                init.cache = 'no-store';
+                init.headers = init.headers || {};
+                if (init.headers instanceof Headers) {
+                    init.headers.set('Cache-Control', 'no-cache');
+                } else {
+                    init.headers['Cache-Control'] = 'no-cache';
+                }
+            }
         } catch {
-            return Promise.reject(new Error('Invalid URL'));
+            return _origFetch.apply(this, arguments);
         }
     }
     return _origFetch.apply(this, arguments).then(function(response) {

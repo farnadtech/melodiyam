@@ -25,6 +25,11 @@ class SecurityHeaders
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
         
+        // Disable Caching to prevent stale data in SPA-like navigation (Livewire wire:navigate)
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
         // Content Security Policy (CSP)
         // Optimized for Laravel, Livewire, and Alpine.js
         $csp = "default-src 'self'; ";
