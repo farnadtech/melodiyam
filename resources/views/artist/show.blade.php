@@ -101,18 +101,28 @@
                     if (trackIds.length === 0) return;
 
                     trackIds.forEach(id => {
-                        fetch(`/api/track/${id}/stats`, { cache: 'no-store' })
-                            .then(r => r.json())
+                        fetch(`/api/track/${id}/stats`, { 
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                            cache: 'no-store' 
+                        })
+                            .then(r => r.ok ? r.json() : null)
                             .then(data => {
+                                if (!data) return;
                                 const playEl = document.getElementById(`track-plays-${id}`);
                                 const durEl = document.getElementById(`track-duration-${id}`);
-                                if (playEl) playEl.textContent = new Intl.NumberFormat('en').format(data.play_count) + ' پخش';
+                                
+                                // Ensure play_count is a valid number before formatting
+                                const plays = parseInt(data.play_count);
+                                if (playEl && !isNaN(plays)) {
+                                    playEl.textContent = new Intl.NumberFormat('en').format(plays) + ' پخش';
+                                }
+                                
                                 if (durEl && data.duration > 0) {
                                     const m = Math.floor(data.duration / 60);
                                     const s = Math.floor(data.duration % 60);
                                     durEl.textContent = m + ':' + String(s).padStart(2, '0');
                                 }
-                            });
+                            }).catch(e => console.error('Stats update error:', e));
                     });
                 });
             </script>
