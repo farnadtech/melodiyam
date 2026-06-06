@@ -52,20 +52,37 @@ export function registerWaveform(Alpine) {
             if (this.peaks && this.peaks.length > 0) {
                 // Pre-generated
                 this.$nextTick(() => this.drawWaveFromContext());
-            } else if (isSafeUrl(this._audioUrl)) {
-                // Fallback to client-side generation
-                this.generatePeaks(this._audioUrl).then(() => {
-                    if (!this.peaks || this.peaks.length === 0) {
-                        this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
-                        this.drawWaveFromContext();
-                    }
-                });
             } else {
-                this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
-                this.$nextTick(() => this.drawWaveFromContext());
+                // Server-side generation failed or not available (shell_exec disabled)
+                // We MUST generate on client-side
+                if (isSafeUrl(this._audioUrl)) {
+                    this.generatePeaks(this._audioUrl).then(() => {
+                        if (!this.peaks || this.peaks.length === 0) {
+                            this.generateFakePeaks();
+                        }
+                        this.drawWaveFromContext();
+                    }).catch(() => {
+                        this.generateFakePeaks();
+                        this.drawWaveFromContext();
+                    });
+                } else {
+                    this.generateFakePeaks();
+                    this.drawWaveFromContext();
+                }
             }
 
             this.tick();
+        },
+
+        generateFakePeaks() {
+            // Generate a consistent but random-looking waveform
+            // Use trackId as seed if possible for consistency across reloads
+            const seed = parseInt(this._trackId) || Math.random();
+            const pseudoRandom = (i) => {
+                const x = Math.sin(seed + i) * 10000;
+                return x - Math.floor(x);
+            };
+            this.peaks = Array.from({ length: 200 }, (_, i) => 0.2 + pseudoRandom(i) * 0.8);
         },
 
         drawWaveFromContext() {

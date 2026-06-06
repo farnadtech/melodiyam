@@ -26,21 +26,36 @@ class AudioHelper
         }
 
         // Method 1: Try FFprobe (Best accuracy)
-        try {
-            $ffprobe = env('FFPROBE_PATH', 'ffprobe');
-            $command = "{$ffprobe} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($path);
-            $output = shell_exec($command);
-            
-            if ($output !== null && is_numeric(trim($output))) {
-                return (int) round((float) trim($output));
-            } else {
-                Log::warning("FFprobe failed to get duration. Output: " . ($output ?: 'empty'));
+        if (function_exists('shell_exec')) {
+            try {
+                $ffprobe = env('FFPROBE_PATH', 'ffprobe');
+                $command = "{$ffprobe} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($path);
+                $output = shell_exec($command);
+                
+                if ($output !== null && is_numeric(trim($output))) {
+                    return (int) round((float) trim($output));
+                } else {
+                    Log::warning("FFprobe failed to get duration. Output: " . ($output ?: 'empty'));
+                }
+            } catch (\Throwable $e) {
+                Log::error("FFprobe error: " . $e->getMessage());
             }
-        } catch (\Throwable $e) {
-            Log::error("FFprobe error: " . $e->getMessage());
         }
 
         if ($isUrl) return 0; // Fallback only works for local files
+
+        // Method 1.5: Try getID3 if available (No shell_exec needed)
+        try {
+            if (class_exists('\getID3')) {
+                $getID3 = new \getID3;
+                $fileInfo = $getID3->analyze($path);
+                if (isset($fileInfo['playtime_seconds'])) {
+                    return (int) round($fileInfo['playtime_seconds']);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error("getID3 error for {$path}: " . $e->getMessage());
+        }
 
         // Method 2: Internal Fallback (Pure PHP)
         try {
