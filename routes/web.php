@@ -113,6 +113,16 @@ Route::post('/upload/track', [\App\Http\Controllers\Web\UserTrackController::cla
 Route::get('/track/{track}/download', [TrackController::class, 'download'])->name('track.download');
 
 // FFmpeg & System Diagnostic Route
+// System Rescue Route (Run this once on server to clear all caches)
+Route::get('/rescue-server', function() {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        return "✅ تمام کش‌های سیستم با موفقیت پاکسازی شد. اکنون پنل مدیریت را چک کنید.";
+    } catch (\Exception $e) {
+        return "❌ خطا در پاکسازی کش: " . $e->getMessage();
+    }
+});
+
 Route::get('/test-ffmpeg', function() {
     $ffmpeg = env('FFMPEG_PATH', 'ffmpeg');
     $ffprobe = env('FFPROBE_PATH', 'ffprobe');

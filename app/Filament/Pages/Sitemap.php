@@ -14,7 +14,7 @@ class Sitemap extends Page
     protected static ?string $navigationLabel = 'سئو و نقشه سایت';
     protected static ?int $navigationSort = 10; // Put it at the end of the group
 
-    protected string $view = 'filament.pages.sitemap';
+    protected static string $view = 'filament.pages.sitemap';
 
     public function generateSitemap(): void
     {

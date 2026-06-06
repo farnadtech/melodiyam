@@ -15,12 +15,8 @@ use Filament\Schemas\Components\Grid;
 class Dashboard extends Page
 {
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-home';
-    protected static string | null $title = 'داشبورد مدیریت';
-
-    public function getView(): string
-    {
-        return 'filament.pages.dashboard';
-    }
+    protected static ?string $title = 'داشبورد مدیریت';
+    protected static string $view = 'filament.pages.dashboard';
 
     protected function getHeaderActions(): array
     {
