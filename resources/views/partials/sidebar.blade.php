@@ -318,6 +318,25 @@
                 <div class="text-[10px] text-surface-400 leading-relaxed text-justify opacity-80">{!! $sfDesc !!}</div>
             </div>
             @endif
+
+            {{-- سکشن نمادهای اعتماد --}}
+            @if($tbEnabled)
+            <div class="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800/50">
+                @if($tbTitle)
+                    <p class="text-[11px] font-bold text-surface-500 dark:text-surface-400 mb-3 px-1">{{ $tbTitle }}</p>
+                @endif
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    @if($tbImage)
+                        <img src="{{ asset('storage/' . $tbImage) }}" alt="{{ $tbTitle }}" class="max-w-[80px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                    @endif
+                    @if($tbHtml)
+                        <div class="trust-badges-html grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                            {!! $tbHtml !!}
+                        </div>
+                    @endif
+                </div>
+            </div>
+            @endif
         </div>
         @endif
 
@@ -382,25 +401,6 @@
                 <a href="{{ $pbUrl }}" wire:navigate class="block w-full py-2 rounded-lg text-sm font-medium transition-colors" style="background:color-mix(in srgb,{{ $pbColor }} 20%,transparent);color:{{ $pbColor }};">
                     {{ $pbBtn }}
                 </a>
-            </div>
-        </div>
-        @endif
-
-        {{-- سکشن نمادهای اعتماد --}}
-        @if($tbEnabled)
-        <div class="p-4 mt-2 border-t border-surface-100 dark:border-surface-800/50">
-            @if($tbTitle)
-                <p class="text-[11px] font-bold text-surface-500 dark:text-surface-400 mb-3 px-1">{{ $tbTitle }}</p>
-            @endif
-            <div class="flex flex-wrap items-center justify-center gap-4">
-                @if($tbImage)
-                    <img src="{{ asset('storage/' . $tbImage) }}" alt="{{ $tbTitle }}" class="max-w-[80px] h-auto grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
-                @endif
-                @if($tbHtml)
-                    <div class="trust-badges-html grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
-                        {!! $tbHtml !!}
-                    </div>
-                @endif
             </div>
         </div>
         @endif
@@ -613,6 +613,25 @@
                 </div>
                 @endif
 
+                {{-- سکشن نمادهای اعتماد (Mobile) --}}
+                @if($tbEnabled)
+                <div class="px-4 py-5 mt-4 border-t border-surface-200 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/20 rounded-2xl">
+                    @if($tbTitle)
+                        <p class="text-[11px] font-bold text-surface-500 dark:text-surface-400 mb-3">{{ $tbTitle }}</p>
+                    @endif
+                    <div class="flex flex-wrap items-center justify-center gap-4">
+                        @if($tbImage)
+                            <img src="{{ asset('storage/' . $tbImage) }}" alt="{{ $tbTitle }}" class="max-w-[70px] h-auto grayscale opacity-70">
+                        @endif
+                        @if($tbHtml)
+                            <div class="trust-badges-html grayscale opacity-70 scale-90">
+                                {!! $tbHtml !!}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
+
                 {{-- بنر هنرمند شو --}}
                 @if($abEnabled && auth()->user()->isListener())
                 <div class="pt-3 mt-2">
@@ -639,24 +658,6 @@
                 </div>
                 @endif
 
-                {{-- سکشن نمادهای اعتماد (Mobile) --}}
-                @if($tbEnabled)
-                <div class="px-4 py-5 mt-4 border-t border-surface-200 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-800/20 rounded-2xl">
-                    @if($tbTitle)
-                        <p class="text-[11px] font-bold text-surface-500 dark:text-surface-400 mb-3">{{ $tbTitle }}</p>
-                    @endif
-                    <div class="flex flex-wrap items-center justify-center gap-4">
-                        @if($tbImage)
-                            <img src="{{ asset('storage/' . $tbImage) }}" alt="{{ $tbTitle }}" class="max-w-[70px] h-auto grayscale opacity-70">
-                        @endif
-                        @if($tbHtml)
-                            <div class="trust-badges-html grayscale opacity-70 scale-90">
-                                {!! $tbHtml !!}
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                @endif
             @endauth
         </nav>
     </div>

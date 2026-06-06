@@ -251,7 +251,7 @@
                 x-transition:leave="transition ease-in duration-100"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                class="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-surface-800 rounded-xl shadow-xl border border-surface-200 dark:border-surface-700 z-50"
+                class="fixed md:absolute inset-x-4 md:inset-x-auto md:left-0 top-16 md:top-full mt-2 md:w-80 bg-white dark:bg-surface-800 rounded-xl shadow-2xl border border-surface-200 dark:border-surface-700 z-[1001]"
             >
                 <div class="px-4 py-3 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
                     <h3 class="text-sm font-bold text-surface-900 dark:text-white">ناتیفیکیشن‌ها</h3>

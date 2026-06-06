@@ -41,4 +41,16 @@ class Sale extends Model
     {
         return $this->belongsTo(CommissionRule::class);
     }
+
+    protected static function booted()
+    {
+        static::created(function ($sale) {
+            if ($sale->status === 'completed' && $sale->seller) {
+                \App\Services\NotificationDispatcher::dispatch('track_purchased_artist', [
+                    'track_title' => $sale->saleable->title ?? 'محصول',
+                    'amount'      => number_format($sale->gross_amount),
+                ], $sale->seller);
+            }
+        });
+    }
 }

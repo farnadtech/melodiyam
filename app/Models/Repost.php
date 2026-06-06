@@ -36,6 +36,22 @@ class Repost extends Model
             if ($subject && \Illuminate\Support\Facades\Schema::hasColumn($subject->getTable(), 'repost_count')) {
                 $subject->increment('repost_count');
             }
+
+            // Notify Owner
+            if ($subject) {
+                $user = $repost->user;
+                $owner = null;
+                if (method_exists($subject, 'user')) $owner = $subject->user;
+                elseif (isset($subject->artist) && $subject->artist) $owner = $subject->artist->user;
+                elseif (isset($subject->user_id)) $owner = User::find($subject->user_id);
+
+                if ($owner && $owner->id !== $user->id) {
+                    \App\Services\NotificationDispatcher::dispatch('track_reposted', [
+                        'track_title' => $subject->title ?? ($subject->name ?? 'محتوا'),
+                        'user_name' => $user->name,
+                    ], $owner);
+                }
+            }
         });
 
         static::deleted(function ($repost) {

@@ -49,6 +49,15 @@ class Report extends Model
         return $this->belongsTo(User::class);
     }
 
+    protected static function booted()
+    {
+        static::created(function ($report) {
+            \App\Services\NotificationDispatcher::dispatch('new_report', [
+                'type' => self::$reasons[$report->reason] ?? $report->reason,
+            ]);
+        });
+    }
+
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');

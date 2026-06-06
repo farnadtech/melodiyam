@@ -72,6 +72,21 @@ class Payment extends Model
         };
     }
 
+    protected static function booted()
+    {
+        static::updated(function ($payment) {
+            if ($payment->isDirty('status') && $payment->status === 'paid') {
+                if ($payment->payment_type === 'subscription' && $payment->subscription) {
+                    \App\Services\NotificationDispatcher::dispatch('subscription_purchased', [
+                        'user_name' => $payment->user->name,
+                        'plan_name' => $payment->subscription->plan->name ?? 'اشتراک',
+                        'amount'    => number_format($payment->totalAmount()),
+                    ]);
+                }
+            }
+        });
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {

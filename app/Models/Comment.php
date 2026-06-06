@@ -23,6 +23,30 @@ class Comment extends Model
         return ['is_approved' => 'boolean'];
     }
 
+    protected static function booted()
+    {
+        static::created(function ($comment) {
+            $target = $comment->commentable;
+            if (!$target) return;
+
+            $user = $comment->user;
+
+            // Get Owner
+            $owner = null;
+            if (method_exists($target, 'user')) $owner = $target->user;
+            elseif (isset($target->artist) && $target->artist) $owner = $target->artist->user;
+            elseif (isset($target->user_id)) $owner = \App\Models\User::find($target->user_id);
+
+            if ($owner && $owner->id !== $user->id) {
+                \App\Services\NotificationDispatcher::dispatch('track_commented', [
+                    'track_title' => $target->title ?? ($target->name ?? 'محتوا'),
+                    'user_name' => $user->name,
+                    'comment_body' => $comment->body,
+                ], $owner);
+            }
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -33,6 +33,15 @@ class ArtistApplication extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    protected static function booted()
+    {
+        static::created(function ($application) {
+            \App\Services\NotificationDispatcher::dispatch('new_artist_application', [
+                'user_name' => $application->user->name,
+            ]);
+        });
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return static::$statuses[$this->status] ?? $this->status;

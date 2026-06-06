@@ -36,4 +36,16 @@ class WalletTransaction extends Model
     {
         return $this->morphTo();
     }
+
+    protected static function booted()
+    {
+        static::created(function ($transaction) {
+            if ($transaction->type === 'withdrawal' && $transaction->status === 'pending') {
+                \App\Services\NotificationDispatcher::dispatch('withdrawal_requested', [
+                    'user_name' => $transaction->wallet->user->name ?? 'کاربر',
+                    'amount'    => number_format($transaction->amount),
+                ]);
+            }
+        });
+    }
 }

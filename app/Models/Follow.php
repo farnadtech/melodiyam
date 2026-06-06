@@ -31,5 +31,25 @@ class Follow extends Model
         static::creating(function ($follow) {
             $follow->created_at = $follow->created_at ?? now();
         });
+
+        static::created(function ($follow) {
+            $target = $follow->followable;
+            if (!$target) return;
+
+            $user = $follow->user;
+            
+            // If following a user directly
+            if ($target instanceof User) {
+                \App\Services\NotificationDispatcher::dispatch('user_followed', [
+                    'follower_name' => $user->name,
+                ], $target);
+            } 
+            // If following an artist
+            elseif ($target instanceof Artist && $target->user) {
+                \App\Services\NotificationDispatcher::dispatch('user_followed', [
+                    'follower_name' => $user->name,
+                ], $target->user);
+            }
+        });
     }
 }
