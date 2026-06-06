@@ -18,6 +18,7 @@ export function registerWaveform(Alpine) {
         activeComment: null,
         lastCheckedSecond: -1,
         openMarker: null,
+        isWaveDrawn: false,
         _trackId: trackId,
         _audioUrl: audioUrl,
 
@@ -47,16 +48,21 @@ export function registerWaveform(Alpine) {
             this.groupedMarkers = merged;
 
             if (this.peaks && this.peaks.length > 0) {
-                // Use pre-generated peaks
+                // Pre-generated
+                this.$nextTick(() => this.drawWaveFromContext());
             } else if (isSafeUrl(this._audioUrl)) {
                 await this.generatePeaks(this._audioUrl);
             } else {
                 this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
+                this.$nextTick(() => this.drawWaveFromContext());
             }
 
+            this.tick();
+        },
+
+        drawWaveFromContext() {
             const isDark = document.documentElement.classList.contains('dark');
             this.drawWave(this.$refs.waveCanvas, isDark ? 'rgba(148,163,184,0.3)' : 'rgba(100,116,139,0.3)', isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.12)');
-            this.tick();
         },
 
         async generatePeaks(url) {
@@ -81,6 +87,7 @@ export function registerWaveform(Alpine) {
                 }
                 const max = Math.max(...peaks);
                 this.peaks = peaks.map(p => p / max);
+                this.drawWaveFromContext();
                 this.duration = audio.duration;
                 this.positionPreviewMarker(audio.duration);
             } catch {
@@ -100,7 +107,7 @@ export function registerWaveform(Alpine) {
         },
 
         drawWave(canvas, fillTop, fillBottom) {
-            if (!canvas || !canvas.parentElement) return;
+            if (!canvas || !canvas.parentElement || !this.peaks || this.peaks.length === 0) return;
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width * dpr;
@@ -110,6 +117,7 @@ export function registerWaveform(Alpine) {
             const ctx = canvas.getContext('2d');
             ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, rect.width, rect.height);
+            this.isWaveDrawn = true;
             const barW = Math.max(2, (rect.width / this.peaks.length) - 1);
             const gap = (rect.width - barW * this.peaks.length) / (this.peaks.length - 1);
             const mid = rect.height / 2;
@@ -129,7 +137,7 @@ export function registerWaveform(Alpine) {
 
         drawProgress() {
             const canvas = this.$refs.waveProgress;
-            if (!canvas || !canvas.parentElement) return;
+            if (!canvas || !canvas.parentElement || !this.peaks || this.peaks.length === 0) return;
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width * dpr;
@@ -209,6 +217,10 @@ export function registerWaveform(Alpine) {
                 this.drawProgress();
             }
             this.animFrame = requestAnimationFrame(() => this.tick());
+
+            if (!this.isWaveDrawn && this.peaks && this.peaks.length > 0) {
+                this.drawWaveFromContext();
+            }
         },
 
         seek(event) {

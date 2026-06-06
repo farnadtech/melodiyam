@@ -19,8 +19,8 @@ class ArtistController extends Controller
         $stats = [
             'total_tracks' => $artist->tracks()->count(),
             'published_tracks' => $artist->tracks()->published()->count(),
-            'total_streams' => $artist->total_streams,
-            'monthly_listeners' => $artist->monthly_listeners,
+            'total_streams' => $artist->tracks()->sum('play_count'),
+            'monthly_plays' => $artist->getAverageMonthlyPlays(),
             'followers_count' => $artist->followers_count,
         ];
 

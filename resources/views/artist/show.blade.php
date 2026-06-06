@@ -112,7 +112,9 @@
                             if (data && data.artist) {
                                 const lEl = document.getElementById('artist-listeners-count');
                                 const fEl = document.getElementById('artist-followers-count');
-                                if (lEl) lEl.textContent = new Intl.NumberFormat('en').format(data.artist.monthly_listeners);
+                                if (lEl) {
+                                    lEl.textContent = new Intl.NumberFormat('en').format(data.artist.monthly_plays || 0);
+                                }
                                 if (fEl) fEl.textContent = new Intl.NumberFormat('en').format(data.artist.followers_count);
                             }
                         });

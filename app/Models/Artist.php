@@ -53,10 +53,22 @@ class Artist extends Model
         return $this->belongsTo(User::class);
     }
 
+    protected $appends = ['avatar_url', 'monthly_plays'];
+
+    public function getMonthlyPlaysAttribute(): int
+    {
+        return $this->getAverageMonthlyPlays();
+    }
+
     public function getAverageMonthlyPlays(): int
     {
-        $monthsActive = $this->created_at->diffInMonths(now()) ?: 1;
-        return (int) round($this->total_streams / $monthsActive);
+        $daysActive = $this->created_at->diffInDays(now()) ?: 1;
+        $monthsActive = max(1, $daysActive / 30);
+        
+        // Sum actual play counts from tracks to be accurate
+        $totalPlays = $this->tracks()->sum('play_count');
+        
+        return (int) round($totalPlays / $monthsActive);
     }
 
     public function albums(): HasMany
