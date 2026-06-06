@@ -190,9 +190,10 @@ class PodcastController extends Controller
 
         $path = $request->file('file')->store('podcasts/episodes/audio', 'public');
 
-        // Get duration
+        // Get duration and waveform
         $fullPath = Storage::disk('public')->path($path);
         $duration = \App\Helpers\AudioHelper::getDuration($fullPath);
+        $waveform = \App\Helpers\AudioHelper::generateWaveform($fullPath);
 
         $coverPath = null;
         if ($request->hasFile('cover_image')) {
@@ -210,6 +211,7 @@ class PodcastController extends Controller
             'file_path'        => $path,
             'cover_image'      => $coverPath,
             'duration'         => $duration,
+            'waveform'         => $waveform,
             'season_number'    => $validated['season_number'] ?? 1,
             'episode_number'   => $validated['episode_number'] ?? ($podcast->episodes()->max('episode_number') + 1),
             'is_explicit'      => $request->boolean('is_explicit'),
@@ -256,11 +258,13 @@ class PodcastController extends Controller
 
         if ($request->hasFile('file')) {
             if ($episode->file_path) Storage::disk('public')->delete($episode->file_path);
-            $data['file_path'] = $request->file('file')->store('podcasts/episodes/audio', 'public');
-
-            // Update duration
-            $fullPath = Storage::disk('public')->path($data['file_path']);
+            $path = $request->file('file')->store('podcasts/episodes/audio', 'public');
+            $data['file_path'] = $path;
+            
+            // Re-generate duration and waveform
+            $fullPath = Storage::disk('public')->path($path);
             $data['duration'] = \App\Helpers\AudioHelper::getDuration($fullPath);
+            $data['waveform'] = \App\Helpers\AudioHelper::generateWaveform($fullPath);
         }
 
         if ($request->hasFile('cover_image')) {

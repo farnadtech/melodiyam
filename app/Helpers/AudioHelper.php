@@ -44,6 +44,67 @@ class AudioHelper
     }
 
     /**
+     * Generate waveform peaks for an audio file.
+     *
+     * @param string $path Absolute path to the file
+     * @param int $samples Number of peak points to generate
+     * @return array Array of normalized peaks (0.0 to 1.0)
+     */
+    public static function generateWaveform(string $path, int $samples = 200): array
+    {
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        try {
+            $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wave_' . uniqid() . '.raw';
+            
+            // Extract raw 8-bit PCM, mono, 1000Hz sample rate
+            // This is fast and gives us enough data to compute peaks
+            $command = "ffmpeg -v error -i " . escapeshellarg($path) . " -f s8 -ac 1 -ar 1000 -y " . escapeshellarg($tempFile);
+            shell_exec($command);
+
+            if (!file_exists($tempFile) || filesize($tempFile) === 0) {
+                return [];
+            }
+
+            $data = file_get_contents($tempFile);
+            @unlink($tempFile);
+
+            $bytes = unpack('c*', $data);
+            $totalBytes = count($bytes);
+            if ($totalBytes === 0) return [];
+
+            $blockSize = (int) floor($totalBytes / $samples);
+            if ($blockSize <= 0) $blockSize = 1;
+
+            $peaks = [];
+            for ($i = 0; $i < $samples; $i++) {
+                $segment = array_slice($bytes, $i * $blockSize, $blockSize);
+                if (empty($segment)) {
+                    $peaks[] = 0;
+                    continue;
+                }
+                
+                $sum = 0;
+                foreach ($segment as $b) {
+                    $sum += abs($b);
+                }
+                $peaks[] = $sum / count($segment);
+            }
+
+            $max = max($peaks);
+            if ($max <= 0) return array_fill(0, $samples, 0.1);
+
+            return array_map(fn($p) => round($p / $max, 3), $peaks);
+
+        } catch (\Throwable $e) {
+            Log::error("Waveform generation failed for {$path}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Estimates MP3 duration by reading the first few frames.
      */
     private static function estimateMp3Duration(string $path): int

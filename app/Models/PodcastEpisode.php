@@ -16,7 +16,7 @@ class PodcastEpisode extends Model
 
     protected $fillable = [
         'podcast_id', 'title', 'slug', 'description', 'show_notes',
-        'cover_image', 'file_path', 'file_url', 'duration',
+        'cover_image', 'file_path', 'file_url', 'duration', 'waveform',
         'season_number', 'episode_number', 'status', 'published_at',
         'is_explicit', 'is_premium_only', 'is_downloadable', 'play_count', 'like_count',
     ];
@@ -41,6 +41,7 @@ class PodcastEpisode extends Model
             'is_premium_only' => 'boolean',
             'is_downloadable' => 'boolean',
             'duration' => 'integer',
+            'waveform' => 'array',
             'play_count' => 'integer',
             'like_count' => 'integer',
         ];

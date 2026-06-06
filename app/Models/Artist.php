@@ -53,6 +53,12 @@ class Artist extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getAverageMonthlyPlays(): int
+    {
+        $monthsActive = $this->created_at->diffInMonths(now()) ?: 1;
+        return (int) round($this->total_streams / $monthsActive);
+    }
+
     public function albums(): HasMany
     {
         return $this->hasMany(Album::class);

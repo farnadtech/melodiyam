@@ -723,7 +723,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1103,6 +1103,7 @@ CREATE TABLE `podcast_episodes` (
   `file_path` varchar(255) DEFAULT NULL,
   `file_url` varchar(255) DEFAULT NULL,
   `duration` int(10) unsigned NOT NULL DEFAULT 0,
+  `waveform` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`waveform`)),
   `season_number` smallint(5) unsigned DEFAULT NULL,
   `episode_number` smallint(5) unsigned DEFAULT NULL,
   `status` varchar(20) NOT NULL DEFAULT 'draft',
@@ -1503,6 +1504,7 @@ CREATE TABLE `tracks` (
   `description` text DEFAULT NULL,
   `cover_image` varchar(255) DEFAULT NULL,
   `duration` int(10) unsigned NOT NULL DEFAULT 0,
+  `waveform` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`waveform`)),
   `track_number` smallint(5) unsigned DEFAULT NULL,
   `disc_number` smallint(5) unsigned NOT NULL DEFAULT 1,
   `file_path` varchar(255) DEFAULT NULL,
@@ -1663,4 +1665,4 @@ CREATE TABLE `wallets` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-06 11:10:01
+-- Dump completed on 2026-06-06 12:12:30

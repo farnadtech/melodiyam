@@ -17,7 +17,7 @@
                     @endif
                     <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-white">{{ $artist->display_name }}</h1>
                     <p class="text-white/80 mt-2">
-                        <span id="artist-listeners-count">{{ number_format($artist->monthly_listeners) }}</span> شنونده ماهانه · <span id="artist-followers-count">{{ number_format($artist->followers_count) }}</span> دنبال‌کننده
+                        <span id="artist-listeners-count">{{ number_format($artist->getAverageMonthlyPlays()) }}</span> پخش ماهانه · <span id="artist-followers-count">{{ number_format($artist->followers_count) }}</span> دنبال‌کننده
                     </p>
                 </div>
             </div>

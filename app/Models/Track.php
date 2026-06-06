@@ -18,7 +18,7 @@ class Track extends Model
 
     protected $fillable = [
         'artist_id', 'artist_name', 'user_id', 'album_id', 'genre_id', 'title', 'title_en', 'slug',
-        'description', 'cover_image', 'duration', 'track_number', 'disc_number',
+        'description', 'cover_image', 'duration', 'waveform', 'track_number', 'disc_number',
         'file_path', 'file_path_128', 'file_path_320', 'file_url',
         'lyrics', 'synced_lyrics', 'language', 'is_explicit', 'is_downloadable',
         'is_premium_only', 'status', 'published_at', 'release_date',
@@ -40,6 +40,7 @@ class Track extends Model
             'is_premium_only' => 'boolean',
             'is_featured' => 'boolean',
             'duration' => 'integer',
+            'waveform' => 'array',
             'play_count' => 'integer',
             'like_count' => 'integer',
             'repost_count' => 'integer',

@@ -6,8 +6,8 @@ export function registerWaveform(Alpine) {
     if (_waveformRegistered) return;
     _waveformRegistered = true;
 
-    Alpine.data('waveform', (audioUrl, trackId, timedCommentsData) => ({
-        peaks: [],
+    Alpine.data('waveform', (audioUrl, trackId, timedCommentsData, pregeneratedPeaks) => ({
+        peaks: pregeneratedPeaks || [],
         currentTime: 0,
         duration: 0,
         progress: 0,
@@ -46,7 +46,9 @@ export function registerWaveform(Alpine) {
             }
             this.groupedMarkers = merged;
 
-            if (isSafeUrl(this._audioUrl)) {
+            if (this.peaks && this.peaks.length > 0) {
+                // Use pre-generated peaks
+            } else if (isSafeUrl(this._audioUrl)) {
                 await this.generatePeaks(this._audioUrl);
             } else {
                 this.peaks = Array.from({ length: 200 }, () => 0.2 + Math.random() * 0.8);
