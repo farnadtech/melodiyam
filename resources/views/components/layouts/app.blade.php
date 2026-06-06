@@ -98,7 +98,7 @@
 
         /* Default content padding (overridden by layout manager when player opens) */
         @media (max-width: 1023px) {
-            #main-content { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px); }
+            #main-content { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 48px); }
         }
         @media (min-width: 1024px) {
             #main-content { padding-bottom: 24px; }
@@ -268,7 +268,7 @@
                 if (playerWrap) {
                     playerWrap.style.bottom = hasPlayer ? (navOffset + 'px') : '0px';
                 }
-                main.style.paddingBottom = (navHeight + playerHeight + safeArea + 12) + 'px';
+                main.style.paddingBottom = (navHeight + playerHeight + safeArea + 48) + 'px';
             } else {
                 if (nav) nav.style.transform = 'translateY(0)';
                 if (playerWrap) playerWrap.style.bottom = '0px';

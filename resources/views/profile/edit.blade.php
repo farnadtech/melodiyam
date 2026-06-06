@@ -54,6 +54,7 @@
                 <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">نام</label>
                 <input type="text" name="name" value="{{ old('name', $user->name) }}" required
                        class="w-full px-4 py-2.5 rounded-xl border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                @error('name') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <!-- Email -->

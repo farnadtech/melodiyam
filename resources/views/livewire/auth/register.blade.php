@@ -37,7 +37,7 @@
             <div>
                 <label for="name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">نام</label>
                 <input
-                    wire:model="name"
+                    wire:model.blur="name"
                     id="name"
                     type="text"
                     placeholder="نام شما"
@@ -101,7 +101,7 @@
             <div>
                 <label for="name" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">نام</label>
                 <input
-                    wire:model="name"
+                    wire:model.blur="name"
                     id="name"
                     type="text"
                     placeholder="نام شما"

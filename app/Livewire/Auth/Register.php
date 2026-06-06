@@ -34,14 +34,14 @@ class Register extends Component
     {
         if ($this->registerMethod === 'email') {
             return [
-                'name' => 'required|min:2|max:50',
+                'name' => 'required|min:2|max:50|unique:users,name',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:6|confirmed',
             ];
         }
 
         return [
-            'name' => 'required|min:2|max:50',
+            'name' => 'required|min:2|max:50|unique:users,name',
             'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
             'code' => 'required|digits:6',
         ];
@@ -50,6 +50,7 @@ class Register extends Component
     protected $messages = [
         'name.required' => 'نام الزامی است',
         'name.min' => 'نام حداقل ۲ کاراکتر باشد',
+        'name.unique' => 'این نام قبلاً توسط کاربر دیگری انتخاب شده است',
         'email.required' => 'ایمیل الزامی است',
         'email.email' => 'فرمت ایمیل صحیح نیست',
         'email.unique' => 'این ایمیل قبلاً ثبت شده است',
@@ -93,6 +94,10 @@ class Register extends Component
     {
         if (in_array($propertyName, ['phone', 'code'])) {
             $this->$propertyName = $this->convertPersianToEnglish($this->$propertyName);
+        }
+
+        if ($propertyName === 'name') {
+            $this->validateOnly('name');
         }
     }
 
@@ -144,11 +149,12 @@ class Register extends Component
         }
 
         $this->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:users,name',
             'phone' => 'required|regex:/^09[0-9]{9}$/|unique:users,phone',
             'password' => 'required|min:8|confirmed',
         ], [
             'phone.unique' => 'این شماره موبایل قبلاً ثبت شده است',
+            'name.unique' => 'این نام قبلاً توسط کاربر دیگری انتخاب شده است',
         ]);
 
         // Check if OTP is enabled in Notification Settings

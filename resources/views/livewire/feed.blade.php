@@ -20,21 +20,21 @@
             <div class="activity-item group animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {{-- Header: User/Artist info --}}
                 <div class="flex items-center gap-4 mb-4 text-sm">
-                    <div class="relative flex-shrink-0">
+                    <a href="{{ route('user.public_profile', $activity->user) }}" wire:navigate class="relative flex-shrink-0">
                         <img src="{{ $activity->user->getAvatarUrl() }}" 
-                             class="w-10 h-10 rounded-full object-cover border border-surface-200 dark:border-gray-700">
+                             class="w-10 h-10 rounded-full object-cover border border-surface-200 dark:border-gray-700 hover:ring-2 hover:ring-primary-500 transition">
                         @if($activity->user->artist)
                             <div class="absolute -bottom-1 -right-1 bg-primary-500 rounded-full p-0.5 border border-white dark:border-black">
                                 <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
                             </div>
                         @endif
-                    </div>
+                    </a>
                     <div class="flex flex-col min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-surface-900 dark:text-gray-200 font-bold hover:text-primary-500 dark:hover:text-white cursor-pointer transition">
+                            <a href="{{ route('user.public_profile', $activity->user) }}" wire:navigate class="text-surface-900 dark:text-gray-200 font-bold hover:text-primary-500 dark:hover:text-white cursor-pointer transition">
                                 {{-- اگه هنرمنده اسم هنرمندیشو نشون بده --}}
                                 {{ $activity->user->artist?->display_name ?? $activity->user->name }}
-                            </span>
+                            </a>
                             <span class="text-surface-500 dark:text-gray-500">
                                 @if($activity->type === 'reposted')
                                     این را بازنشر کرد
@@ -162,7 +162,7 @@
                                     </button>
                                 </div>
                                 <div class="flex items-center gap-3 md:gap-4 text-surface-400 dark:text-gray-500 text-[10px] md:text-[11px] font-medium">
-                                    <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path></svg>{{ number_format($subject->play_count) }}</span>
+                                    <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>{{ number_format($subject->play_count) }}</span>
                                     <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>{{ number_format($subject->like_count) }}</span>
                                     <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path></svg>{{ number_format($subject->comment_count) }}</span>
                                 </div>
