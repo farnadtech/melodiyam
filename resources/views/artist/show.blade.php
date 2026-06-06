@@ -83,8 +83,8 @@
                     <div class="flex-1 min-w-0">
                         <a href="{{ route('track.show', $track) }}" wire:navigate class="text-sm font-medium text-surface-900 dark:text-surface-100 hover:text-primary-500 truncate block">{{ $track->title }}</a>
                     </div>
-                    <span class="text-xs text-surface-400">{{ number_format($track->play_count) }} پخش</span>
-                    <span class="text-xs text-surface-400">{{ $track->formattedDuration() }}</span>
+                    <span class="text-xs text-surface-400" id="track-plays-{{ $track->id }}">{{ number_format($track->play_count) }} پخش</span>
+                    <span class="text-xs text-surface-400" id="track-duration-{{ $track->id }}">{{ $track->formattedDuration() }}</span>
                     <button
                         @click="$store.player.play({ id: {{ $track->id }}, title: '{{ e($track->title) }}', artist: '{{ e($artist->display_name) }}', url: '{{ $track->getStreamUrl() }}', cover: '{{ $track->getCoverUrl() }}', cover_page: '{{ route('track.show', $track->slug ?? $track->id) }}', artist_url: '{{ route('artist.show', $artist->slug) }}', duration: {{ $track->duration }} })"
                         class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center transition-opacity"
@@ -94,6 +94,28 @@
                 </div>
                 @endforeach
             </div>
+
+            <script>
+                document.addEventListener('livewire:navigated', () => {
+                    const trackIds = [{{ $tracks->pluck('id')->implode(',') }}];
+                    if (trackIds.length === 0) return;
+
+                    trackIds.forEach(id => {
+                        fetch(`/api/track/${id}/stats`, { cache: 'no-store' })
+                            .then(r => r.json())
+                            .then(data => {
+                                const playEl = document.getElementById(`track-plays-${id}`);
+                                const durEl = document.getElementById(`track-duration-${id}`);
+                                if (playEl) playEl.textContent = new Intl.NumberFormat('en').format(data.play_count) + ' پخش';
+                                if (durEl && data.duration > 0) {
+                                    const m = Math.floor(data.duration / 60);
+                                    const s = Math.floor(data.duration % 60);
+                                    durEl.textContent = m + ':' + String(s).padStart(2, '0');
+                                }
+                            });
+                    });
+                });
+            </script>
 
             <div class="mt-6">
                 {{ $tracks->links() }}

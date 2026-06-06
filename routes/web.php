@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/interaction/comment', [\App\Http\Controllers\Web\InteractionController::class, 'comment'])->name('interaction.comment');
     Route::post('/interaction/report', [\App\Http\Controllers\Web\InteractionController::class, 'report'])->name('interaction.report');
     Route::post('/interaction/follow', [\App\Http\Controllers\Web\InteractionController::class, 'follow'])->name('interaction.follow');
+    Route::post('/interaction/play', [\App\Http\Controllers\Web\InteractionController::class, 'play'])->name('interaction.play');
 });
 
 Route::get('/track/{track}', [TrackController::class, 'show'])->name('track.show');

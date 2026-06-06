@@ -105,7 +105,7 @@ function registerAlpineStuff(Alpine) {
                         if (!stored || stored <= 0) {
                             const csrf = getCsrfToken();
                             if (!csrf) return;
-                            const url = '/api/track/' + encodeURIComponent(trackId) + '/fix-duration';
+                            const url = '/interaction/play';
                             fetch(url, {
                                 method: 'POST',
                                 headers: {
@@ -113,7 +113,10 @@ function registerAlpineStuff(Alpine) {
                                     'Accept': 'application/json',
                                     'X-CSRF-TOKEN': csrf,
                                 },
-                                body: JSON.stringify({ duration: Math.round(this.duration) })
+                                body: JSON.stringify({ 
+                                    id: parseInt(trackId),
+                                    duration: Math.round(this.duration) 
+                                })
                             }).catch(() => {});
                         }
                     }

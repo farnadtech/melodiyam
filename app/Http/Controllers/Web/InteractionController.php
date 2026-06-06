@@ -224,6 +224,27 @@ class InteractionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function play(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+        ]);
+
+        $track = \App\Models\Track::find($request->id);
+        if ($track) {
+            $track->increment('play_count');
+            
+            // Auto-fix duration if not set
+            if ($request->has('duration') && ($track->duration <= 0)) {
+                $track->update(['duration' => (int) round($request->duration)]);
+            }
+
+            return response()->json(['success' => true, 'play_count' => $track->play_count, 'duration' => $track->duration]);
+        }
+
+        return response()->json(['success' => false], 404);
+    }
+
     protected function resolveType($type)
     {
         return match($type) {
