@@ -36,6 +36,11 @@ class Follow extends Model
             $target = $follow->followable;
             if (!$target) return;
 
+            // Increment followers_count on the target if column exists
+            if (\Illuminate\Support\Facades\Schema::hasColumn($target->getTable(), 'followers_count')) {
+                $target->increment('followers_count');
+            }
+
             $user = $follow->user;
             
             // If following a user directly
@@ -49,6 +54,16 @@ class Follow extends Model
                 \App\Services\NotificationDispatcher::dispatch('user_followed', [
                     'follower_name' => $user->name,
                 ], $target->user);
+            }
+        });
+
+        static::deleted(function ($follow) {
+            $target = $follow->followable;
+            if (!$target) return;
+
+            // Decrement followers_count on the target if column exists
+            if (\Illuminate\Support\Facades\Schema::hasColumn($target->getTable(), 'followers_count')) {
+                $target->decrement('followers_count');
             }
         });
     }

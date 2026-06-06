@@ -234,6 +234,27 @@ class InteractionController extends Controller
         if ($track) {
             $track->increment('play_count');
             
+            // Increment artist stats if applicable
+            if ($track->artist_id) {
+                $artist = \App\Models\Artist::find($track->artist_id);
+                if ($artist) {
+                    $artist->increment('total_streams');
+                    
+                    // Monthly listeners logic (simple unique user check per month)
+                    $userId = auth()->id();
+                    if ($userId) {
+                        $alreadyListened = \App\Models\Stream::where('user_id', $userId)
+                            ->where('track_id', $track->id)
+                            ->where('created_at', '>=', now()->startOfMonth())
+                            ->exists();
+                        
+                        if (!$alreadyListened) {
+                            $artist->increment('monthly_listeners');
+                        }
+                    }
+                }
+            }
+            
             // Auto-fix duration if not set
             if ($request->has('duration') && ($track->duration <= 0)) {
                 $track->update(['duration' => (int) round($request->duration)]);

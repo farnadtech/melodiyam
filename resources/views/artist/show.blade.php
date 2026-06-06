@@ -17,7 +17,7 @@
                     @endif
                     <h1 class="text-3xl lg:text-5xl font-display font-extrabold text-white">{{ $artist->display_name }}</h1>
                     <p class="text-white/80 mt-2">
-                        {{ number_format($artist->monthly_listeners) }} شنونده ماهانه · <span id="artist-followers-count">{{ number_format($artist->followers_count) }}</span> دنبال‌کننده
+                        <span id="artist-listeners-count">{{ number_format($artist->monthly_listeners) }}</span> شنونده ماهانه · <span id="artist-followers-count">{{ number_format($artist->followers_count) }}</span> دنبال‌کننده
                     </p>
                 </div>
             </div>
@@ -97,6 +97,18 @@
 
             <script>
                 document.addEventListener('livewire:navigated', () => {
+                    // Update Artist overall stats
+                    fetch(`/api/v1/artists/{{ $artist->slug }}`, { cache: 'no-store' })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.artist) {
+                                const lEl = document.getElementById('artist-listeners-count');
+                                const fEl = document.getElementById('artist-followers-count');
+                                if (lEl) lEl.textContent = new Intl.NumberFormat('en').format(data.artist.monthly_listeners);
+                                if (fEl) fEl.textContent = new Intl.NumberFormat('en').format(data.artist.followers_count);
+                            }
+                        });
+
                     const trackIds = [{{ $tracks->pluck('id')->implode(',') }}];
                     if (trackIds.length === 0) return;
 
