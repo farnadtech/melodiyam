@@ -613,29 +613,27 @@ window.fetch = function(input, init) {
     } else if (input instanceof Request) {
         url = input.url;
     }
-    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
-        try {
-            const parsed = new URL(url, window.location.origin);
-            if (parsed.origin !== window.location.origin) {
-                return _origFetch.apply(this, arguments);
-            }
+    
+    // Check if it's an internal request
+    const isInternal = typeof url === 'string' && 
+                      (url.startsWith('/') || url.includes(window.location.host));
 
-            // Force no-cache for internal GET requests to prevent stale data in SPA navigation
-            if (!init || !init.method || init.method.toUpperCase() === 'GET') {
-                if (!init) init = {};
-                init.cache = 'no-store';
-                init.headers = init.headers || {};
-                if (init.headers instanceof Headers) {
-                    init.headers.set('Cache-Control', 'no-cache');
-                } else {
-                    init.headers['Cache-Control'] = 'no-cache';
-                }
-            }
-        } catch {
-            return _origFetch.apply(this, arguments);
-        }
+    if (isInternal) {
+        if (!init) init = {};
+        
+        // Force no-cache for all internal requests
+        init.cache = 'no-store';
+        
+        const headers = init.headers instanceof Headers ? init.headers : new Headers(init.headers || {});
+        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        headers.set('Pragma', 'no-cache');
+        headers.set('Expires', '0');
+        headers.set('X-Requested-With', 'XMLHttpRequest');
+        
+        init.headers = headers;
     }
-    return _origFetch.apply(this, arguments).then(function(response) {
+
+    return _origFetch.call(this, url, init).then(function(response) {
         if (response.status === 403 && response.headers.get('X-Demo-Blocked') === '1') {
             window.showDemoToast();
         }

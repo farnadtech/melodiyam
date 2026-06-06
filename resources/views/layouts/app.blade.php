@@ -3,10 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Expires" content="-1" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="livewire-navigate-cache" content="off">
 
     <title>{{ $title ?? config('app.name') }} - {{ config('app.name') }}</title>
     <meta name="description" content="{{ $metaDescription ?? 'پلتفرم استریم موسیقی فارسی - گوش دادن به بهترین موسیقی‌ها' }}">
@@ -74,9 +75,8 @@
     @endif
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
     @endif
-    <meta name="livewire-navigate-cache" content="off">
 </head>
-<body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden">
+<body class="min-h-screen bg-surface-50 dark:bg-surface-950 antialiased overflow-hidden" data-turbo="false" data-livewire-navigate-cache="false">
 
     {{-- PWA Install Banner --}}
     @include('partials.pwa-banner')
