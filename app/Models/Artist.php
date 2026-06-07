@@ -184,4 +184,9 @@ class Artist extends Model
         }
         return asset('images/default-avatar.png');
     }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        return $this->getAvatarUrl();
+    }
 }
