@@ -583,6 +583,9 @@ Route::post('/logout', function () {
     auth()->logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+    if (request()->expectsJson()) {
+        return response()->json(['success' => true]);
+    }
     return redirect('/?_=' . time());
 })->middleware('auth')->name('logout');
 
