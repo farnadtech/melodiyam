@@ -23,5 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            // Always redirect to login instead of returning JSON for Livewire/AJAX requests
+            if ($request->expectsJson() || $request->hasHeader('X-Livewire')) {
+                return response()->redirectTo(route('login'));
+            }
+        });
     })->create();

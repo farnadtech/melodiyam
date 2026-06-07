@@ -142,7 +142,7 @@ function registerAlpineStuff(Alpine) {
             }, 30000);
         },
 
-        play(track = null) {
+        async play(track = null) {
             if (window._adCurrentlyPlaying) {
                 if (track) window._adPendingTrack = sanitizeTrack(track);
                 return;
@@ -155,6 +155,23 @@ function registerAlpineStuff(Alpine) {
                 if (safe.isPremium && !(safe.previewSeconds > 0)) {
                     this.showPremiumModal(safe);
                     return;
+                }
+
+                // ── Free stream daily limit pre-check ──
+                if (safe.url && safe.url.includes('/stream/track/')) {
+                    try {
+                        const limitRes = await fetch('/stream-limit-check', {
+                            credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (limitRes.ok) {
+                            const limitData = await limitRes.json();
+                            if (limitData.allowed === false) {
+                                this.showLimitModal(limitData.limit, safe);
+                                return;
+                            }
+                        }
+                    } catch (e) { /* network error, let stream proceed */ }
                 }
 
                 const prevId = this.currentTrack?.id;
@@ -306,6 +323,67 @@ function registerAlpineStuff(Alpine) {
             actions.appendChild(upgradeLink);
             card.appendChild(heading);
             card.appendChild(desc);
+            card.appendChild(actions);
+            modal.appendChild(card);
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+        },
+
+        showLimitModal(limit, track) {
+            const old = document.getElementById('preview-limit-modal');
+            if (old) old.remove();
+
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--admin-primary').trim() || '#0ea5e9';
+
+            const modal = document.createElement('div');
+            modal.id = 'preview-limit-modal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);direction:rtl;';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;border-radius:20px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.5);border:1px solid ' + primary + '44;';
+
+            const icon = document.createElement('div');
+            icon.style.cssText = 'width:56px;height:56px;border-radius:50%;background:' + primary + '22;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;';
+            icon.innerHTML = '<svg width="28" height="28" fill="none" stroke="' + primary + '" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+            const heading = document.createElement('h3');
+            heading.style.cssText = 'color:#f1f5f9;font-size:18px;font-weight:700;margin-bottom:8px;';
+            heading.textContent = 'سقف پخش رایگان به پایان رسید';
+
+            const desc = document.createElement('p');
+            desc.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:24px;line-height:1.7;';
+            desc.textContent = 'شما امروز ' + limit + ' آهنگ رایگان پخش کرده‌اید. برای ادامه، اشتراک پریمیوم تهیه کنید.';
+
+            if (track && track.title) {
+                const trackNote = document.createElement('p');
+                trackNote.style.cssText = 'color:#64748b;font-size:12px;margin-bottom:20px;font-style:italic;';
+                trackNote.textContent = '«' + track.title + '»';
+                card.appendChild(icon);
+                card.appendChild(heading);
+                card.appendChild(desc);
+                card.appendChild(trackNote);
+            } else {
+                card.appendChild(icon);
+                card.appendChild(heading);
+                card.appendChild(desc);
+            }
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.style.cssText = 'padding:10px 20px;border-radius:10px;background:#334155;color:#cbd5e1;font-size:13px;cursor:pointer;border:none;';
+            closeBtn.textContent = 'بستن';
+            closeBtn.addEventListener('click', () => modal.remove());
+
+            const upgradeLink = document.createElement('a');
+            upgradeLink.href = '/premium';
+            upgradeLink.style.cssText = 'padding:10px 24px;border-radius:10px;background:' + primary + ';color:#fff;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;';
+            upgradeLink.textContent = 'ارتقا به پریمیوم';
+
+            actions.appendChild(closeBtn);
+            actions.appendChild(upgradeLink);
             card.appendChild(actions);
             modal.appendChild(card);
             document.body.appendChild(modal);

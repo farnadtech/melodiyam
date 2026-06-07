@@ -160,6 +160,32 @@ Route::get('/test-ffmpeg', function() {
     return response()->json($results);
 });
 
+// Lightweight pre-check: can the current user still stream today?
+Route::get('/stream-limit-check', function () {
+    $freeLimit = (int) \App\Models\Setting::get('free_stream_limit', 0);
+    if ($freeLimit <= 0) {
+        return response()->json(['allowed' => true]);
+    }
+
+    $user = auth()->user();
+    if ($user && $user->isPremium()) {
+        return response()->json(['allowed' => true]);
+    }
+
+    $today     = now()->format('Y-m-d');
+    $subjectId = $user ? "u{$user->id}" : 'g' . request()->ip();
+    $cacheKey  = "free_streams_today:{$subjectId}:{$today}";
+    $played    = \Illuminate\Support\Facades\Cache::get($cacheKey, []);
+    $count     = count($played);
+
+    return response()->json([
+        'allowed'       => $count < $freeLimit,
+        'limit'         => $freeLimit,
+        'played_today'  => $count,
+        'remaining'     => max(0, $freeLimit - $count),
+    ]);
+});
+
 Route::get('/stream/track/{track}', function (App\Models\Track $track) {
     // Check premium-only access first
     if ($track->is_premium_only) {
@@ -217,6 +243,35 @@ Route::get('/stream/track/{track}', function (App\Models\Track $track) {
                 if (!$hasPurchased) {
                     abort(403);
                 }
+            }
+        }
+    }
+
+    // ── Free stream daily limit enforcement ──
+    $freeLimit = (int) \App\Models\Setting::get('free_stream_limit', 0);
+    if ($freeLimit > 0) {
+        $streamUser = auth()->user();
+        $isFreeUser = !$streamUser || !$streamUser->isPremium();
+        if ($isFreeUser) {
+            $today     = now()->format('Y-m-d');
+            $subjectId = $streamUser ? "u{$streamUser->id}" : 'g' . request()->ip();
+            $cacheKey  = "free_streams_today:{$subjectId}:{$today}";
+            $played    = \Illuminate\Support\Facades\Cache::get($cacheKey, []);
+            $trackKey  = (string) $track->id;
+
+            if (!in_array($trackKey, $played)) {
+                if (count($played) >= $freeLimit) {
+                    return response()->json([
+                        'error'        => 'stream_limit_reached',
+                        'limit'        => $freeLimit,
+                        'message'      => "سقف پخش رایگان روزانه ({$freeLimit} آهنگ) به پایان رسید.",
+                        'upgrade_url'  => '/premium',
+                    ], 429);
+                }
+                $played[] = $trackKey;
+                // Cache expires at end of today (minimum 60s to avoid edge-case negatives)
+                $secsUntilMidnight = max(60, strtotime('tomorrow') - time());
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $played, $secsUntilMidnight);
             }
         }
     }
@@ -528,7 +583,7 @@ Route::post('/logout', function () {
     auth()->logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/');
+    return redirect('/?_=' . time());
 })->middleware('auth')->name('logout');
 
 // ── Authenticated Routes ──
