@@ -97,18 +97,19 @@ class Login extends Component
 
         $fieldType = filter_var($this->identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
-        if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password, 'is_active' => true], true)) {
-            RateLimiter::clear($throttleKey);
-
-            $deviceError = $this->checkMaxDevices(Auth::user());
+        // Check device limit BEFORE login — prevents session destruction from wiping the error
+        $user = User::where($fieldType, $this->identifier)->where('is_active', true)->first();
+        if ($user) {
+            $deviceError = $this->checkMaxDevices($user);
             if ($deviceError) {
-                Auth::logout();
-                session()->invalidate();
-                session()->regenerateToken();
+                RateLimiter::hit($throttleKey, 60);
                 $this->addError('identifier', $deviceError);
                 return;
             }
+        }
 
+        if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password, 'is_active' => true], true)) {
+            RateLimiter::clear($throttleKey);
             return redirect()->intended('/');
         }
 
@@ -185,16 +186,14 @@ class Login extends Component
             $user->update(['phone_verified_at' => now()]);
         }
 
-        Auth::login($user, true);
-
+        // Check device limit BEFORE login (existing premium users could be at the limit)
         $deviceError = $this->checkMaxDevices($user);
         if ($deviceError) {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
             $this->addError('phone', $deviceError);
             return;
         }
+
+        Auth::login($user, true);
 
         return redirect()->intended('/');
     }
@@ -206,7 +205,7 @@ class Login extends Component
 
     /**
      * Check if the user can log in on a new device without exceeding their plan's limit.
-     * Returns null if login is allowed, or a Persian error message if the limit is reached.
+     * Must be called BEFORE Auth::attempt() so the error bag is not destroyed.
      *
      * "Online" = session last_activity is within the configured session lifetime.
      */
@@ -220,13 +219,11 @@ class Login extends Component
         $maxDevices = $plan?->max_devices ?? 1;
 
         // Consider a session "online" if active within the configured session lifetime
-        $lifetimeSeconds  = (int) config('session.lifetime', 120) * 60;
-        $onlineThreshold  = now()->timestamp - $lifetimeSeconds;
-        $currentSessionId = session()->getId();
+        $lifetimeSeconds = (int) config('session.lifetime', 120) * 60;
+        $onlineThreshold = now()->timestamp - $lifetimeSeconds;
 
         $activeCount = DB::table('sessions')
             ->where('user_id', $user->id)
-            ->where('id', '!=', $currentSessionId)
             ->where('last_activity', '>', $onlineThreshold)
             ->count();
 
