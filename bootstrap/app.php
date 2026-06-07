@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\DemoModeGuard::class,
             \App\Http\Middleware\EnforceVerification::class,
+            \App\Http\Middleware\EnforceMaxDevices::class,
         ]);
         $middleware->api(append: [
             \App\Http\Middleware\SecurityHeaders::class,
