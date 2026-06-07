@@ -44,16 +44,17 @@ class EnforceMaxDevices
             $request->session()->save();
         }
 
-        // Sessions ordered newest-first; skip the top $maxDevices slots
-        $excess = DB::table('sessions')
+        // Sessions ordered newest-first; keep the top $maxDevices, delete the rest
+        // MySQL requires LIMIT with OFFSET, so we fetch IDs and slice in PHP
+        $allSessionIds = DB::table('sessions')
             ->where('user_id', $user->id)
             ->orderByDesc('last_activity')
-            ->skip($maxDevices)
-            ->pluck('id');
+            ->pluck('id')
+            ->slice($maxDevices);
 
-        if ($excess->isNotEmpty()) {
+        if ($allSessionIds->isNotEmpty()) {
             DB::table('sessions')
-                ->whereIn('id', $excess)
+                ->whereIn('id', $allSessionIds)
                 ->delete();
         }
 
