@@ -1,6 +1,6 @@
 ﻿{
     "released_at":  "2026-06-07",
-    "changelog":  "",
-    "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.6-update.zip",
-    "version":  "1.2.6"
+    "changelog":  "fix: sidebar auth state after logout with wire:navigate",
+    "download_url":  "https://iranbooklet.ir/melodiyam/melodiyam-v1.2.7-update.zip",
+    "version":  "1.2.7"
 }
