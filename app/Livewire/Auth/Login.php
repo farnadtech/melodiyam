@@ -189,7 +189,7 @@ class Login extends Component
         // Check device limit BEFORE login (existing premium users could be at the limit)
         $deviceError = $this->checkMaxDevices($user);
         if ($deviceError) {
-            $this->addError('phone', $deviceError);
+            $this->addError('code', $deviceError);
             return;
         }
 
@@ -215,8 +215,9 @@ class Login extends Component
             return null;
         }
 
-        $plan       = $user->activeSubscription?->plan;
-        $maxDevices = $plan?->max_devices ?? 1;
+        // activeSubscription is a relationship method — must call ->first() to get the model
+        $plan       = $user->activeSubscription()?->first()?->plan;
+        $maxDevices = (int) ($plan?->max_devices ?? 1);
 
         // Consider a session "online" if active within the configured session lifetime
         $lifetimeSeconds = (int) config('session.lifetime', 120) * 60;
@@ -227,7 +228,8 @@ class Login extends Component
             ->where('last_activity', '>', $onlineThreshold)
             ->count();
 
-        if ($activeCount >= $maxDevices) {
+        // Only block if there is at least one OTHER genuinely active session
+        if ($activeCount >= 1 && $activeCount >= $maxDevices) {
             return "پلن شما اجازه ورود همزمان از {$maxDevices} دستگاه را دارد. لطفاً ابتدا از دستگاه‌های دیگر خارج شوید.";
         }
 

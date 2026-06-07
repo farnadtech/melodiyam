@@ -36,8 +36,8 @@ class EnforceMaxDevices
             return $next($request);
         }
 
-        $plan       = $user->activeSubscription?->plan;
-        $maxDevices = $plan?->max_devices ?? 1;
+        $plan       = $user->activeSubscription()?->first()?->plan;
+        $maxDevices = (int) ($plan?->max_devices ?? 1);
 
         // Persist current session to DB before counting (it may not be saved yet)
         if ($request->hasSession()) {
