@@ -60,6 +60,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\RecentTracksTable::class,
                 \App\Filament\Widgets\TopArtistsTable::class,
                 \App\Filament\Widgets\RecentUsersTable::class,
+                \App\Filament\Widgets\RevenueChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -22,7 +22,8 @@ class TopArtistsTable extends BaseWidget
                     ->label('')
                     ->circular()
                     ->size(40)
-                    ->defaultImageUrl(asset('images/default-cover.png')),
+                    ->getStateUsing(fn ($record) => $record->getAvatarUrl())
+                    ->defaultImageUrl(asset('images/default-avatar.png')),
 
                 Tables\Columns\TextColumn::make('display_name')
                     ->label('نام')

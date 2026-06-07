@@ -22,6 +22,7 @@ class RecentTracksTable extends BaseWidget
                     ->label('')
                     ->circular()
                     ->size(40)
+                    ->getStateUsing(fn ($record) => $record->getCoverUrl())
                     ->defaultImageUrl(asset('images/default-cover.png')),
 
                 Tables\Columns\TextColumn::make('title')

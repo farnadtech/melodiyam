@@ -22,6 +22,7 @@ class RecentUsersTable extends BaseWidget
                     ->label('')
                     ->circular()
                     ->size(40)
+                    ->getStateUsing(fn ($record) => $record->getAvatarUrl())
                     ->defaultImageUrl(asset('images/default-avatar.png')),
 
                 Tables\Columns\TextColumn::make('name')
