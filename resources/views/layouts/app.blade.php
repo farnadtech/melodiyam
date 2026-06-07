@@ -284,24 +284,30 @@
     })();
     </script>
 
-    {{-- Auth state guard: detect logout across wire:navigate SPA navigation --}}
+    {{-- Auth state guard: detect stale auth after SPA navigation --}}
     <script>
     (function() {
-        // Use the DOM as the source of truth on first load (immune to SW cache)
+        // Only run on full page loads (not wire:navigate SPA updates)
+        // DOM is the source of truth — immune to any cache layer
         var _guestBtn = document.querySelector('a[href="/login"]');
-        var _authState = _guestBtn ? false : true; // true = logged-in rendered by server
+        var _pageIsGuest = !!_guestBtn;
 
-        function checkAuthState() {
-            // URL uses /api/ prefix so the old Service Worker skips it
+        // One-shot check: if server disagrees with what Blade rendered, hard-reload once
+        var _reloaded = sessionStorage.getItem('_authReload');
+        sessionStorage.removeItem('_authReload');
+
+        if (!_reloaded) {
             fetch('/api/auth/state?_=' + Date.now(), {
                 cache: 'no-store',
+                credentials: 'same-origin',
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (_authState !== data.authenticated) {
-                        _authState = data.authenticated;
-                        // Hard navigate to force server re-render
+                    var serverIsGuest = !data.authenticated;
+                    if (_pageIsGuest !== serverIsGuest) {
+                        // Mismatch — server and DOM disagree, reload once
+                        sessionStorage.setItem('_authReload', '1');
                         window.location.replace(
                             window.location.href.split(/[?#]/)[0] + '?_r=' + Date.now()
                         );
@@ -309,9 +315,6 @@
                 })
                 .catch(function() {});
         }
-
-        checkAuthState();
-        document.addEventListener('livewire:navigated', checkAuthState);
     })();
     </script>
 
