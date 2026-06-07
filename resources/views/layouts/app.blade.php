@@ -265,7 +265,7 @@
         window.addEventListener('load', startLayoutManager);
         document.addEventListener('DOMContentLoaded', startLayoutManager);
         document.addEventListener('livewire:navigated', function() { 
-            setTimeout(startLayoutManager, 100); 
+            setTimeout(startLayoutManager, 100);
         });
         document.addEventListener('alpine:initialized', startLayoutManager);
         
@@ -281,6 +281,32 @@
             document.addEventListener('DOMContentLoaded', attachObserver);
             document.addEventListener('livewire:navigated', attachObserver);
         }
+    })();
+    </script>
+
+    {{-- Auth state guard: detect logout across wire:navigate SPA navigation --}}
+    <script>
+    (function() {
+        var _authState = null;
+
+        function checkAuthState() {
+            fetch('/auth/state', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (_authState === null) {
+                        _authState = data.authenticated;
+                        return;
+                    }
+                    if (_authState !== data.authenticated) {
+                        _authState = data.authenticated;
+                        window.location.reload();
+                    }
+                })
+                .catch(function() {});
+        }
+
+        checkAuthState();
+        document.addEventListener('livewire:navigated', checkAuthState);
     })();
     </script>
 

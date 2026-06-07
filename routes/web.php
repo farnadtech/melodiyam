@@ -589,6 +589,14 @@ Route::post('/logout', function () {
     return redirect('/?_=' . time());
 })->middleware('auth')->name('logout');
 
+// Auth state check (used by SPA navigation to detect logout)
+Route::get('/auth/state', function () {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'is_artist'     => auth()->check() && auth()->user()?->isArtist(),
+    ]);
+})->name('auth.state');
+
 // ── Authenticated Routes ──
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library');

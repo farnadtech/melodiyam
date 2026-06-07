@@ -338,7 +338,37 @@
         document.addEventListener('livewire:navigated', function() {
             // Dispatch custom event so components can refresh stats
             window.dispatchEvent(new CustomEvent('page-content-refreshed'));
+            // Refresh sidebar auth state after every navigation
+            Livewire.dispatch('sidebar-navigated');
         });
+
+        // Auth state guard: detect logout across wire:navigate SPA navigation
+        (function() {
+            var _authState = null; // null = not yet checked
+
+            function checkAuthState() {
+                fetch('/auth/state', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (_authState === null) {
+                            _authState = data.authenticated;
+                            return;
+                        }
+                        // Auth state changed → full reload to re-render sidebar
+                        if (_authState !== data.authenticated) {
+                            _authState = data.authenticated;
+                            window.location.reload();
+                        }
+                    })
+                    .catch(function() {});
+            }
+
+            // Check on first load
+            checkAuthState();
+
+            // Check after every SPA navigation
+            document.addEventListener('livewire:navigated', checkAuthState);
+        })();
 
         // Force full page reload on back/forward navigation (prevents stale cached pages)
         window.addEventListener('pageshow', function(e) {
