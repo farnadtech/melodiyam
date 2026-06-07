@@ -336,10 +336,24 @@
 
         // On every Livewire navigation, force components to re-fetch fresh data
         document.addEventListener('livewire:navigated', function() {
+            // Re-apply dark mode class after Livewire replaces <head> (inline script may not re-run)
+            var d = localStorage.getItem('theme_dark');
+            if (d === null) d = 'true';
+            if (d === 'true') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+
             // Dispatch custom event so components can refresh stats
             window.dispatchEvent(new CustomEvent('page-content-refreshed'));
             // Refresh sidebar auth state after every navigation
             Livewire.dispatch('sidebar-navigated');
+        });
+
+        // BEFORE Livewire replaces DOM — pre-set dark class to prevent flash
+        document.addEventListener('livewire:navigate', function() {
+            var d = localStorage.getItem('theme_dark');
+            if (d === null) d = 'true';
+            if (d === 'true') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
         });
 
         // Force full page reload on back/forward navigation (prevents stale cached pages)

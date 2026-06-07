@@ -9,6 +9,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="livewire-navigate-cache" content="off">
 
+    {{-- Apply dark mode synchronously BEFORE first paint (prevents flash during wire:navigate) --}}
+    <script>
+        (function() {
+            var d = localStorage.getItem('theme_dark');
+            if (d === null) d = 'true';
+            if (d === 'true') document.documentElement.classList.add('dark');
+        })();
+    </script>
+
     @php
         $siteName = \App\Models\Setting::get('site_name', config('app.name'));
         $defaultTitle = \App\Models\Setting::get('meta_title', $siteName);
@@ -264,8 +273,22 @@
         window.addEventListener('resize', updateLayout);
         window.addEventListener('load', startLayoutManager);
         document.addEventListener('DOMContentLoaded', startLayoutManager);
-        document.addEventListener('livewire:navigated', function() { 
+        document.addEventListener('livewire:navigated', function() {
+            // Re-apply dark mode synchronously after Livewire replaces <head>
+            var d = localStorage.getItem('theme_dark');
+            if (d === null) d = 'true';
+            if (d === 'true') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+
             setTimeout(startLayoutManager, 100);
+        });
+
+        // Pre-set dark class BEFORE Livewire swaps the DOM (prevents flash)
+        document.addEventListener('livewire:navigate', function() {
+            var d = localStorage.getItem('theme_dark');
+            if (d === null) d = 'true';
+            if (d === 'true') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
         });
         document.addEventListener('alpine:initialized', startLayoutManager);
         

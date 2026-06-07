@@ -76,7 +76,7 @@
                             : 0;
                         $isPaid = !$isPremiumOnly && $subject->is_for_sale && $subject->price;
                         // Premium users with includes_paid_content can play paid tracks
-                        $hasPlanPaidAccess = $user?->activeSubscription?->plan?->includes_paid_content ?? false;
+                        $hasPlanPaidAccess = $user?->activeSubscription()?->first()?->plan?->includes_paid_content ?? false;
                         
                         $previewSec = $subject->preview_seconds ?? 0;
                         $canPlay = (!$isPremiumOnly || $isPremiumUser) && (!$isPaid || $hasPlanPaidAccess);
