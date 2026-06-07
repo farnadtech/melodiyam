@@ -24,7 +24,7 @@
                     _navListener: null,
                     async refreshStats() {
                         try {
-                            const r = await fetch('/api/track/{{ $track->id }}/stats');
+                            const r = await fetch('/api/track/{{ $track->id }}/stats', { cache: 'no-store' });
                             if (!r.ok) return;
                             const d = await r.json();
                             this.playCount   = d.play_count;

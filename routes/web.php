@@ -106,7 +106,7 @@ Route::get('/api/track/{id}/stats', function ($id) {
         'play_count' => $track->play_count,
         'like_count' => $track->like_count,
         'comment_count' => $track->comments()->count(),
-    ]);
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
 })->name('api.track.stats');
 Route::get('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'create'])->middleware(['auth'])->name('track.create');
 Route::post('/upload/track', [\App\Http\Controllers\Web\UserTrackController::class, 'store'])->middleware(['auth'])->name('track.store');

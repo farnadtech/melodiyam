@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Prevent browser-level caching for SPA-like Livewire pages --}}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
     <title>{{ $title ?? $metaTitle ?? $siteName }} - {{ $siteName }}</title>
     <meta name="description" content="{{ $metaDescription ?? $siteDescription ?? '' }}">
@@ -323,6 +327,27 @@
     })();
     </script>
 
+
+    {{-- Anti-Cache Script: Force fresh content on every wire:navigate --}}
+    <script>
+    (function() {
+        // Track auth state via CSRF token presence (auth pages have sessions)
+        var _wasAuth = document.querySelector('meta[name="csrf-token"]') !== null;
+
+        // On every Livewire navigation, force components to re-fetch fresh data
+        document.addEventListener('livewire:navigated', function() {
+            // Dispatch custom event so components can refresh stats
+            window.dispatchEvent(new CustomEvent('page-content-refreshed'));
+        });
+
+        // Force full page reload on back/forward navigation (prevents stale cached pages)
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
+    })();
+    </script>
     @livewireScripts
     @stack('scripts')
 </body>
