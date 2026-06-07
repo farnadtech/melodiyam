@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -98,6 +99,7 @@ class Login extends Component
 
         if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password, 'is_active' => true], true)) {
             RateLimiter::clear($throttleKey);
+            $this->enforceMaxDevices(Auth::user());
             return redirect()->intended('/');
         }
 
@@ -175,6 +177,7 @@ class Login extends Component
         }
 
         Auth::login($user, true);
+        $this->enforceMaxDevices($user);
 
         return redirect()->intended('/');
     }
@@ -182,5 +185,36 @@ class Login extends Component
     public function render()
     {
         return view('livewire.auth.login');
+    }
+
+    /**
+     * Enforce max concurrent devices per plan.
+     * If the user's plan allows N devices, delete the oldest sessions beyond N-1
+     * so the current login takes the Nth slot.
+     */
+    private function enforceMaxDevices(User $user): void
+    {
+        if (!$user->isPremium()) return;
+
+        $plan = $user->activeSubscription?->plan;
+        $maxDevices = $plan?->max_devices ?? 1;
+
+        // Count active sessions for this user (excluding the current one which just started)
+        $currentSessionId = session()->getId();
+        $activeSessions = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $currentSessionId)
+            ->orderByDesc('last_activity')
+            ->get();
+
+        // If adding the current session would exceed max_devices, kill the oldest ones
+        if ($activeSessions->count() >= $maxDevices) {
+            $sessionsToDelete = $activeSessions->slice($maxDevices - 1);
+            if ($sessionsToDelete->isNotEmpty()) {
+                DB::table('sessions')
+                    ->whereIn('id', $sessionsToDelete->pluck('id'))
+                    ->delete();
+            }
+        }
     }
 }

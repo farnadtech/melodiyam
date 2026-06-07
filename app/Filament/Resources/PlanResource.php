@@ -25,7 +25,7 @@ class PlanResource extends Resource
             Forms\Components\TextInput::make('name')->label('نام')->required(),
             Forms\Components\TextInput::make('name_fa')->label('نام فارسی')->required(),
             Forms\Components\Select::make('type')->label('نوع')
-                ->options(['free' => 'رایگان', 'premium' => 'پریمیوم', 'family' => 'خانوادگی', 'student' => 'دانشجو'])->required(),
+                ->options(['free' => 'رایگان', 'premium' => 'پریمیوم'])->required(),
             Forms\Components\TextInput::make('price')->label('قیمت (تومان)')->numeric()->required(),
             Forms\Components\TextInput::make('duration_days')->label('مدت (روز)')->numeric()->required(),
             Forms\Components\TextInput::make('trial_days')->label('روزهای آزمایشی رایگان')->numeric()->default(0)
@@ -69,8 +69,6 @@ class PlanResource extends Resource
                     ->formatStateUsing(fn ($state) => match($state) {
                         'free' => 'رایگان',
                         'premium' => 'پریمیوم',
-                        'family' => 'خانوادگی',
-                        'student' => 'دانشجو',
                         default => $state,
                     })->badge(),
                 Tables\Columns\TextColumn::make('price')->label('قیمت')->numeric()->suffix(' تومان'),
