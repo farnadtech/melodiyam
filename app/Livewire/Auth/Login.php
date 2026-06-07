@@ -99,7 +99,16 @@ class Login extends Component
 
         if (Auth::attempt([$fieldType => $this->identifier, 'password' => $this->password, 'is_active' => true], true)) {
             RateLimiter::clear($throttleKey);
-            $this->enforceMaxDevices(Auth::user());
+
+            $deviceError = $this->checkMaxDevices(Auth::user());
+            if ($deviceError) {
+                Auth::logout();
+                session()->invalidate();
+                session()->regenerateToken();
+                $this->addError('identifier', $deviceError);
+                return;
+            }
+
             return redirect()->intended('/');
         }
 
@@ -177,7 +186,15 @@ class Login extends Component
         }
 
         Auth::login($user, true);
-        $this->enforceMaxDevices($user);
+
+        $deviceError = $this->checkMaxDevices($user);
+        if ($deviceError) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+            $this->addError('phone', $deviceError);
+            return;
+        }
 
         return redirect()->intended('/');
     }
@@ -188,33 +205,35 @@ class Login extends Component
     }
 
     /**
-     * Enforce max concurrent devices per plan.
-     * If the user's plan allows N devices, delete the oldest sessions beyond N-1
-     * so the current login takes the Nth slot.
+     * Check if the user can log in on a new device without exceeding their plan's limit.
+     * Returns null if login is allowed, or a Persian error message if the limit is reached.
+     *
+     * "Online" = session last_activity is within the configured session lifetime.
      */
-    private function enforceMaxDevices(User $user): void
+    private function checkMaxDevices(User $user): ?string
     {
-        if (!$user->isPremium()) return;
+        if (! $user->isPremium()) {
+            return null;
+        }
 
-        $plan = $user->activeSubscription?->plan;
+        $plan       = $user->activeSubscription?->plan;
         $maxDevices = $plan?->max_devices ?? 1;
 
-        // Count active sessions for this user (excluding the current one which just started)
+        // Consider a session "online" if active within the configured session lifetime
+        $lifetimeSeconds  = (int) config('session.lifetime', 120) * 60;
+        $onlineThreshold  = now()->timestamp - $lifetimeSeconds;
         $currentSessionId = session()->getId();
-        $activeSessions = DB::table('sessions')
+
+        $activeCount = DB::table('sessions')
             ->where('user_id', $user->id)
             ->where('id', '!=', $currentSessionId)
-            ->orderByDesc('last_activity')
-            ->get();
+            ->where('last_activity', '>', $onlineThreshold)
+            ->count();
 
-        // If adding the current session would exceed max_devices, kill the oldest ones
-        if ($activeSessions->count() >= $maxDevices) {
-            $sessionsToDelete = $activeSessions->slice($maxDevices - 1);
-            if ($sessionsToDelete->isNotEmpty()) {
-                DB::table('sessions')
-                    ->whereIn('id', $sessionsToDelete->pluck('id'))
-                    ->delete();
-            }
+        if ($activeCount >= $maxDevices) {
+            return "پلن شما اجازه ورود همزمان از {$maxDevices} دستگاه را دارد. لطفاً ابتدا از دستگاه‌های دیگر خارج شوید.";
         }
+
+        return null;
     }
 }
