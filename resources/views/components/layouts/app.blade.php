@@ -347,17 +347,23 @@
             var _authState = null; // null = not yet checked
 
             function checkAuthState() {
-                fetch('/auth/state', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                // Cache-bust to prevent proxy/browser from serving a stale auth response
+                fetch('/auth/state?_=' + Date.now(), {
+                    cache: 'no-store',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         if (_authState === null) {
                             _authState = data.authenticated;
                             return;
                         }
-                        // Auth state changed → full reload to re-render sidebar
+                        // Auth state changed → force a hard re-fetch of the page to re-render sidebar
                         if (_authState !== data.authenticated) {
                             _authState = data.authenticated;
-                            window.location.reload();
+                            // Hard navigate to force server re-render — bypasses proxy cache
+                            var sep = window.location.href.includes('?') ? '&' : '?';
+                            window.location.replace(window.location.href.split(/[?#]/)[0] + sep + '_r=' + Date.now());
                         }
                     })
                     .catch(function() {});

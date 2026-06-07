@@ -594,7 +594,9 @@ Route::get('/auth/state', function () {
     return response()->json([
         'authenticated' => auth()->check(),
         'is_artist'     => auth()->check() && auth()->user()?->isArtist(),
-    ]);
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+      ->header('Pragma', 'no-cache')
+      ->header('Expires', '0');
 })->name('auth.state');
 
 // ── Authenticated Routes ──

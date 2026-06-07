@@ -24,6 +24,10 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'no-referrer-when-downgrade');
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
+
+        // Tell reverse proxies (Nginx, Cloudflare, etc.) to serve different HTML per session.
+        // Without this, a proxy may cache a logged-in page and serve it to a logged-out user.
+        $response->headers->set('Vary', 'Cookie, Accept-Encoding');
         
         // Disable Caching to prevent stale data in SPA-like navigation (Livewire wire:navigate)
         $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
