@@ -1,4 +1,4 @@
-const CACHE_NAME = 'melodiyam-v2';
+const CACHE_NAME = 'melodiyam-v3';
 const OFFLINE_URL = './';
 
 // Install — skip waiting, activate immediately
@@ -18,14 +18,14 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch — network only for navigation to avoid PWA issues, cache assets
+// Fetch — network-only for HTML pages; cache-only for static assets (JS/CSS/images)
 self.addEventListener('fetch', event => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
     const url = new URL(event.request.url);
 
-    // Skip Livewire, API, admin, stream, and manifest requests
+    // Skip Livewire AJAX, API, admin, stream, and manifest requests — let them pass through
     if (url.pathname.includes('/livewire') ||
         url.pathname.includes('/api/') ||
         url.pathname.includes('/admin') ||
@@ -35,7 +35,7 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For navigation requests (HTML pages), always go to network
+    // Full page navigations (browser address bar, regular <a> clicks) — network only
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request).catch(() => {
@@ -51,23 +51,29 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For other assets (JS, CSS, Images), use cache-first or network-first
-    event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-            if (cachedResponse) return cachedResponse;
+    // Static assets (JS, CSS, images, fonts) — network-first with cache fallback
+    const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|eot|ico)(\?.*)?$/.test(url.pathname);
 
-            return fetch(event.request).then(response => {
-                // Cache successful responses for assets
-                if (response.status === 200 && response.type === 'basic') {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, clone);
-                    });
-                }
-                return response;
-            }).catch(() => {
-                return new Response('', { status: 408 });
-            });
-        })
+    if (isStaticAsset) {
+        event.respondWith(
+            caches.match(event.request).then(cachedResponse => {
+                if (cachedResponse) return cachedResponse;
+                return fetch(event.request).then(response => {
+                    if (response.status === 200 && response.type === 'basic') {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, clone);
+                        });
+                    }
+                    return response;
+                }).catch(() => new Response('', { status: 408 }));
+            })
+        );
+        return;
+    }
+
+    // Everything else (wire:navigate HTML fetches, AJAX, etc.) — network only, no cache
+    event.respondWith(
+        fetch(event.request).catch(() => new Response('', { status: 503 }))
     );
 });

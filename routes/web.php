@@ -589,8 +589,8 @@ Route::post('/logout', function () {
     return redirect('/?_=' . time());
 })->middleware('auth')->name('logout');
 
-// Auth state check (used by SPA navigation to detect logout)
-Route::get('/auth/state', function () {
+// Auth state check — URL includes '/api/' so the old Service Worker skips it
+Route::get('/api/auth/state', function () {
     return response()->json([
         'authenticated' => auth()->check(),
         'is_artist'     => auth()->check() && auth()->user()?->isArtist(),

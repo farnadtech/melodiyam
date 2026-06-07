@@ -287,25 +287,24 @@
     {{-- Auth state guard: detect logout across wire:navigate SPA navigation --}}
     <script>
     (function() {
-        var _authState = null;
+        // Use the DOM as the source of truth on first load (immune to SW cache)
+        var _guestBtn = document.querySelector('a[href="/login"]');
+        var _authState = _guestBtn ? false : true; // true = logged-in rendered by server
 
         function checkAuthState() {
-            // Cache-bust to prevent proxy/browser from serving a stale auth response
-            fetch('/auth/state?_=' + Date.now(), {
+            // URL uses /api/ prefix so the old Service Worker skips it
+            fetch('/api/auth/state?_=' + Date.now(), {
                 cache: 'no-store',
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (_authState === null) {
-                        _authState = data.authenticated;
-                        return;
-                    }
                     if (_authState !== data.authenticated) {
                         _authState = data.authenticated;
-                        // Hard navigate to force server re-render — bypasses proxy cache
-                        var sep = window.location.href.includes('?') ? '&' : '?';
-                        window.location.replace(window.location.href.split(/[?#]/)[0] + sep + '_r=' + Date.now());
+                        // Hard navigate to force server re-render
+                        window.location.replace(
+                            window.location.href.split(/[?#]/)[0] + '?_r=' + Date.now()
+                        );
                     }
                 })
                 .catch(function() {});

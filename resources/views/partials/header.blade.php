@@ -339,7 +339,7 @@
                 </a>
                 @endif
                 <hr class="my-2 border-surface-200 dark:border-surface-700">
-                <form method="POST" action="{{ url('/logout') }}" @submit.prevent="fetch('{{ url('/logout') }}', { method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json'} }).finally(() => { window.location.replace('/') })">
+                <form method="POST" action="{{ url('/logout') }}" @submit.prevent="fetch('{{ url('/logout') }}', { method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json'} }).finally(() => { if ('serviceWorker' in navigator) { caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))); navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())); } window.location.replace('/?_=' + Date.now()); })">
                     @csrf
                     <button type="submit" class="flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors w-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
